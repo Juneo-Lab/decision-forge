@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a reproducible defect in data generation, verification, or tooling.
+title: "[Bug]: "
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include fictional inputs and commands. Remove private data and credentials.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Decision Forge, Python, and operating system versions
+    validations:
+      required: true

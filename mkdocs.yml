@@ -1,0 +1,19 @@
+site_name: Decision Forge
+site_description: Compile organizational workflows into verifiable decision training data.
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: teal
+  features:
+    - navigation.sections
+    - content.code.copy
+nav:
+  - Overview: index.md
+  - Architecture: architecture.md
+  - Specification: specification.md
+  - Data protocol: data-protocol.md
+  - References: references.md
+markdown_extensions:
+  - tables
+  - fenced_code

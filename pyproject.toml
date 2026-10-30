@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "decision-forge"
+version = "0.1.0"
+description = "Compile organizational workflows into verifiable decision training data."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Decision Forge contributors" }]
+keywords = ["synthetic-data", "agents", "decision-models", "fine-tuning", "policy"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "pydantic>=2.10,<3",
+  "PyYAML>=6.0.2,<7",
+  "httpx>=0.28,<1",
+  "typer>=0.15,<1",
+  "filelock>=3.17,<4",
+]
+
+[project.scripts]
+decision-forge = "decision_forge.cli:app"
+
+[dependency-groups]
+dev = ["pytest>=8.3,<9", "pytest-cov>=6,<7", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyYAML>=6", "build>=1.2,<2"]
+docs = ["mkdocs-material>=9.6,<10"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/decision_forge"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true

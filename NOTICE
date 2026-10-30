@@ -1,0 +1,5 @@
+Decision Forge
+Copyright 2026 Decision Forge contributors
+
+This project includes original implementations informed by public data-pipeline and agent-harness
+designs. References and integration status are documented in docs/references.md.

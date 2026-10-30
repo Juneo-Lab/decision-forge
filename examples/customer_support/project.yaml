@@ -1,0 +1,755 @@
+schema_version: '1.0'
+organization:
+  id: northstar-demo
+  name: Northstar Support (fictional)
+  policy_version: 2026-10-demo
+  rules:
+  - id: human
+    description: A human specialist can handle every request, with fallback score 1.
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: human
+      any_of: []
+    effect: allow
+    score: 1
+    evidence:
+    - source_id: handbook
+      quote: A human specialist may handle every support request.
+  - id: agent
+    description: Prefer an available support agent for non-urgent, standard-sensitivity requests (score
+      2).
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: agent
+      - path: state.urgent
+        op: eq
+        value: false
+      - path: state.sensitivity
+        op: eq
+        value: standard
+      - path: candidate.available
+        op: eq
+        value: true
+      any_of: []
+    effect: allow
+    score: 2
+    evidence:
+    - source_id: handbook
+      quote: Prefer the support agent for non-urgent, standard-sensitivity requests when the agent is
+        available.
+  - id: internal-full
+    description: Internal project members may receive the full record (score 3).
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: full
+      - path: state.recipient
+        op: eq
+        value: internal
+      any_of: []
+    effect: allow
+    score: 3
+    evidence:
+    - source_id: handbook
+      quote: Internal project members may receive the full customer record.
+  - id: approved-full
+    description: External partners with explicit full-record approval may receive the full record (score
+      3).
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: full
+      - path: state.recipient
+        op: eq
+        value: partner
+      - path: state.full_approval
+        op: eq
+        value: true
+      any_of: []
+    effect: allow
+    score: 3
+    evidence:
+    - source_id: handbook
+      quote: External partners may receive the full customer record only with explicit full-record approval.
+  - id: partner-summary
+    description: Authorized external partners may receive a redacted summary (score 2).
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: summary
+      - path: state.recipient
+        op: eq
+        value: partner
+      - path: state.partner_authorized
+        op: eq
+        value: true
+      any_of: []
+    effect: allow
+    score: 2
+    evidence:
+    - source_id: handbook
+      quote: Authorized external partners may receive a redacted summary.
+  - id: reject
+    description: Reject is the fallback (score 0); prefer a permitted disclosure when available.
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: reject
+      any_of: []
+    effect: allow
+    score: 0
+    evidence:
+    - source_id: handbook
+      quote: Prefer the most informative permitted disclosure; reject the request when no disclosure is
+        permitted.
+  - id: execute
+    description: Execute when the amount is at most 1000 or the refund has approval (score 2).
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: execute
+      - path: state.amount
+        op: exists
+        value: true
+      any_of:
+      - path: state.amount
+        op: lte
+        value: 1000
+      - path: state.approved
+        op: eq
+        value: true
+    effect: allow
+    score: 2
+    evidence:
+    - source_id: handbook
+      quote: Refunds up to and including 1000 units may be executed immediately.
+    - source_id: handbook
+      quote: An approved refund may be executed regardless of amount.
+  - id: request-approval
+    description: Request approval for an unapproved refund above 1000 (score 1).
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: request_approval
+      - path: state.amount
+        op: gt
+        value: 1000
+      - path: state.approved
+        op: eq
+        value: false
+      any_of: []
+    effect: allow
+    score: 1
+    evidence:
+    - source_id: handbook
+      quote: Refunds above 1000 units require approval before execution.
+  - id: clarify
+    description: Request the amount when it is missing (score 1).
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: clarify
+      - path: state.amount
+        op: exists
+        value: false
+      any_of: []
+    effect: allow
+    score: 1
+    evidence:
+    - source_id: handbook
+      quote: Request the missing amount before deciding whether to execute a refund.
+  - id: accept
+    description: Accept only when acceptance checks pass and evidence is complete (score 2).
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: accept
+      - path: state.checks_pass
+        op: eq
+        value: true
+      - path: state.evidence_complete
+        op: eq
+        value: true
+      any_of: []
+    effect: allow
+    score: 2
+    evidence:
+    - source_id: handbook
+      quote: Accept a delivery only when its acceptance checks pass and the required evidence is complete.
+  - id: revise
+    description: Revision is available as a fallback (score 0); prefer acceptance when both criteria pass.
+    when:
+      all_of:
+      - path: candidate.id
+        op: eq
+        value: revise
+      any_of: []
+    effect: allow
+    score: 0
+    evidence:
+    - source_id: handbook
+      quote: Request revision when either acceptance checks or supporting evidence are incomplete.
+sources:
+- id: handbook
+  path: sources/policies.md
+nodes:
+- id: routing
+  kind: allocate_work
+  question: Who should handle this support request?
+  candidates:
+  - id: human
+    description: Human support specialist
+    attributes: {}
+  - id: agent
+    description: Support agent
+    attributes:
+      available: true
+  rule_ids:
+  - human
+  - agent
+  dimensions:
+  - path: state.urgent
+    values:
+    - false
+    - true
+  - path: state.sensitivity
+    values:
+    - standard
+    - restricted
+  - path: candidates.agent.available
+    values:
+    - false
+    - true
+- id: disclosure
+  kind: share_information
+  question: What should be shared with this recipient?
+  candidates:
+  - id: full
+    description: Full customer record
+    attributes: {}
+  - id: summary
+    description: Redacted summary
+    attributes: {}
+  - id: reject
+    description: Reject disclosure
+    attributes: {}
+  rule_ids:
+  - internal-full
+  - approved-full
+  - partner-summary
+  - reject
+  dimensions:
+  - path: state.recipient
+    values:
+    - internal
+    - partner
+  - path: state.full_approval
+    values:
+    - false
+    - true
+  - path: state.partner_authorized
+    values:
+    - false
+    - true
+- id: refund
+  kind: select_actions
+  question: What is the next action for this refund?
+  candidates:
+  - id: execute
+    description: Execute refund
+    attributes: {}
+  - id: request_approval
+    description: Request authorization
+    attributes: {}
+  - id: clarify
+    description: Request the missing amount
+    attributes: {}
+  rule_ids:
+  - execute
+  - request-approval
+  - clarify
+  dimensions:
+  - path: state.amount
+    values:
+    - 500
+    - 1000
+    - 1001
+    - 5000
+  - path: state.approved
+    values:
+    - false
+    - true
+- id: acceptance
+  kind: evaluate_outcomes
+  question: Does this delivery meet the acceptance standard?
+  candidates:
+  - id: accept
+    description: Accept delivery
+    attributes: {}
+  - id: revise
+    description: Request revision
+    attributes: {}
+  rule_ids:
+  - accept
+  - revise
+  dimensions:
+  - path: state.checks_pass
+    values:
+    - false
+    - true
+  - path: state.evidence_complete
+    values:
+    - false
+    - true
+scenarios:
+- id: synthetic-routing-0
+  family_id: support-case-0
+  node_id: routing
+  state:
+    case_id: support-case-0
+    product: analytics
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-disclosure-0
+  family_id: support-case-0
+  node_id: disclosure
+  state:
+    case_id: support-case-0
+    product: analytics
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-refund-0
+  family_id: support-case-0
+  node_id: refund
+  state:
+    case_id: support-case-0
+    product: analytics
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-acceptance-0
+  family_id: support-case-0
+  node_id: acceptance
+  state:
+    case_id: support-case-0
+    product: analytics
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-routing-1
+  family_id: support-case-1
+  node_id: routing
+  state:
+    case_id: support-case-1
+    product: storage
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-disclosure-1
+  family_id: support-case-1
+  node_id: disclosure
+  state:
+    case_id: support-case-1
+    product: storage
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-refund-1
+  family_id: support-case-1
+  node_id: refund
+  state:
+    case_id: support-case-1
+    product: storage
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-acceptance-1
+  family_id: support-case-1
+  node_id: acceptance
+  state:
+    case_id: support-case-1
+    product: storage
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-routing-2
+  family_id: support-case-2
+  node_id: routing
+  state:
+    case_id: support-case-2
+    product: search
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-disclosure-2
+  family_id: support-case-2
+  node_id: disclosure
+  state:
+    case_id: support-case-2
+    product: search
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-refund-2
+  family_id: support-case-2
+  node_id: refund
+  state:
+    case_id: support-case-2
+    product: search
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-acceptance-2
+  family_id: support-case-2
+  node_id: acceptance
+  state:
+    case_id: support-case-2
+    product: search
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-routing-3
+  family_id: support-case-3
+  node_id: routing
+  state:
+    case_id: support-case-3
+    product: workflow
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-disclosure-3
+  family_id: support-case-3
+  node_id: disclosure
+  state:
+    case_id: support-case-3
+    product: workflow
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-refund-3
+  family_id: support-case-3
+  node_id: refund
+  state:
+    case_id: support-case-3
+    product: workflow
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-acceptance-3
+  family_id: support-case-3
+  node_id: acceptance
+  state:
+    case_id: support-case-3
+    product: workflow
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-routing-4
+  family_id: support-case-4
+  node_id: routing
+  state:
+    case_id: support-case-4
+    product: reporting
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-disclosure-4
+  family_id: support-case-4
+  node_id: disclosure
+  state:
+    case_id: support-case-4
+    product: reporting
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-refund-4
+  family_id: support-case-4
+  node_id: refund
+  state:
+    case_id: support-case-4
+    product: reporting
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-acceptance-4
+  family_id: support-case-4
+  node_id: acceptance
+  state:
+    case_id: support-case-4
+    product: reporting
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-routing-5
+  family_id: support-case-5
+  node_id: routing
+  state:
+    case_id: support-case-5
+    product: billing
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-disclosure-5
+  family_id: support-case-5
+  node_id: disclosure
+  state:
+    case_id: support-case-5
+    product: billing
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-refund-5
+  family_id: support-case-5
+  node_id: refund
+  state:
+    case_id: support-case-5
+    product: billing
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-acceptance-5
+  family_id: support-case-5
+  node_id: acceptance
+  state:
+    case_id: support-case-5
+    product: billing
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-routing-6
+  family_id: support-case-6
+  node_id: routing
+  state:
+    case_id: support-case-6
+    product: access
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-disclosure-6
+  family_id: support-case-6
+  node_id: disclosure
+  state:
+    case_id: support-case-6
+    product: access
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-refund-6
+  family_id: support-case-6
+  node_id: refund
+  state:
+    case_id: support-case-6
+    product: access
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-acceptance-6
+  family_id: support-case-6
+  node_id: acceptance
+  state:
+    case_id: support-case-6
+    product: access
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-routing-7
+  family_id: support-case-7
+  node_id: routing
+  state:
+    case_id: support-case-7
+    product: export
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-disclosure-7
+  family_id: support-case-7
+  node_id: disclosure
+  state:
+    case_id: support-case-7
+    product: export
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-refund-7
+  family_id: support-case-7
+  node_id: refund
+  state:
+    case_id: support-case-7
+    product: export
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-acceptance-7
+  family_id: support-case-7
+  node_id: acceptance
+  state:
+    case_id: support-case-7
+    product: export
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-routing-8
+  family_id: support-case-8
+  node_id: routing
+  state:
+    case_id: support-case-8
+    product: backup
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-disclosure-8
+  family_id: support-case-8
+  node_id: disclosure
+  state:
+    case_id: support-case-8
+    product: backup
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-refund-8
+  family_id: support-case-8
+  node_id: refund
+  state:
+    case_id: support-case-8
+    product: backup
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-acceptance-8
+  family_id: support-case-8
+  node_id: acceptance
+  state:
+    case_id: support-case-8
+    product: backup
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-routing-9
+  family_id: support-case-9
+  node_id: routing
+  state:
+    case_id: support-case-9
+    product: monitoring
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-disclosure-9
+  family_id: support-case-9
+  node_id: disclosure
+  state:
+    case_id: support-case-9
+    product: monitoring
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-refund-9
+  family_id: support-case-9
+  node_id: refund
+  state:
+    case_id: support-case-9
+    product: monitoring
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-acceptance-9
+  family_id: support-case-9
+  node_id: acceptance
+  state:
+    case_id: support-case-9
+    product: monitoring
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-routing-10
+  family_id: support-case-10
+  node_id: routing
+  state:
+    case_id: support-case-10
+    product: integration
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-disclosure-10
+  family_id: support-case-10
+  node_id: disclosure
+  state:
+    case_id: support-case-10
+    product: integration
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-refund-10
+  family_id: support-case-10
+  node_id: refund
+  state:
+    case_id: support-case-10
+    product: integration
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-acceptance-10
+  family_id: support-case-10
+  node_id: acceptance
+  state:
+    case_id: support-case-10
+    product: integration
+  source_ids:
+  - handbook
+  stratum: routine
+- id: synthetic-routing-11
+  family_id: support-case-11
+  node_id: routing
+  state:
+    case_id: support-case-11
+    product: support
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-disclosure-11
+  family_id: support-case-11
+  node_id: disclosure
+  state:
+    case_id: support-case-11
+    product: support
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-refund-11
+  family_id: support-case-11
+  node_id: refund
+  state:
+    case_id: support-case-11
+    product: support
+  source_ids:
+  - handbook
+  stratum: boundary
+- id: synthetic-acceptance-11
+  family_id: support-case-11
+  node_id: acceptance
+  state:
+    case_id: support-case-11
+    product: support
+  source_ids:
+  - handbook
+  stratum: boundary
+recipe:
+  seed: 42
+  variants_per_scenario: 16
+  splits:
+    train: 0.6
+    development: 0.2
+    test: 0.2
