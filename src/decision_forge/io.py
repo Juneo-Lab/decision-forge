@@ -43,13 +43,23 @@ def write_json(path: Path, value: Any) -> None:
 
 
 def read_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeError):
+        raise ValueError("Invalid JSON artifact encoding or syntax") from None
+
+
+def read_yaml(path: Path) -> Any:
+    try:
+        return yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (yaml.YAMLError, UnicodeError, RecursionError):
+        raise ValueError("Invalid YAML/JSON input encoding or syntax") from None
 
 
 def load_project(path: Path) -> Project:
     if path.stat().st_size > MAX_SOURCE_BYTES:
         raise ValueError("Project specification exceeds the 2 MB limit")
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data = read_yaml(path)
     return Project.model_validate(data)
 
 
@@ -65,8 +75,15 @@ def load_sources(project: Project, root: Path) -> tuple[dict[str, str], dict[str
             raise ValueError(f"Source exceeds the 2 MB limit: {source.id}")
         contents[source.id] = path.read_text(encoding="utf-8")
         hashes[source.id] = digest(contents[source.id])
+        if source.content_hash is not None and source.content_hash != hashes[source.id]:
+            raise ValueError(f"Source content hash changed: {source.id}")
     for rule in project.organization.rules:
         for evidence in rule.evidence:
             if evidence.quote not in contents[evidence.source_id]:
                 raise ValueError(f"Evidence quote not found for rule {rule.id}")
+            if (
+                evidence.start is not None
+                and contents[evidence.source_id][evidence.start : evidence.end] != evidence.quote
+            ):
+                raise ValueError(f"Evidence span does not match for rule {rule.id}")
     return contents, hashes

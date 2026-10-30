@@ -12,6 +12,8 @@ nav:
   - Overview: index.md
   - Architecture: architecture.md
   - Specification: specification.md
+  - Organization compiler: organization-compiler.md
+  - Implementation plan: implementation-plan.md
   - Data protocol: data-protocol.md
   - References: references.md
 markdown_extensions:

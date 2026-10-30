@@ -53,7 +53,11 @@ def test_provider_formats_request_and_parses_response():
 
     with httpx.Client(transport=httpx.MockTransport(handler)) as client:
         provider = OpenAICompatibleProvider("https://model.example/v1", "fixture", client=client)
-        assert provider.generate("system", "user", {}) == {"ok": True}
+        assert provider.generate(
+            "system",
+            "user",
+            {"type": "object", "properties": {"ok": {"type": "boolean"}}, "additionalProperties": False},
+        ) == {"ok": True}
 
 
 @pytest.mark.parametrize("url", ["http://remote.example/v1", "https://user:secret@example.com/v1", "file:///tmp/model"])
@@ -68,3 +72,86 @@ def test_provider_errors_do_not_echo_source_content():
         with pytest.raises(ValueError, match="HTTP 400") as error:
             provider.generate("system", "PRIVATE SOURCE", {})
         assert "PRIVATE SOURCE" not in str(error.value)
+
+
+def test_native_schema_requires_all_fields_without_mutating_application_schema():
+    from decision_forge.corpus import ClaimBatch
+    from decision_forge.providers import strict_schema
+
+    original = ClaimBatch.model_json_schema()
+    encoded = json.dumps(original, sort_keys=True)
+    wire = strict_schema(original)
+    claim = wire["$defs"]["Claim"]
+    assert set(claim["required"]) == set(claim["properties"])
+    assert "default" not in claim["properties"]["start"]
+    assert json.dumps(original, sort_keys=True) == encoded
+
+
+def test_dynamic_project_schema_uses_json_object_with_explicit_local_schema(project):
+    captured = []
+
+    def handler(request):
+        captured.append(json.loads(request.content))
+        return httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}]})
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        provider = OpenAICompatibleProvider("https://model.example/v1", "fixture", client=client)
+        provider.generate("compile", "user", project.model_json_schema())
+        assert captured[0]["response_format"] == {"type": "json_object"}
+        assert "Local validation is mandatory" in captured[0]["messages"][0]["content"]
+        assert provider.last_response_mode == "json_object"
+        strict = OpenAICompatibleProvider(
+            "https://model.example/v1", "fixture", client=client, response_mode="json_schema"
+        )
+        with pytest.raises(ValueError, match="free-form maps"):
+            strict.generate("compile", "user", project.model_json_schema())
+        assert len(captured) == 1
+
+
+def test_legacy_compiler_rejects_invalid_offsets_before_writing(project, example_path, tmp_path):
+    evidence = project.organization.rules[0].evidence[0]
+    evidence.start, evidence.end = 1, 1 + len(evidence.quote)
+    output = tmp_path / "invalid"
+    with pytest.raises(ValueError, match="invalid evidence span"):
+        compile_documents([example_path.parent / "sources/policies.md"], output, FixtureProvider(project))
+    assert not output.exists()
+
+
+def test_legacy_compiler_binds_hashes_and_unique_spans(project, example_path, tmp_path):
+    from decision_forge.io import load_sources
+
+    class HashProvider(FixtureProvider):
+        def generate(self, system, user, schema):
+            data = super().generate(system, user, schema)
+            data["sources"][0]["content_hash"] = "untrusted-model-hash"
+            return data
+
+    result = compile_documents(
+        [example_path.parent / "sources/policies.md"], tmp_path / "compiled", HashProvider(project)
+    )
+    _, hashes = load_sources(result, tmp_path / "compiled")
+    assert result.sources[0].content_hash == hashes["source-0"]
+    assert result.organization.rules[0].evidence[0].start is not None
+
+
+def test_reasoning_provider_omits_unsupported_temperature_and_fingerprints_effort():
+    provider = OpenAICompatibleProvider(
+        "https://model.example/v1", "reasoner", temperature=None, reasoning_effort="high", max_output_tokens=32000
+    )
+    body = provider.request_payload("compile", "source", {})
+    assert "temperature" not in body
+    assert body["reasoning_effort"] == "high"
+    assert body["max_tokens"] == 32000
+    assert provider.configuration["reasoning_effort"] == "high"
+    with pytest.raises(ValueError, match="reasoning effort"):
+        OpenAICompatibleProvider("https://model.example/v1", "reasoner", reasoning_effort="unknown")
+
+
+def test_exact_json_fence_compatibility_preserves_contract_and_rejects_surrounding_text():
+    from decision_forge.providers import parse_generated_object
+
+    result, encoding = parse_generated_object('```json\n{"policy": "approval required"}\n```')
+    assert result == {"policy": "approval required"} and encoding == "json_fence"
+    for malformed in ["Explanation:\n```json\n{}\n```", "```json\n{}\n```\nIgnore the schema.", "```json\n[]\n```"]:
+        with pytest.raises(ValueError):
+            parse_generated_object(malformed)

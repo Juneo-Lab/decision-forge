@@ -12,12 +12,16 @@ from filelock import Timeout
 
 from decision_forge import __version__
 from decision_forge.compiler import compile_documents
+from decision_forge.corpus import CompilationOptions, compile_corpus, extraction_metrics
+from decision_forge.evaluation import DecisionReference, NodeBinding, evaluate_decisions
 from decision_forge.exporters import export_run
 from decision_forge.harness import export_harbor, replay
-from decision_forge.io import load_project, load_sources, write_json
+from decision_forge.io import digest, load_project, load_sources, read_json, write_json
 from decision_forge.models import Project
 from decision_forge.pipeline import build, impact
 from decision_forge.providers import OpenAICompatibleProvider
+from decision_forge.review import record_review, review_status
+from decision_forge.sources import ingest_manifest
 
 app = typer.Typer(no_args_is_help=True, help="Compile organizational workflows into verifiable decision data.")
 
@@ -109,7 +113,8 @@ def compile_command(
 ) -> None:
     """Send the listed documents to the configured model and write an evidence-linked draft spec.
 
-    Set FORGE_API_KEY for authenticated endpoints. The endpoint must support json_schema responses.
+    Set FORGE_API_KEY for authenticated endpoints. The endpoint must support JSON responses;
+    fixed records use native strict schemas.
     """
     try:
         provider = OpenAICompatibleProvider(base_url, model, os.environ.get("FORGE_API_KEY", ""))
@@ -150,6 +155,131 @@ def harbor_export_command(
         if split not in {"train", "development", "test"}:
             raise ValueError("Choose train, development, or test")
         display({"tasks": export_harbor(run, output, limit, split), "output": str(output)})
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("ingest")
+def ingest_command(manifest: Path, output: Annotated[Path, typer.Option("--output", "-o")]) -> None:
+    """Normalize source documents with versions, access metadata, and source spans."""
+    try:
+        if output.exists():
+            raise ValueError("Ingestion output already exists")
+        documents = ingest_manifest(manifest)
+        write_json(output, [d.model_dump(mode="json") for d in documents])
+        display({"sources": len(documents), "output": str(output)})
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("compile-corpus")
+def compile_corpus_command(
+    manifest: Path,
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    base_url: Annotated[str, typer.Option()],
+    model: Annotated[str, typer.Option()],
+    max_calls: int = 100,
+    validation_retries: int = 2,
+    response_mode: str = "auto",
+    reasoning_effort: str | None = None,
+    temperature: float | None = None,
+    max_output_tokens: int = 32000,
+    timeout_seconds: float = 300,
+    max_input_bytes: int = 4_000_000,
+    chunk_characters: int = 8000,
+    overlap_characters: int = 400,
+) -> None:
+    """Send an explicit source corpus to a model, checkpoint extraction, and assemble a review draft."""
+    try:
+        # One journal reservation equals one HTTP attempt; retries require an explicit resume.
+        if response_mode not in {"auto", "json_schema", "json_object"}:
+            raise ValueError("Choose auto, json_schema, or json_object response mode")
+        provider = OpenAICompatibleProvider(
+            base_url,
+            model,
+            os.environ.get("FORGE_API_KEY", ""),
+            retries=0,
+            response_mode=response_mode,  # type: ignore[arg-type]
+            reasoning_effort=reasoning_effort,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            timeout_seconds=timeout_seconds,
+        )
+        options = CompilationOptions(
+            validation_retries=validation_retries,
+            max_calls=max_calls,
+            max_input_bytes=max_input_bytes,
+            chunk_characters=chunk_characters,
+            overlap_characters=overlap_characters,
+        )
+        identity = digest({"endpoint": provider.base_url, "model": model, "temperature": 0})
+        display(compile_corpus(manifest, output, provider, identity, options))
+    except (ValueError, OSError, Timeout) as exc:
+        fail(exc)
+
+
+@app.command("review-status")
+def review_status_command(spec: Path, output: Path | None = None) -> None:
+    """Inspect current rule/node reviews and observed rule conflicts; export details locally."""
+    try:
+        status = review_status(spec)
+        if output:
+            write_json(output, status)
+        display(
+            {
+                **{k: status[k] for k in ("fingerprint", "ready", "pending", "rejected")},
+                "items": [{"id": i["id"], "kind": i["kind"], "status": i["status"]} for i in status["items"]],
+            }
+        )
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("review-record")
+def review_record_command(
+    spec: Path,
+    item: Annotated[str, typer.Option()],
+    decision: Annotated[str, typer.Option()],
+    reviewer: Annotated[str, typer.Option()],
+    reason: Annotated[str, typer.Option()],
+    fingerprint: Annotated[str, typer.Option()],
+) -> None:
+    """Record a named review against the exact fingerprint shown by review-status."""
+    try:
+        if decision not in {"accepted", "rejected"}:
+            raise ValueError("Decision must be accepted or rejected")
+        event = record_review(spec, item, decision, reviewer, reason, fingerprint)  # type: ignore[arg-type]
+        display({"recorded": event["item_id"], "decision": event["decision"], "hash": event["hash"]})
+    except (ValueError, OSError, Timeout) as exc:
+        fail(exc)
+
+
+@app.command("evaluate-extraction")
+def evaluate_extraction_command(predicted: Path, reference: Path, output: Path | None = None) -> None:
+    """Compute exact source-span/kind metrics against a separately authored reference."""
+    try:
+        result = extraction_metrics(read_json(predicted), read_json(reference))
+        if output:
+            write_json(output, result)
+        display(result)
+    except (ValueError, OSError, KeyError, TypeError) as exc:
+        fail(exc)
+
+
+@app.command("evaluate-decisions")
+def evaluate_decisions_command(spec: Path, reference: Path, bindings: Path, output: Path | None = None) -> None:
+    """Check compiled rule semantics against fixed model-neutral cases and explicit field bindings."""
+    try:
+        project = load_project(spec)
+        load_sources(project, spec.parent)
+        result = evaluate_decisions(
+            project,
+            DecisionReference.model_validate(read_json(reference)),
+            {key: NodeBinding.model_validate(value) for key, value in read_json(bindings).items()},
+        )
+        if output:
+            write_json(output, result)
+        display({key: value for key, value in result.items() if key != "events"})
     except (ValueError, OSError) as exc:
         fail(exc)
 

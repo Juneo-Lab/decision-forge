@@ -1,0 +1,10 @@
+schema_version: '1.0'
+sources:
+  - id: handbook
+    path: sources/policies.md
+    version: '2026-10-demo'
+    adapter: text
+    access:
+      classification: public
+      allowed_roles: []
+      owner: Northstar Support (fictional)

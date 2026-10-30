@@ -21,6 +21,7 @@ from decision_forge.io import (
     write_json,
 )
 from decision_forge.models import Episode, Project, Scenario
+from decision_forge.review import require_review
 
 
 @lru_cache(maxsize=1)
@@ -51,15 +52,18 @@ def scenario_fingerprint(project: Project, scenario: Scenario, hashes: dict[str,
 
 def build(spec: Path, output: Path, cache: Path | None = None) -> dict[str, Any]:
     project = load_project(spec)
-    _, hashes = load_sources(project, spec.parent)
+    require_review(spec)
+    contents, hashes = load_sources(project, spec.parent)
     output.mkdir(parents=True, exist_ok=True)
     cache = cache or output.parent / ".forge-cache"
     cache.mkdir(parents=True, exist_ok=True)
     with FileLock(str(output / ".build.lock"), timeout=0):
-        return _build(project, hashes, output, cache)
+        return _build(project, contents, hashes, output, cache)
 
 
-def _build(project: Project, hashes: dict[str, str], output: Path, cache: Path) -> dict[str, Any]:
+def _build(
+    project: Project, contents: dict[str, str], hashes: dict[str, str], output: Path, cache: Path
+) -> dict[str, Any]:
     fingerprint = digest(
         {
             "engine": __version__,
@@ -117,7 +121,12 @@ def _build(project: Project, hashes: dict[str, str], output: Path, cache: Path) 
         "label_basis": "declarative_policy; source quotes checked; semantic review external",
     }
     write_json(output / "report.json", report)
-    write_json(output / "project.snapshot.json", project.model_dump(mode="json"))
+    snapshot = project.model_copy(deep=True)
+    for source in snapshot.sources:
+        source.path = f"sources/{source.id}.txt"
+        source.content_hash = hashes[source.id]
+        atomic_text(output / source.path, contents[source.id])
+    write_json(output / "project.snapshot.json", snapshot.model_dump(mode="json"))
     lines = [
         "# Decision Forge build report",
         "",

@@ -15,6 +15,20 @@ Use the supplied source IDs and paths exactly. Produce all output text in Englis
 Represent decision points using allocate_work, share_information, select_actions, evaluate_outcomes
 when supported by the supplied materials. Candidate IDs are stable action identifiers.
 Rules use predicates over state.<field> and candidate.<field>; candidate.id is reserved.
+Condition.all_of and Condition.any_of are FLAT arrays of Predicate objects, never nested conditions.
+A predicate is {"path":"state.amount","op":"lte","value":1000}. For (A AND B) OR (C AND D),
+create two separate rules. Both all_of and any_of, when nonempty, must be satisfied.
+For claim-based input, copy evidence quotes verbatim from the supplied claims. Omit evidence offsets;
+the compiler binds them. Keep source version/hash/access metadata unchanged. Do not invent nested DSLs.
+Each rule is evaluated against EVERY candidate. A rule about a particular action MUST include a
+predicate on candidate.id (or a distinguishing candidate attribute). For example:
+{"all_of":[{"path":"candidate.id","op":"eq","value":"execute"},
+{"path":"state.amount","op":"lte","value":1000}]}.
+A denial of one candidate does not permit another: explicitly allow escalation, clarification,
+revision or rejection actions in their applicable states. Do not emit blanket allow rules for
+statements about preferring a particular candidate. Missing fields and null are distinct; exists
+checks key presence, and numeric comparisons with null are false. Include candidate bindings in
+rule descriptions so model-visible policies convey the same action semantics.
 The highest matched priority governs; deny wins at equal priority; unmatched candidates are denied.
 Among permitted candidates the highest score wins; ties preserve all valid choices.
 Policy descriptions must fully describe conditions and priorities for model-visible context.
@@ -52,10 +66,20 @@ def compile_documents(sources: list[Path], output: Path, provider: StructuredPro
     for source in project.sources:
         if source.id not in provided or source.path != provided[source.id]["path"]:
             raise ValueError("Compiler invented or modified a source reference")
+        source.content_hash = digest(provided[source.id]["text"])
     for rule in project.organization.rules:
         for evidence in rule.evidence:
-            if evidence.quote not in provided[evidence.source_id]["text"]:
+            text = provided[evidence.source_id]["text"]
+            start = text.find(evidence.quote)
+            if start < 0:
                 raise ValueError(f"Compiler produced unsupported evidence for rule {rule.id}")
+            if evidence.start is not None:
+                if text[evidence.start : evidence.end] != evidence.quote:
+                    raise ValueError(f"Compiler produced invalid evidence span for rule {rule.id}")
+            elif text.find(evidence.quote, start + 1) < 0:
+                evidence.start, evidence.end = start, start + len(evidence.quote)
+            # The legacy text compiler has no page/section locator adapter.
+            evidence.locator = None
     output.mkdir(parents=True, exist_ok=True)
     for doc in documents:
         atomic_text(output / doc["path"], doc["text"])

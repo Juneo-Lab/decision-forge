@@ -1,0 +1,728 @@
+[
+  {
+    "run": "live-m1-gemini25flash-json",
+    "attempts": 4,
+    "returned": 4,
+    "failed": 0,
+    "reserved_or_interrupted": 0,
+    "known_cost_usd": 0.03746127,
+    "calls_without_cost": 0,
+    "calls": [
+      {
+        "key": "16d9ea1154781c3f393b5e356a21e66d3e2fd3e405c53c290acecbb51a914522",
+        "input_bytes": 3137,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 627,
+          "completion_tokens": 730,
+          "cost": 0.0020131
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object",
+        "validation": {
+          "status": "accepted"
+        }
+      },
+      {
+        "key": "c65d48f5e440c4775d80c49f3ee2884445a47c65a0ec962dbe3af3f86d5687ef",
+        "input_bytes": 15665,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 4576,
+          "completion_tokens": 5911,
+          "cost": 0.0161503
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object",
+        "validation": {
+          "status": "rejected",
+          "errors": [
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "path"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "op"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "any_of"
+              ],
+              "type": "extra_forbidden"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "path"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "op"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "any_of"
+              ],
+              "type": "extra_forbidden"
+            }
+          ]
+        }
+      },
+      {
+        "key": "c65d48f5e440c4775d80c49f3ee2884445a47c65a0ec962dbe3af3f86d5687ef",
+        "input_bytes": 31734,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 8133,
+          "completion_tokens": 3322,
+          "cost": 0.0107449
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object",
+        "validation": {
+          "status": "rejected",
+          "errors": [
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "path"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "op"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "any_of"
+              ],
+              "type": "extra_forbidden"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "path"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "op"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "any_of"
+              ],
+              "type": "extra_forbidden"
+            }
+          ]
+        }
+      },
+      {
+        "key": "c65d48f5e440c4775d80c49f3ee2884445a47c65a0ec962dbe3af3f86d5687ef",
+        "input_bytes": 31734,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 8133,
+          "completion_tokens": 3321,
+          "cost": 0.00855297
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object",
+        "validation": {
+          "status": "rejected",
+          "errors": [
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "path"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "op"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "any_of"
+              ],
+              "type": "extra_forbidden"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "path"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "op"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "any_of"
+              ],
+              "type": "extra_forbidden"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "run": "live-m1-gemini25flash-v4",
+    "attempts": 1,
+    "returned": 0,
+    "failed": 1,
+    "reserved_or_interrupted": 0,
+    "known_cost_usd": 0,
+    "calls_without_cost": 1,
+    "calls": [
+      {
+        "key": "0ee87d73a93fad3027d3f1c38e1f032f0b9a068da10e394579ce6824e33c4dc5",
+        "input_bytes": 2945,
+        "status": "failed",
+        "usage": null,
+        "input_basis": "provider_request_body",
+        "response_mode": "json_schema"
+      }
+    ]
+  },
+  {
+    "run": "live-m1-gpt41-v5",
+    "attempts": 2,
+    "returned": 1,
+    "failed": 0,
+    "reserved_or_interrupted": 1,
+    "known_cost_usd": 0.004786,
+    "calls_without_cost": 1,
+    "calls": [
+      {
+        "key": "b7fedc65dd48284949b7e2ed2c2d4f72d2e278a97043bdeb9248a8fe9fef080a",
+        "input_bytes": 2936,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 509,
+          "completion_tokens": 471,
+          "cost": 0.004786
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_schema",
+        "validation": {
+          "status": "accepted"
+        }
+      },
+      {
+        "key": "57a9789a6a699c6523a919c0547ab2050e7be048f0db530758b6fe05fcc25f7d",
+        "input_bytes": 16442,
+        "status": "reserved",
+        "usage": null,
+        "input_basis": "provider_request_body"
+      }
+    ]
+  },
+  {
+    "run": "live-m1-gpt41mini",
+    "attempts": 2,
+    "returned": 0,
+    "failed": 2,
+    "reserved_or_interrupted": 0,
+    "known_cost_usd": 0,
+    "calls_without_cost": 2,
+    "calls": [
+      {
+        "key": "20165b8cc65af4989f2e30b5020f37cdd3f0b574656e7bc99b25038393824d39",
+        "input_bytes": 2890,
+        "status": "failed",
+        "usage": null
+      },
+      {
+        "key": "20165b8cc65af4989f2e30b5020f37cdd3f0b574656e7bc99b25038393824d39",
+        "input_bytes": 2890,
+        "status": "failed",
+        "usage": null
+      }
+    ]
+  },
+  {
+    "run": "live-m1-gpt41mini-v2",
+    "attempts": 1,
+    "returned": 1,
+    "failed": 0,
+    "reserved_or_interrupted": 0,
+    "known_cost_usd": 0.0009008,
+    "calls_without_cost": 0,
+    "calls": [
+      {
+        "key": "a68a7b55aac7db5bf9eec70ed74a17a1b7e4b5426e24116183ebd7223c5cff34",
+        "input_bytes": 2890,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 552,
+          "completion_tokens": 425,
+          "cost": 0.0009008
+        },
+        "response_mode": "json_schema"
+      }
+    ]
+  },
+  {
+    "run": "live-m1-gpt41mini-v3",
+    "attempts": 2,
+    "returned": 2,
+    "failed": 0,
+    "reserved_or_interrupted": 0,
+    "known_cost_usd": 0.0105964,
+    "calls_without_cost": 0,
+    "calls": [
+      {
+        "key": "9c2f6eb405f273ded226c7d4aa32fadf2cdacdb963bd0ff190e1b83c7051d192",
+        "input_bytes": 2940,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 509,
+          "completion_tokens": 398,
+          "cost": 0.0008404
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_schema"
+      },
+      {
+        "key": "b06c4f315cc4f1825de7f232e83e1189c2347aea850d15fe9856c08b7a44ab3d",
+        "input_bytes": 13341,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 3406,
+          "completion_tokens": 5246,
+          "cost": 0.009756
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object"
+      }
+    ]
+  },
+  {
+    "run": "live-m1-gpt41mini-v4",
+    "attempts": 3,
+    "returned": 3,
+    "failed": 0,
+    "reserved_or_interrupted": 0,
+    "known_cost_usd": 0.0161092,
+    "calls_without_cost": 0,
+    "calls": [
+      {
+        "key": "b1a8aebcf0e3cd1bd6efea1e31814140acd6f026fabacf0098b365efa2bda72f",
+        "input_bytes": 2941,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 509,
+          "completion_tokens": 472,
+          "cost": 0.0009588
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_schema"
+      },
+      {
+        "key": "421ee2dfc2b481136edd10d8f2994c09ff1792501b755f8b21df594c11d63f92",
+        "input_bytes": 15661,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 4098,
+          "completion_tokens": 4065,
+          "cost": 0.0081432
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object"
+      },
+      {
+        "key": "421ee2dfc2b481136edd10d8f2994c09ff1792501b755f8b21df594c11d63f92",
+        "input_bytes": 15661,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 4098,
+          "completion_tokens": 4099,
+          "cost": 0.0070072
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object",
+        "validation": {
+          "status": "accepted"
+        }
+      }
+    ]
+  },
+  {
+    "run": "live-m1-gpt41mini-v5",
+    "attempts": 2,
+    "returned": 1,
+    "failed": 0,
+    "reserved_or_interrupted": 1,
+    "known_cost_usd": 0.0088948,
+    "calls_without_cost": 1,
+    "calls": [
+      {
+        "key": "1946af6ca2256af459c9e9970b4f7f920c3e02ecb3e6e493dc273d0b41e0f893",
+        "input_bytes": 16447,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 4245,
+          "completion_tokens": 4498,
+          "cost": 0.0088948
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object",
+        "validation": {
+          "status": "rejected",
+          "errors": [
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "path"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "op"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                2,
+                "when",
+                "all_of",
+                1,
+                "any_of"
+              ],
+              "type": "extra_forbidden"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "path"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "op"
+              ],
+              "type": "missing"
+            },
+            {
+              "location": [
+                "organization",
+                "rules",
+                12,
+                "when",
+                "all_of",
+                1,
+                "any_of"
+              ],
+              "type": "extra_forbidden"
+            }
+          ]
+        }
+      },
+      {
+        "key": "1946af6ca2256af459c9e9970b4f7f920c3e02ecb3e6e493dc273d0b41e0f893",
+        "input_bytes": 31855,
+        "status": "reserved",
+        "usage": null,
+        "input_basis": "provider_request_body"
+      }
+    ]
+  },
+  {
+    "run": "live-m1-gpt61sol-high",
+    "attempts": 2,
+    "returned": 2,
+    "failed": 0,
+    "reserved_or_interrupted": 0,
+    "known_cost_usd": 0.1505675,
+    "calls_without_cost": 0,
+    "calls": [
+      {
+        "key": "000732bf773a355cc443b2ce520fe44ae7f254b6227177a7c39deaa1b1a8e88a",
+        "input_bytes": 2950,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 507,
+          "completion_tokens": 809,
+          "cost": 0.009104
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_schema",
+        "validation": {
+          "status": "accepted"
+        }
+      },
+      {
+        "key": "cd844dd5a031adda2a68ebe00449b9ec7020bd8c84974cb2926ad9b6223238cf",
+        "input_bytes": 16564,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 4262,
+          "completion_tokens": 13081,
+          "cost": 0.1414635
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object",
+        "validation": {
+          "status": "accepted"
+        }
+      }
+    ]
+  },
+  {
+    "run": "live-m1-opus55-high",
+    "attempts": 3,
+    "returned": 1,
+    "failed": 2,
+    "reserved_or_interrupted": 0,
+    "known_cost_usd": 0.563128,
+    "calls_without_cost": 0,
+    "calls": [
+      {
+        "key": "1eb60920380502e827053e1739ca230aa3e41df496bb3537231f12505d09bfe6",
+        "input_bytes": 2957,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 1185,
+          "completion_tokens": 922,
+          "cost": 0.02318
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_schema",
+        "validation": {
+          "status": "accepted"
+        }
+      },
+      {
+        "key": "a475e0c0bb9882ce1f13216e18e34603c987cab83fbe4ce5c7bb0d5eb55caa6a",
+        "input_bytes": 16632,
+        "status": "failed",
+        "usage": {
+          "prompt_tokens": 6301,
+          "completion_tokens": 11938,
+          "cost": 0.263964
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object"
+      },
+      {
+        "key": "a475e0c0bb9882ce1f13216e18e34603c987cab83fbe4ce5c7bb0d5eb55caa6a",
+        "input_bytes": 16632,
+        "status": "failed",
+        "usage": {
+          "prompt_tokens": 6301,
+          "completion_tokens": 12539,
+          "cost": 0.275984
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object"
+      }
+    ]
+  },
+  {
+    "run": "live-m1-opus55-high-v2",
+    "attempts": 2,
+    "returned": 2,
+    "failed": 0,
+    "reserved_or_interrupted": 0,
+    "known_cost_usd": 0.29342799999999997,
+    "calls_without_cost": 0,
+    "calls": [
+      {
+        "key": "32e4a0af65fef0f27b6e9440b114a86b59dc06bf4281ea3263f5b44ddca37745",
+        "input_bytes": 2957,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 1185,
+          "completion_tokens": 961,
+          "cost": 0.02396
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_schema",
+        "response_encoding": "json",
+        "response_metadata": {
+          "id": "gen-1793384361-w1WZuHpMC2OI9vuP4FfD",
+          "model": "anthropic/claude-opus-5.5",
+          "finish_reason": "stop"
+        },
+        "validation": {
+          "status": "accepted"
+        }
+      },
+      {
+        "key": "56903a72632c38d55fd51290226bed33b7541588aa4b9a91257fa0fddb3ed4ee",
+        "input_bytes": 16751,
+        "status": "returned",
+        "usage": {
+          "prompt_tokens": 6347,
+          "completion_tokens": 12204,
+          "cost": 0.269468
+        },
+        "input_basis": "provider_request_body",
+        "response_mode": "json_object",
+        "response_encoding": "json_fence",
+        "response_metadata": {
+          "id": "gen-1793384373-FKg64RYPheOxjfe89tMG",
+          "model": "anthropic/claude-opus-5.5",
+          "finish_reason": "stop"
+        },
+        "validation": {
+          "status": "accepted"
+        }
+      }
+    ]
+  }
+]

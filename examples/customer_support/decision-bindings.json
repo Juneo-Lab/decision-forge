@@ -1,0 +1,80 @@
+{
+  "allocate_work": {
+    "node_id": "routing",
+    "facts": [
+      {
+        "fact": "urgent",
+        "path": "state.urgent"
+      },
+      {
+        "fact": "sensitivity",
+        "path": "state.sensitivity"
+      },
+      {
+        "fact": "agent_available",
+        "path": "candidates.agent.available"
+      }
+    ],
+    "candidate_actions": {
+      "human": "human",
+      "agent": "agent"
+    }
+  },
+  "share_information": {
+    "node_id": "disclosure",
+    "facts": [
+      {
+        "fact": "recipient",
+        "path": "state.recipient"
+      },
+      {
+        "fact": "full_approval",
+        "path": "state.full_approval"
+      },
+      {
+        "fact": "partner_authorized",
+        "path": "state.partner_authorized"
+      }
+    ],
+    "candidate_actions": {
+      "full": "full",
+      "summary": "summary",
+      "reject": "reject"
+    }
+  },
+  "select_actions": {
+    "node_id": "refund",
+    "facts": [
+      {
+        "fact": "amount",
+        "path": "state.amount"
+      },
+      {
+        "fact": "approved",
+        "path": "state.approved"
+      }
+    ],
+    "candidate_actions": {
+      "execute": "execute",
+      "request_approval": "request_approval",
+      "clarify": "request_amount"
+    }
+  },
+  "evaluate_outcomes": {
+    "node_id": "acceptance",
+    "facts": [
+      {
+        "fact": "checks_passed",
+        "path": "state.checks_pass"
+      },
+      {
+        "fact": "evidence_complete",
+        "path": "state.evidence_complete"
+      }
+    ],
+    "candidate_actions": {
+      "accept": "accept",
+      "revise": "revise"
+    }
+  }
+}

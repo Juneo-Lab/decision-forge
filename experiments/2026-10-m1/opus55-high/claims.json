@@ -1,0 +1,132 @@
+[
+  {
+    "id": "f7ad45755d6613293c4af835b79cd974bf53c5a0b2cf663ef2f13bc4f4a90b8e",
+    "summary": "A human specialist may handle any support request (baseline eligibility for all requests).",
+    "quote": "A human specialist may handle every support request.",
+    "kind": "allocate_work",
+    "start": 129,
+    "end": 181,
+    "source_id": "handbook",
+    "locator": "line:7;section:## Work allocation"
+  },
+  {
+    "id": "fc69babee7f049c3ff35c57cf36c400ecba0e7b53576c34d8430668266644364",
+    "summary": "The support agent is preferred for requests that are non-urgent and standard-sensitivity, conditional on the agent being available.",
+    "quote": "Prefer the support agent for non-urgent, standard-sensitivity requests when the agent is available.",
+    "kind": "allocate_work",
+    "start": 182,
+    "end": 281,
+    "source_id": "handbook",
+    "locator": "line:8;section:## Work allocation"
+  },
+  {
+    "id": "42251ffa29b07e7afc6706915f48312544b3a5fdc3bf24f241202a42eb232234",
+    "summary": "The human specialist is used for urgent or restricted requests, and for any request whenever the support agent is unavailable.",
+    "quote": "Use the human specialist for urgent or restricted requests and whenever the support agent is unavailable.",
+    "kind": "allocate_work",
+    "start": 282,
+    "end": 387,
+    "source_id": "handbook",
+    "locator": "line:9;section:## Work allocation"
+  },
+  {
+    "id": "b3ddd7d1c4a56136b3b62984a3a93eb583efa96935aab93c31de03a2901258e9",
+    "summary": "Internal project members are permitted to receive the full customer record.",
+    "quote": "Internal project members may receive the full customer record.",
+    "kind": "share_information",
+    "start": 413,
+    "end": 475,
+    "source_id": "handbook",
+    "locator": "line:13;section:## Information sharing"
+  },
+  {
+    "id": "d51634acd3ff2f5e156230aee95cd11b2f713900ea98e96153ca6d74a9029049",
+    "summary": "External partners may receive the full customer record only if explicit full-record approval exists.",
+    "quote": "External partners may receive the full customer record only with explicit full-record approval.",
+    "kind": "share_information",
+    "start": 476,
+    "end": 571,
+    "source_id": "handbook",
+    "locator": "line:14;section:## Information sharing"
+  },
+  {
+    "id": "090f99de444c2f10bde4cd24dbe96777642f64cfc81d59a7d3c55e6325f7c3ad",
+    "summary": "Authorized external partners are permitted to receive a redacted summary of the customer record.",
+    "quote": "Authorized external partners may receive a redacted summary.",
+    "kind": "share_information",
+    "start": 572,
+    "end": 632,
+    "source_id": "handbook",
+    "locator": "line:15;section:## Information sharing"
+  },
+  {
+    "id": "85f20441d0fec4954b64ee30da1fc5dcb83aef36f6445d108b10480c3140ca37",
+    "summary": "Choose the most informative disclosure that is permitted; if no disclosure is permitted, reject the request.",
+    "quote": "Prefer the most informative permitted disclosure; reject the request when no disclosure is permitted.",
+    "kind": "share_information",
+    "start": 633,
+    "end": 734,
+    "source_id": "handbook",
+    "locator": "line:16;section:## Information sharing"
+  },
+  {
+    "id": "c78c81c18a89b92df1700c276c0ed20971f95723333b1f5bb58bfa0a952afbc0",
+    "summary": "Refunds of 1000 units or less (inclusive) may be executed immediately without approval.",
+    "quote": "Refunds up to and including 1000 units may be executed immediately.",
+    "kind": "select_actions",
+    "start": 757,
+    "end": 824,
+    "source_id": "handbook",
+    "locator": "line:20;section:## Action selection"
+  },
+  {
+    "id": "aa09fe77795368aff036f3f18e015d55f4dbda13c39f53982f6b439dc57bf2f9",
+    "summary": "Refunds above 1000 units require approval before they can be executed.",
+    "quote": "Refunds above 1000 units require approval before execution.",
+    "kind": "select_actions",
+    "start": 825,
+    "end": 884,
+    "source_id": "handbook",
+    "locator": "line:21;section:## Action selection"
+  },
+  {
+    "id": "9667a269cff03de4353219ea21aac0656727be079edfb88c028f8a0b5cbdd7ea",
+    "summary": "Once a refund is approved, it may be executed regardless of its amount (exception to the 1000-unit threshold).",
+    "quote": "An approved refund may be executed regardless of amount.",
+    "kind": "select_actions",
+    "start": 885,
+    "end": 941,
+    "source_id": "handbook",
+    "locator": "line:22;section:## Action selection"
+  },
+  {
+    "id": "25631f0bc524bd1ec5bdba3a9301d50e873dd21715f5e5a256be8a87a5252e39",
+    "summary": "If the refund amount is missing, request it before deciding whether to execute the refund.",
+    "quote": "Request the missing amount before deciding whether to execute a refund.",
+    "kind": "select_actions",
+    "start": 942,
+    "end": 1013,
+    "source_id": "handbook",
+    "locator": "line:23;section:## Action selection"
+  },
+  {
+    "id": "4c14d705f763ea07fdd99c2862f8f59f8d9262e0b6c1709842ef45f6a893ab91",
+    "summary": "A delivery is accepted only when both its acceptance checks pass and the required evidence is complete.",
+    "quote": "Accept a delivery only when its acceptance checks pass and the required evidence is complete.",
+    "kind": "evaluate_outcomes",
+    "start": 1038,
+    "end": 1131,
+    "source_id": "handbook",
+    "locator": "line:27;section:## Outcome evaluation"
+  },
+  {
+    "id": "3ba34943f200c297e840bb25b621ed86ef3665f0378c068efe9e76d998416554",
+    "summary": "Request revision of a delivery when either the acceptance checks or the supporting evidence are incomplete.",
+    "quote": "Request revision when either acceptance checks or supporting evidence are incomplete.",
+    "kind": "evaluate_outcomes",
+    "start": 1132,
+    "end": 1217,
+    "source_id": "handbook",
+    "locator": "line:28;section:## Outcome evaluation"
+  }
+]

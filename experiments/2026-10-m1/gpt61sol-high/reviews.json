@@ -1,0 +1,12 @@
+[
+  {
+    "fingerprint": "d95b9c05edda28480c7f7f6609f7b752418572531b66200993f24b9db5f6e218",
+    "item_id": "node:evaluate_delivery",
+    "decision": "rejected",
+    "reviewer": "codex-semantic-review",
+    "reason": "Reference case evaluate_outcomes-01 expects revision after failed checks with complete evidence. The source explicitly says incomplete checks; this draft distinguishes failed from incomplete. The reference disagreement needs policy clarification. Preserve the original 31/32 result.",
+    "recorded_at": "2026-10-30T18:23:05.104529+00:00",
+    "previous": null,
+    "hash": "c2a271c73e059a179942735c8f170cd26876fff0c729bf1ff1c56ab32980d0fb"
+  }
+]

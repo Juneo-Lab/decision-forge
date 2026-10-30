@@ -27,11 +27,25 @@ class Source(Contract):
     id: Identifier
     path: str
     description: str = ""
+    version: str | None = None
+    content_hash: str | None = None
+    access: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class Evidence(Contract):
     source_id: Identifier
     quote: str = Field(min_length=1)
+    start: int | None = Field(default=None, ge=0)
+    end: int | None = Field(default=None, ge=1)
+    locator: str | None = None
+
+    @model_validator(mode="after")
+    def span_bounds(self) -> Self:
+        if (self.start is None) != (self.end is None):
+            raise ValueError("Evidence start and end must be supplied together")
+        if self.start is not None and self.end is not None and self.end - self.start != len(self.quote):
+            raise ValueError("Evidence offsets must delimit the exact quote")
+        return self
 
 
 class Predicate(Contract):

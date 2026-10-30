@@ -27,6 +27,11 @@ Acceptance: ingest at least two document formats through the adapter contract; p
 locations and access metadata; report extraction accuracy on reviewed fixtures; isolate incomplete
 or conflicting rules in an explicit review queue.
 
+Implementation evidence: source adapters and review/evaluation interfaces are implemented. The
+[flagship model experiment](experiments/2026-10-m1/README.md) preserves successful compilation,
+reference disagreements, and rejected review items. Larger multi-document interaction studies and
+aggregate token-budget policy remain open in issue #12. M1 is still open.
+
 ## M2 · v0.3 · Distribution-aware synthesis
 
 Integrate Data Designer through a version-pinned optional extra. Add conditional sampling,

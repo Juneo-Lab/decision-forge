@@ -1,0 +1,44 @@
+[
+  {
+    "key": "32e4a0af65fef0f27b6e9440b114a86b59dc06bf4281ea3263f5b44ddca37745",
+    "input_bytes": 2957,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 1185,
+      "completion_tokens": 961,
+      "cost": 0.02396
+    },
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_encoding": "json",
+    "response_metadata": {
+      "id": "gen-1793384361-w1WZuHpMC2OI9vuP4FfD",
+      "model": "anthropic/claude-opus-5.5",
+      "finish_reason": "stop"
+    },
+    "validation": {
+      "status": "accepted"
+    }
+  },
+  {
+    "key": "56903a72632c38d55fd51290226bed33b7541588aa4b9a91257fa0fddb3ed4ee",
+    "input_bytes": 16751,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 6347,
+      "completion_tokens": 12204,
+      "cost": 0.269468
+    },
+    "input_basis": "provider_request_body",
+    "response_mode": "json_object",
+    "response_encoding": "json_fence",
+    "response_metadata": {
+      "id": "gen-1793384373-FKg64RYPheOxjfe89tMG",
+      "model": "anthropic/claude-opus-5.5",
+      "finish_reason": "stop"
+    },
+    "validation": {
+      "status": "accepted"
+    }
+  }
+]

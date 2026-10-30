@@ -9,6 +9,17 @@ from decision_forge.models import Candidate, CandidateVerdict, Condition, Predic
 MISSING = object()
 
 
+def json_equal(left: Any, right: Any) -> bool:
+    """JSON equality with recursive type identity, including nested booleans."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(json_equal(value, right[key]) for key, value in left.items())
+    if isinstance(left, list):
+        return len(left) == len(right) and all(json_equal(a, b) for a, b in zip(left, right, strict=True))
+    return bool(left == right)
+
+
 def lookup(root: dict[str, Any], path: str) -> Any:
     value: Any = root
     for part in path.split("."):
@@ -28,16 +39,16 @@ def matches_predicate(predicate: Predicate, context: dict[str, Any]) -> bool:
     if actual is MISSING:
         return False
     if predicate.op in {"eq", "ne"}:
-        equal = type(actual) is type(expected) and actual == expected
+        equal = json_equal(actual, expected)
         return equal if predicate.op == "eq" else not equal
     if predicate.op == "in":
         if not isinstance(expected, list):
             raise ValueError("The in operator requires a list")
-        return any(type(actual) is type(item) and actual == item for item in expected)
+        return any(json_equal(actual, item) for item in expected)
     if predicate.op == "contains":
         if not isinstance(actual, list):
             return False
-        return any(type(item) is type(expected) and item == expected for item in actual)
+        return any(json_equal(item, expected) for item in actual)
     if isinstance(actual, bool) or isinstance(expected, bool):
         return False
     if not isinstance(actual, (float, int)) or not isinstance(expected, (float, int)):

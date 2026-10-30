@@ -1,0 +1,523 @@
+{
+  "protocol": "northstar-handbook-decisions-v1",
+  "project_digest": "1a50276c7e0a2c2587cd12a2971cbee960e860ee1d61c380df84d485fe394e84",
+  "reference_digest": "3216064900ca90c02e949415ff416ffcaf976ad6ceb022ebc7924b83e5aad506",
+  "bindings_digest": "8c3fcf3ffefaf7972178ecdab8be731fdb9a0b8f6a21e26b9674b349232da071",
+  "cases": 32,
+  "correct": 31,
+  "accuracy": 0.96875,
+  "by_kind": {
+    "allocate_work": {
+      "cases": 8,
+      "correct": 8,
+      "accuracy": 1.0
+    },
+    "evaluate_outcomes": {
+      "cases": 4,
+      "correct": 3,
+      "accuracy": 0.75
+    },
+    "select_actions": {
+      "cases": 8,
+      "correct": 8,
+      "accuracy": 1.0
+    },
+    "share_information": {
+      "cases": 12,
+      "correct": 12,
+      "accuracy": 1.0
+    }
+  },
+  "events": [
+    {
+      "id": "allocate_work-00",
+      "kind": "allocate_work",
+      "expected": "human",
+      "predicted_actions": [
+        "human"
+      ],
+      "predicted_candidates": [
+        "human_specialist"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "allocation_agent_prohibited",
+        "allocation_human_allowed"
+      ]
+    },
+    {
+      "id": "allocate_work-01",
+      "kind": "allocate_work",
+      "expected": "agent",
+      "predicted_actions": [
+        "agent"
+      ],
+      "predicted_candidates": [
+        "support_agent"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "allocation_agent_preferred",
+        "allocation_human_allowed"
+      ]
+    },
+    {
+      "id": "allocate_work-02",
+      "kind": "allocate_work",
+      "expected": "human",
+      "predicted_actions": [
+        "human"
+      ],
+      "predicted_candidates": [
+        "human_specialist"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "allocation_agent_prohibited",
+        "allocation_human_allowed"
+      ]
+    },
+    {
+      "id": "allocate_work-03",
+      "kind": "allocate_work",
+      "expected": "human",
+      "predicted_actions": [
+        "human"
+      ],
+      "predicted_candidates": [
+        "human_specialist"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "allocation_agent_prohibited",
+        "allocation_human_allowed"
+      ]
+    },
+    {
+      "id": "allocate_work-04",
+      "kind": "allocate_work",
+      "expected": "human",
+      "predicted_actions": [
+        "human"
+      ],
+      "predicted_candidates": [
+        "human_specialist"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "allocation_agent_prohibited",
+        "allocation_human_allowed"
+      ]
+    },
+    {
+      "id": "allocate_work-05",
+      "kind": "allocate_work",
+      "expected": "human",
+      "predicted_actions": [
+        "human"
+      ],
+      "predicted_candidates": [
+        "human_specialist"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "allocation_agent_prohibited",
+        "allocation_human_allowed"
+      ]
+    },
+    {
+      "id": "allocate_work-06",
+      "kind": "allocate_work",
+      "expected": "human",
+      "predicted_actions": [
+        "human"
+      ],
+      "predicted_candidates": [
+        "human_specialist"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "allocation_agent_prohibited",
+        "allocation_human_allowed"
+      ]
+    },
+    {
+      "id": "allocate_work-07",
+      "kind": "allocate_work",
+      "expected": "human",
+      "predicted_actions": [
+        "human"
+      ],
+      "predicted_candidates": [
+        "human_specialist"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "allocation_agent_prohibited",
+        "allocation_human_allowed"
+      ]
+    },
+    {
+      "id": "share_information-00",
+      "kind": "share_information",
+      "expected": "full",
+      "predicted_actions": [
+        "full"
+      ],
+      "predicted_candidates": [
+        "full_record"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_full_internal"
+      ]
+    },
+    {
+      "id": "share_information-01",
+      "kind": "share_information",
+      "expected": "full",
+      "predicted_actions": [
+        "full"
+      ],
+      "predicted_candidates": [
+        "full_record"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_full_internal"
+      ]
+    },
+    {
+      "id": "share_information-02",
+      "kind": "share_information",
+      "expected": "full",
+      "predicted_actions": [
+        "full"
+      ],
+      "predicted_candidates": [
+        "full_record"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_full_internal"
+      ]
+    },
+    {
+      "id": "share_information-03",
+      "kind": "share_information",
+      "expected": "full",
+      "predicted_actions": [
+        "full"
+      ],
+      "predicted_candidates": [
+        "full_record"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_full_internal"
+      ]
+    },
+    {
+      "id": "share_information-04",
+      "kind": "share_information",
+      "expected": "reject",
+      "predicted_actions": [
+        "reject"
+      ],
+      "predicted_candidates": [
+        "reject_disclosure"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_full_external_unapproved_denied",
+        "sharing_reject_unauthorized_external"
+      ]
+    },
+    {
+      "id": "share_information-05",
+      "kind": "share_information",
+      "expected": "summary",
+      "predicted_actions": [
+        "summary"
+      ],
+      "predicted_candidates": [
+        "redacted_summary"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_full_external_unapproved_denied",
+        "sharing_summary_authorized_external"
+      ]
+    },
+    {
+      "id": "share_information-06",
+      "kind": "share_information",
+      "expected": "full",
+      "predicted_actions": [
+        "full"
+      ],
+      "predicted_candidates": [
+        "full_record"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_full_external_approved"
+      ]
+    },
+    {
+      "id": "share_information-07",
+      "kind": "share_information",
+      "expected": "full",
+      "predicted_actions": [
+        "full"
+      ],
+      "predicted_candidates": [
+        "full_record"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_full_external_approved",
+        "sharing_summary_authorized_external"
+      ]
+    },
+    {
+      "id": "share_information-08",
+      "kind": "share_information",
+      "expected": "reject",
+      "predicted_actions": [
+        "reject"
+      ],
+      "predicted_candidates": [
+        "reject_disclosure"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_reject_unrecognized_recipient"
+      ]
+    },
+    {
+      "id": "share_information-09",
+      "kind": "share_information",
+      "expected": "reject",
+      "predicted_actions": [
+        "reject"
+      ],
+      "predicted_candidates": [
+        "reject_disclosure"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_reject_unrecognized_recipient"
+      ]
+    },
+    {
+      "id": "share_information-10",
+      "kind": "share_information",
+      "expected": "reject",
+      "predicted_actions": [
+        "reject"
+      ],
+      "predicted_candidates": [
+        "reject_disclosure"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_reject_unrecognized_recipient"
+      ]
+    },
+    {
+      "id": "share_information-11",
+      "kind": "share_information",
+      "expected": "reject",
+      "predicted_actions": [
+        "reject"
+      ],
+      "predicted_candidates": [
+        "reject_disclosure"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "sharing_reject_unrecognized_recipient"
+      ]
+    },
+    {
+      "id": "select_actions-00",
+      "kind": "select_actions",
+      "expected": "execute",
+      "predicted_actions": [
+        "execute"
+      ],
+      "predicted_candidates": [
+        "execute_refund"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "refund_execute_small"
+      ]
+    },
+    {
+      "id": "select_actions-01",
+      "kind": "select_actions",
+      "expected": "execute",
+      "predicted_actions": [
+        "execute"
+      ],
+      "predicted_candidates": [
+        "execute_refund"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "refund_execute_approved",
+        "refund_execute_small"
+      ]
+    },
+    {
+      "id": "select_actions-02",
+      "kind": "select_actions",
+      "expected": "execute",
+      "predicted_actions": [
+        "execute"
+      ],
+      "predicted_candidates": [
+        "execute_refund"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "refund_execute_small"
+      ]
+    },
+    {
+      "id": "select_actions-03",
+      "kind": "select_actions",
+      "expected": "execute",
+      "predicted_actions": [
+        "execute"
+      ],
+      "predicted_candidates": [
+        "execute_refund"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "refund_execute_approved",
+        "refund_execute_small"
+      ]
+    },
+    {
+      "id": "select_actions-04",
+      "kind": "select_actions",
+      "expected": "request_approval",
+      "predicted_actions": [
+        "request_approval"
+      ],
+      "predicted_candidates": [
+        "request_approval"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "refund_execute_large_unapproved_denied",
+        "refund_request_approval"
+      ]
+    },
+    {
+      "id": "select_actions-05",
+      "kind": "select_actions",
+      "expected": "execute",
+      "predicted_actions": [
+        "execute"
+      ],
+      "predicted_candidates": [
+        "execute_refund"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "refund_execute_approved"
+      ]
+    },
+    {
+      "id": "select_actions-06",
+      "kind": "select_actions",
+      "expected": "request_amount",
+      "predicted_actions": [
+        "request_amount"
+      ],
+      "predicted_candidates": [
+        "request_amount"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "refund_execute_missing_amount_denied",
+        "refund_request_missing_amount"
+      ]
+    },
+    {
+      "id": "select_actions-07",
+      "kind": "select_actions",
+      "expected": "request_amount",
+      "predicted_actions": [
+        "request_amount"
+      ],
+      "predicted_candidates": [
+        "request_amount"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "refund_execute_null_amount_denied",
+        "refund_request_null_amount"
+      ]
+    },
+    {
+      "id": "evaluate_outcomes-00",
+      "kind": "evaluate_outcomes",
+      "expected": "revise",
+      "predicted_actions": [
+        "revise"
+      ],
+      "predicted_candidates": [
+        "request_revision"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "outcome_request_revision"
+      ]
+    },
+    {
+      "id": "evaluate_outcomes-01",
+      "kind": "evaluate_outcomes",
+      "expected": "revise",
+      "predicted_actions": [],
+      "predicted_candidates": [],
+      "correct": false,
+      "matched_rules": []
+    },
+    {
+      "id": "evaluate_outcomes-02",
+      "kind": "evaluate_outcomes",
+      "expected": "revise",
+      "predicted_actions": [
+        "revise"
+      ],
+      "predicted_candidates": [
+        "request_revision"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "outcome_request_revision"
+      ]
+    },
+    {
+      "id": "evaluate_outcomes-03",
+      "kind": "evaluate_outcomes",
+      "expected": "accept",
+      "predicted_actions": [
+        "accept"
+      ],
+      "predicted_candidates": [
+        "accept_delivery"
+      ],
+      "correct": true,
+      "matched_rules": [
+        "outcome_accept"
+      ]
+    }
+  ]
+}

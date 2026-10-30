@@ -53,7 +53,7 @@ uv run decision-forge harbor-export runs/demo --output runs/harbor-tasks --split
 
 ## Compile your documents
 
-Provide Markdown, text, JSON, or YAML files and an OpenAI-compatible endpoint supporting JSON Schema
+Provide Markdown, text, JSON, or YAML files and an OpenAI-compatible endpoint supporting JSON
 responses. This command sends the specified documents to that endpoint.
 
 ```bash
@@ -66,8 +66,10 @@ uv run decision-forge validate runs/my-organization/project.json
 
 The compiler checks structure, cross-references, and exact supporting quotations. The resulting
 specification is a draft: business reviewers validate the interpretation of rules and preferences.
-Run `build` on the reviewed specification to produce data. Keys and raw model responses are never
-written to build logs. The built-in compiler supports small source bundles up to 2 MB.
+Use `review-status` and `review-record` to record review decisions, then run `build` to produce data. Keys and raw model responses are never
+written to build logs. The single-request compiler supports source bundles up to 2 MB.
+The [organization compiler](docs/organization-compiler.md) adds versioned text/PDF/workflow sources,
+resumable chunk extraction, source spans, call budgets, and a content-bound review queue.
 
 ## What ships in v0.1
 

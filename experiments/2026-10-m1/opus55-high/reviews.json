@@ -1,0 +1,12 @@
+[
+  {
+    "fingerprint": "045c6ba0863167e44e9556a6ce176bd1f1f6e1d469a9d6c93fdfbc2f3f990eff",
+    "item_id": "node:process_refund",
+    "decision": "rejected",
+    "reviewer": "codex-semantic-review",
+    "reason": "Reference case select_actions-06 supplies no amount key. The rules test equality with null, which does not match an absent key. Add and review the missing-key clarification branch before generation.",
+    "recorded_at": "2026-10-30T18:23:05.043824+00:00",
+    "previous": null,
+    "hash": "d18e0c78ea9dd02c2c6a1f70e5d3a3a6b173f6eaaeea63e9b5d331fc0bfedf76"
+  }
+]

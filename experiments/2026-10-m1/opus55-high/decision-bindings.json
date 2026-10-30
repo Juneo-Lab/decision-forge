@@ -1,0 +1,94 @@
+{
+  "allocate_work": {
+    "node_id": "route_support_request",
+    "facts": [
+      {
+        "fact": "urgent",
+        "path": "state.urgent"
+      },
+      {
+        "fact": "sensitivity",
+        "path": "state.sensitivity"
+      },
+      {
+        "fact": "agent_available",
+        "path": "state.agent_available"
+      }
+    ],
+    "candidate_actions": {
+      "human_specialist": "human",
+      "support_agent": "agent"
+    }
+  },
+  "share_information": {
+    "node_id": "share_customer_record",
+    "facts": [
+      {
+        "fact": "recipient",
+        "path": "state.recipient_type",
+        "values": [
+          {
+            "source": "internal",
+            "target": "internal_project_member"
+          },
+          {
+            "source": "partner",
+            "target": "external_partner"
+          },
+          {
+            "source": "outsider",
+            "target": "other"
+          }
+        ]
+      },
+      {
+        "fact": "partner_authorized",
+        "path": "state.partner_authorized"
+      },
+      {
+        "fact": "full_approval",
+        "path": "state.full_record_approval"
+      }
+    ],
+    "candidate_actions": {
+      "share_full_record": "full",
+      "share_redacted_summary": "summary",
+      "reject_request": "reject"
+    }
+  },
+  "select_actions": {
+    "node_id": "process_refund",
+    "facts": [
+      {
+        "fact": "amount",
+        "path": "state.amount"
+      },
+      {
+        "fact": "approved",
+        "path": "state.approved"
+      }
+    ],
+    "candidate_actions": {
+      "execute_refund": "execute",
+      "request_approval": "request_approval",
+      "request_amount": "request_amount"
+    }
+  },
+  "evaluate_outcomes": {
+    "node_id": "evaluate_delivery",
+    "facts": [
+      {
+        "fact": "checks_passed",
+        "path": "state.acceptance_checks_passed"
+      },
+      {
+        "fact": "evidence_complete",
+        "path": "state.evidence_complete"
+      }
+    ],
+    "candidate_actions": {
+      "accept_delivery": "accept",
+      "request_revision": "revise"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "status": "draft",
+  "fingerprint": "afffa44a2c57d7225e45014ebac7190d224fa767d604881ec8b0bb30f055334e",
+  "provider": "86eb8217a127df839413def8cded460f7620090439dfe90ba9c3739b834b8971",
+  "semantic_review": "pending",
+  "project_digest": "1a50276c7e0a2c2587cd12a2971cbee960e860ee1d61c380df84d485fe394e84",
+  "claims": 13,
+  "cache_hits": 0,
+  "attempted_calls": 2,
+  "metered_calls": 2,
+  "artifact_hashes": {
+    "claims.json": "89c24acfde9d9e0f2b719da1867cc445f51732033d5bff807fc8455727e8e496",
+    "corpus.json": "794c9a84f158779d933f1f2ed9ebcc840a5304efdff255fac37836c8a383c659",
+    "calls.json": "c43e05f46057d4d096793482567936f4238824d85cc33d1d37c4ea20b4304e80"
+  }
+}

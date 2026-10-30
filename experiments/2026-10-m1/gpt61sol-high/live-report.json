@@ -1,0 +1,60 @@
+{
+  "model": "openai/gpt-6.1-sol",
+  "endpoint": "https://openrouter.ai/api/v1",
+  "configuration": {
+    "transport_version": "structured-auto-v3",
+    "base_url": "https://openrouter.ai/api/v1",
+    "model": "openai/gpt-6.1-sol",
+    "response_mode": "auto",
+    "max_output_tokens": 32000,
+    "temperature": null,
+    "reasoning_effort": "high"
+  },
+  "status": "draft",
+  "claims": 13,
+  "attempted_calls": 2,
+  "extraction": {
+    "protocol": "exact-source-span-and-kind-v1",
+    "predicted": 13,
+    "reference": 13,
+    "matched": 13,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "missing": [],
+    "extra": []
+  },
+  "calls": [
+    {
+      "key": "000732bf773a355cc443b2ce520fe44ae7f254b6227177a7c39deaa1b1a8e88a",
+      "input_bytes": 2950,
+      "status": "returned",
+      "usage": {
+        "prompt_tokens": 507,
+        "completion_tokens": 809,
+        "cost": 0.009104
+      },
+      "input_basis": "provider_request_body",
+      "response_mode": "json_schema",
+      "validation": {
+        "status": "accepted"
+      }
+    },
+    {
+      "key": "cd844dd5a031adda2a68ebe00449b9ec7020bd8c84974cb2926ad9b6223238cf",
+      "input_bytes": 16564,
+      "status": "returned",
+      "usage": {
+        "prompt_tokens": 4262,
+        "completion_tokens": 13081,
+        "cost": 0.1414635
+      },
+      "input_basis": "provider_request_body",
+      "response_mode": "json_object",
+      "validation": {
+        "status": "accepted"
+      }
+    }
+  ],
+  "elapsed_seconds": 178.21075758291408
+}

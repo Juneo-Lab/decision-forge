@@ -1,0 +1,157 @@
+[
+  {
+    "id": "handbook",
+    "version": "2026-10-demo",
+    "adapter": "text",
+    "adapter_version": "text-v1",
+    "raw_hash": "aad07037bf14ce8212c0f699771f6409f5cce9822d7aa9f50ff4ca7461043a60",
+    "content_hash": "da8c95310178efb3d5b25e0f9d07f4982223b082821ad2f8dadf324d45b9f671",
+    "spans": [
+      {
+        "start": 0,
+        "end": 36,
+        "locator": "line:1;section:# Northstar Support policy handbook"
+      },
+      {
+        "start": 36,
+        "end": 37,
+        "locator": "line:2;section:# Northstar Support policy handbook"
+      },
+      {
+        "start": 37,
+        "end": 108,
+        "locator": "line:3;section:# Northstar Support policy handbook"
+      },
+      {
+        "start": 108,
+        "end": 109,
+        "locator": "line:4;section:# Northstar Support policy handbook"
+      },
+      {
+        "start": 109,
+        "end": 128,
+        "locator": "line:5;section:## Work allocation"
+      },
+      {
+        "start": 128,
+        "end": 129,
+        "locator": "line:6;section:## Work allocation"
+      },
+      {
+        "start": 129,
+        "end": 182,
+        "locator": "line:7;section:## Work allocation"
+      },
+      {
+        "start": 182,
+        "end": 282,
+        "locator": "line:8;section:## Work allocation"
+      },
+      {
+        "start": 282,
+        "end": 388,
+        "locator": "line:9;section:## Work allocation"
+      },
+      {
+        "start": 388,
+        "end": 389,
+        "locator": "line:10;section:## Work allocation"
+      },
+      {
+        "start": 389,
+        "end": 412,
+        "locator": "line:11;section:## Information sharing"
+      },
+      {
+        "start": 412,
+        "end": 413,
+        "locator": "line:12;section:## Information sharing"
+      },
+      {
+        "start": 413,
+        "end": 476,
+        "locator": "line:13;section:## Information sharing"
+      },
+      {
+        "start": 476,
+        "end": 572,
+        "locator": "line:14;section:## Information sharing"
+      },
+      {
+        "start": 572,
+        "end": 633,
+        "locator": "line:15;section:## Information sharing"
+      },
+      {
+        "start": 633,
+        "end": 735,
+        "locator": "line:16;section:## Information sharing"
+      },
+      {
+        "start": 735,
+        "end": 736,
+        "locator": "line:17;section:## Information sharing"
+      },
+      {
+        "start": 736,
+        "end": 756,
+        "locator": "line:18;section:## Action selection"
+      },
+      {
+        "start": 756,
+        "end": 757,
+        "locator": "line:19;section:## Action selection"
+      },
+      {
+        "start": 757,
+        "end": 825,
+        "locator": "line:20;section:## Action selection"
+      },
+      {
+        "start": 825,
+        "end": 885,
+        "locator": "line:21;section:## Action selection"
+      },
+      {
+        "start": 885,
+        "end": 942,
+        "locator": "line:22;section:## Action selection"
+      },
+      {
+        "start": 942,
+        "end": 1014,
+        "locator": "line:23;section:## Action selection"
+      },
+      {
+        "start": 1014,
+        "end": 1015,
+        "locator": "line:24;section:## Action selection"
+      },
+      {
+        "start": 1015,
+        "end": 1037,
+        "locator": "line:25;section:## Outcome evaluation"
+      },
+      {
+        "start": 1037,
+        "end": 1038,
+        "locator": "line:26;section:## Outcome evaluation"
+      },
+      {
+        "start": 1038,
+        "end": 1132,
+        "locator": "line:27;section:## Outcome evaluation"
+      },
+      {
+        "start": 1132,
+        "end": 1218,
+        "locator": "line:28;section:## Outcome evaluation"
+      }
+    ],
+    "access": {
+      "classification": "public",
+      "allowed_roles": [],
+      "owner": "Northstar Support (fictional)"
+    }
+  }
+]

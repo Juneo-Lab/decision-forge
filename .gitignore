@@ -15,4 +15,5 @@ site/
 !.env.example
 runs/
 .forge-cache/
+.forge-compile-cache/
 private/

@@ -111,7 +111,8 @@ organization:
       quote: Prefer the most informative permitted disclosure; reject the request when no disclosure is
         permitted.
   - id: execute
-    description: Execute when the amount is at most 1000 or the refund has approval (score 2).
+    description: Execute a refund with a specified amount when it is at most 1000 or has approval (score
+      2).
     when:
       all_of:
       - path: candidate.id
@@ -120,6 +121,9 @@ organization:
       - path: state.amount
         op: exists
         value: true
+      - path: state.amount
+        op: ne
+        value: null
       any_of:
       - path: state.amount
         op: lte
@@ -154,16 +158,19 @@ organization:
     - source_id: handbook
       quote: Refunds above 1000 units require approval before execution.
   - id: clarify
-    description: Request the amount when it is missing (score 1).
+    description: Request the amount when its field is absent or null (score 1).
     when:
       all_of:
       - path: candidate.id
         op: eq
         value: clarify
+      any_of:
       - path: state.amount
         op: exists
         value: false
-      any_of: []
+      - path: state.amount
+        op: eq
+        value: null
     effect: allow
     score: 1
     evidence:

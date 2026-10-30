@@ -27,6 +27,11 @@ dependencies = [
 [project.scripts]
 decision-forge = "decision_forge.cli:app"
 
+[project.optional-dependencies]
+documents = [
+    "pypdf>=6,<7",
+]
+
 [dependency-groups]
 dev = ["pytest>=8.3,<9", "pytest-cov>=6,<7", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyYAML>=6", "build>=1.2,<2"]
 docs = ["mkdocs-material>=9.6,<10"]

@@ -1,0 +1,1151 @@
+{
+  "schema_version": "1.0",
+  "fingerprint": "d95b9c05edda28480c7f7f6609f7b752418572531b66200993f24b9db5f6e218",
+  "source_hashes": {
+    "handbook": "da8c95310178efb3d5b25e0f9d07f4982223b082821ad2f8dadf324d45b9f671"
+  },
+  "items": [
+    {
+      "id": "rule:allocation_human_allowed",
+      "kind": "rule",
+      "content": {
+        "id": "allocation_human_allowed",
+        "description": "At priority 10, allow candidate human_specialist for every support request with score 0. The human specialist remains permitted even when the support agent is preferred.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "human_specialist"
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "A human specialist may handle every support request.",
+            "start": 129,
+            "end": 181,
+            "locator": "line:7;section:## Work allocation"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:allocation_agent_preferred",
+      "kind": "rule",
+      "content": {
+        "id": "allocation_agent_preferred",
+        "description": "At priority 10, allow candidate support_agent with score 10 when urgent is false, sensitivity is standard, and agent_available is true. This score prefers support_agent over the permitted human_specialist in exactly these states.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "support_agent"
+            },
+            {
+              "path": "state.urgent",
+              "op": "eq",
+              "value": false
+            },
+            {
+              "path": "state.sensitivity",
+              "op": "eq",
+              "value": "standard"
+            },
+            {
+              "path": "state.agent_available",
+              "op": "eq",
+              "value": true
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 10.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Prefer the support agent for non-urgent, standard-sensitivity requests when the agent is available.",
+            "start": 182,
+            "end": 281,
+            "locator": "line:8;section:## Work allocation"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:allocation_agent_prohibited",
+      "kind": "rule",
+      "content": {
+        "id": "allocation_agent_prohibited",
+        "description": "At priority 20, deny candidate support_agent when urgent is true, sensitivity is restricted, or agent_available is false. This denial overrides its priority-10 permission; human_specialist remains explicitly permitted by allocation_human_allowed.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "support_agent"
+            }
+          ],
+          "any_of": [
+            {
+              "path": "state.urgent",
+              "op": "eq",
+              "value": true
+            },
+            {
+              "path": "state.sensitivity",
+              "op": "eq",
+              "value": "restricted"
+            },
+            {
+              "path": "state.agent_available",
+              "op": "eq",
+              "value": false
+            }
+          ]
+        },
+        "effect": "deny",
+        "priority": 20,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Use the human specialist for urgent or restricted requests and whenever the support agent is unavailable.",
+            "start": 282,
+            "end": 387,
+            "locator": "line:9;section:## Work allocation"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:sharing_full_internal",
+      "kind": "rule",
+      "content": {
+        "id": "sharing_full_internal",
+        "description": "At priority 10, allow candidate full_record with score 20 when recipient_type is internal_project_member. The score ranks a permitted full record above a permitted redacted summary, which has score 10.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "full_record"
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "eq",
+              "value": "internal_project_member"
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 20.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Internal project members may receive the full customer record.",
+            "start": 413,
+            "end": 475,
+            "locator": "line:13;section:## Information sharing"
+          },
+          {
+            "source_id": "handbook",
+            "quote": "Prefer the most informative permitted disclosure; reject the request when no disclosure is permitted.",
+            "start": 633,
+            "end": 734,
+            "locator": "line:16;section:## Information sharing"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:sharing_full_external_approved",
+      "kind": "rule",
+      "content": {
+        "id": "sharing_full_external_approved",
+        "description": "At priority 10, allow candidate full_record with score 20 when recipient_type is authorized_external_partner or unauthorized_external_partner and full_record_approval is true. Authorization for a redacted summary is distinct from explicit full-record approval. Score 20 prefers the full record over a permitted summary.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "full_record"
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "in",
+              "value": [
+                "authorized_external_partner",
+                "unauthorized_external_partner"
+              ]
+            },
+            {
+              "path": "state.full_record_approval",
+              "op": "eq",
+              "value": true
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 20.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "External partners may receive the full customer record only with explicit full-record approval.",
+            "start": 476,
+            "end": 571,
+            "locator": "line:14;section:## Information sharing"
+          },
+          {
+            "source_id": "handbook",
+            "quote": "Prefer the most informative permitted disclosure; reject the request when no disclosure is permitted.",
+            "start": 633,
+            "end": 734,
+            "locator": "line:16;section:## Information sharing"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:sharing_full_external_unapproved_denied",
+      "kind": "rule",
+      "content": {
+        "id": "sharing_full_external_unapproved_denied",
+        "description": "At priority 20, deny candidate full_record for either external-partner recipient type when full_record_approval is false, explicitly null, or absent. This overrides any priority-10 permission and does not itself permit a summary or rejection.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "full_record"
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "in",
+              "value": [
+                "authorized_external_partner",
+                "unauthorized_external_partner"
+              ]
+            }
+          ],
+          "any_of": [
+            {
+              "path": "state.full_record_approval",
+              "op": "eq",
+              "value": false
+            },
+            {
+              "path": "state.full_record_approval",
+              "op": "eq",
+              "value": null
+            },
+            {
+              "path": "state.full_record_approval",
+              "op": "exists",
+              "value": false
+            }
+          ]
+        },
+        "effect": "deny",
+        "priority": 20,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "External partners may receive the full customer record only with explicit full-record approval.",
+            "start": 476,
+            "end": 571,
+            "locator": "line:14;section:## Information sharing"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:sharing_summary_authorized_external",
+      "kind": "rule",
+      "content": {
+        "id": "sharing_summary_authorized_external",
+        "description": "At priority 10, allow candidate redacted_summary with score 10 when recipient_type is authorized_external_partner. Full-record approval is not required for this summary. Its score is below the score of a permitted full_record.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "redacted_summary"
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "eq",
+              "value": "authorized_external_partner"
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 10.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Authorized external partners may receive a redacted summary.",
+            "start": 572,
+            "end": 632,
+            "locator": "line:15;section:## Information sharing"
+          },
+          {
+            "source_id": "handbook",
+            "quote": "Prefer the most informative permitted disclosure; reject the request when no disclosure is permitted.",
+            "start": 633,
+            "end": 734,
+            "locator": "line:16;section:## Information sharing"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:sharing_reject_unauthorized_external",
+      "kind": "rule",
+      "content": {
+        "id": "sharing_reject_unauthorized_external",
+        "description": "At priority 10, allow candidate reject_disclosure with score 0 when recipient_type is unauthorized_external_partner and full_record_approval is false, explicitly null, or absent. Neither disclosure candidate is permitted in these states.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "reject_disclosure"
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "eq",
+              "value": "unauthorized_external_partner"
+            }
+          ],
+          "any_of": [
+            {
+              "path": "state.full_record_approval",
+              "op": "eq",
+              "value": false
+            },
+            {
+              "path": "state.full_record_approval",
+              "op": "eq",
+              "value": null
+            },
+            {
+              "path": "state.full_record_approval",
+              "op": "exists",
+              "value": false
+            }
+          ]
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "External partners may receive the full customer record only with explicit full-record approval.",
+            "start": 476,
+            "end": 571,
+            "locator": "line:14;section:## Information sharing"
+          },
+          {
+            "source_id": "handbook",
+            "quote": "Authorized external partners may receive a redacted summary.",
+            "start": 572,
+            "end": 632,
+            "locator": "line:15;section:## Information sharing"
+          },
+          {
+            "source_id": "handbook",
+            "quote": "Prefer the most informative permitted disclosure; reject the request when no disclosure is permitted.",
+            "start": 633,
+            "end": 734,
+            "locator": "line:16;section:## Information sharing"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:sharing_reject_unrecognized_recipient",
+      "kind": "rule",
+      "content": {
+        "id": "sharing_reject_unrecognized_recipient",
+        "description": "At priority 10, allow candidate reject_disclosure with score 0 when recipient_type is present but is none of internal_project_member, authorized_external_partner, or unauthorized_external_partner. This includes an explicitly null recipient type; neither disclosure has a matching permission.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "reject_disclosure"
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "exists",
+              "value": true
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "ne",
+              "value": "internal_project_member"
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "ne",
+              "value": "authorized_external_partner"
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "ne",
+              "value": "unauthorized_external_partner"
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Prefer the most informative permitted disclosure; reject the request when no disclosure is permitted.",
+            "start": 633,
+            "end": 734,
+            "locator": "line:16;section:## Information sharing"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:sharing_reject_missing_recipient",
+      "kind": "rule",
+      "content": {
+        "id": "sharing_reject_missing_recipient",
+        "description": "At priority 10, allow candidate reject_disclosure with score 0 when the recipient_type key is absent. No recipient-based disclosure permission matches in this state. This rule distinguishes an absent key from an explicitly null value.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "reject_disclosure"
+            },
+            {
+              "path": "state.recipient_type",
+              "op": "exists",
+              "value": false
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Prefer the most informative permitted disclosure; reject the request when no disclosure is permitted.",
+            "start": 633,
+            "end": 734,
+            "locator": "line:16;section:## Information sharing"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:refund_execute_small",
+      "kind": "rule",
+      "content": {
+        "id": "refund_execute_small",
+        "description": "At priority 10, allow candidate execute_refund with score 0 when amount is at most 1000, including exactly 1000. Approval is not required in these states. Numeric comparisons do not match an absent or null amount.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "execute_refund"
+            },
+            {
+              "path": "state.amount",
+              "op": "lte",
+              "value": 1000
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Refunds up to and including 1000 units may be executed immediately.",
+            "start": 757,
+            "end": 824,
+            "locator": "line:20;section:## Action selection"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:refund_execute_approved",
+      "kind": "rule",
+      "content": {
+        "id": "refund_execute_approved",
+        "description": "At priority 20, allow candidate execute_refund with score 0 when refund_approved is true and amount is present and non-null. No amount threshold applies to an approved refund. The priority-100 missing-amount and null-amount denials preserve the requirement to obtain an amount before execution.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "execute_refund"
+            },
+            {
+              "path": "state.refund_approved",
+              "op": "eq",
+              "value": true
+            },
+            {
+              "path": "state.amount",
+              "op": "exists",
+              "value": true
+            },
+            {
+              "path": "state.amount",
+              "op": "ne",
+              "value": null
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 20,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "An approved refund may be executed regardless of amount.",
+            "start": 885,
+            "end": 941,
+            "locator": "line:22;section:## Action selection"
+          },
+          {
+            "source_id": "handbook",
+            "quote": "Request the missing amount before deciding whether to execute a refund.",
+            "start": 942,
+            "end": 1013,
+            "locator": "line:23;section:## Action selection"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:refund_execute_large_unapproved_denied",
+      "kind": "rule",
+      "content": {
+        "id": "refund_execute_large_unapproved_denied",
+        "description": "At priority 30, deny candidate execute_refund when amount exceeds 1000 and refund_approved is false, explicitly null, or absent. This overrides lower-priority execution permissions but does not itself permit requesting approval.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "execute_refund"
+            },
+            {
+              "path": "state.amount",
+              "op": "gt",
+              "value": 1000
+            }
+          ],
+          "any_of": [
+            {
+              "path": "state.refund_approved",
+              "op": "eq",
+              "value": false
+            },
+            {
+              "path": "state.refund_approved",
+              "op": "eq",
+              "value": null
+            },
+            {
+              "path": "state.refund_approved",
+              "op": "exists",
+              "value": false
+            }
+          ]
+        },
+        "effect": "deny",
+        "priority": 30,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Refunds above 1000 units require approval before execution.",
+            "start": 825,
+            "end": 884,
+            "locator": "line:21;section:## Action selection"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:refund_request_approval",
+      "kind": "rule",
+      "content": {
+        "id": "refund_request_approval",
+        "description": "At priority 10, explicitly allow candidate request_approval with score 0 when amount exceeds 1000 and refund_approved is false, explicitly null, or absent. Request approval rather than execute the unapproved refund.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "request_approval"
+            },
+            {
+              "path": "state.amount",
+              "op": "gt",
+              "value": 1000
+            }
+          ],
+          "any_of": [
+            {
+              "path": "state.refund_approved",
+              "op": "eq",
+              "value": false
+            },
+            {
+              "path": "state.refund_approved",
+              "op": "eq",
+              "value": null
+            },
+            {
+              "path": "state.refund_approved",
+              "op": "exists",
+              "value": false
+            }
+          ]
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Refunds above 1000 units require approval before execution.",
+            "start": 825,
+            "end": 884,
+            "locator": "line:21;section:## Action selection"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:refund_execute_missing_amount_denied",
+      "kind": "rule",
+      "content": {
+        "id": "refund_execute_missing_amount_denied",
+        "description": "At priority 100, deny candidate execute_refund when the amount key is absent, regardless of approval. This takes precedence over lower-priority execution permissions.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "execute_refund"
+            },
+            {
+              "path": "state.amount",
+              "op": "exists",
+              "value": false
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "deny",
+        "priority": 100,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Request the missing amount before deciding whether to execute a refund.",
+            "start": 942,
+            "end": 1013,
+            "locator": "line:23;section:## Action selection"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:refund_request_missing_amount",
+      "kind": "rule",
+      "content": {
+        "id": "refund_request_missing_amount",
+        "description": "At priority 100, explicitly allow candidate request_amount with score 0 when the amount key is absent, regardless of approval. An absent key is tested separately from an explicitly null value.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "request_amount"
+            },
+            {
+              "path": "state.amount",
+              "op": "exists",
+              "value": false
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 100,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Request the missing amount before deciding whether to execute a refund.",
+            "start": 942,
+            "end": 1013,
+            "locator": "line:23;section:## Action selection"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:refund_execute_null_amount_denied",
+      "kind": "rule",
+      "content": {
+        "id": "refund_execute_null_amount_denied",
+        "description": "At priority 100, deny candidate execute_refund when amount is present and explicitly null, representing no supplied amount, regardless of approval. This takes precedence over lower-priority execution permissions.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "execute_refund"
+            },
+            {
+              "path": "state.amount",
+              "op": "exists",
+              "value": true
+            },
+            {
+              "path": "state.amount",
+              "op": "eq",
+              "value": null
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "deny",
+        "priority": 100,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Request the missing amount before deciding whether to execute a refund.",
+            "start": 942,
+            "end": 1013,
+            "locator": "line:23;section:## Action selection"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:refund_request_null_amount",
+      "kind": "rule",
+      "content": {
+        "id": "refund_request_null_amount",
+        "description": "At priority 100, explicitly allow candidate request_amount with score 0 when amount is present and explicitly null, representing no supplied amount, regardless of approval. This is separate from the absent-key clarification rule.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "request_amount"
+            },
+            {
+              "path": "state.amount",
+              "op": "exists",
+              "value": true
+            },
+            {
+              "path": "state.amount",
+              "op": "eq",
+              "value": null
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 100,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Request the missing amount before deciding whether to execute a refund.",
+            "start": 942,
+            "end": 1013,
+            "locator": "line:23;section:## Action selection"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:outcome_accept",
+      "kind": "rule",
+      "content": {
+        "id": "outcome_accept",
+        "description": "At priority 10, allow candidate accept_delivery with score 0 only when acceptance_checks_status is passed and evidence_status is complete. Incomplete, failed, missing, or null checks do not satisfy this permission, nor does incomplete, missing, or null evidence.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "accept_delivery"
+            },
+            {
+              "path": "state.acceptance_checks_status",
+              "op": "eq",
+              "value": "passed"
+            },
+            {
+              "path": "state.evidence_status",
+              "op": "eq",
+              "value": "complete"
+            }
+          ],
+          "any_of": []
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Accept a delivery only when its acceptance checks pass and the required evidence is complete.",
+            "start": 1038,
+            "end": 1131,
+            "locator": "line:27;section:## Outcome evaluation"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "rule:outcome_request_revision",
+      "kind": "rule",
+      "content": {
+        "id": "outcome_request_revision",
+        "description": "At priority 10, explicitly allow candidate request_revision with score 0 when acceptance_checks_status is incomplete or evidence_status is incomplete. A failed but completed check is not treated as an incomplete check; this rule does not independently authorize revision for failed checks with complete evidence.",
+        "when": {
+          "all_of": [
+            {
+              "path": "candidate.id",
+              "op": "eq",
+              "value": "request_revision"
+            }
+          ],
+          "any_of": [
+            {
+              "path": "state.acceptance_checks_status",
+              "op": "eq",
+              "value": "incomplete"
+            },
+            {
+              "path": "state.evidence_status",
+              "op": "eq",
+              "value": "incomplete"
+            }
+          ]
+        },
+        "effect": "allow",
+        "priority": 10,
+        "score": 0.0,
+        "evidence": [
+          {
+            "source_id": "handbook",
+            "quote": "Request revision when either acceptance checks or supporting evidence are incomplete.",
+            "start": 1132,
+            "end": 1217,
+            "locator": "line:28;section:## Outcome evaluation"
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "node:allocate_support_request",
+      "kind": "node",
+      "content": {
+        "id": "allocate_support_request",
+        "kind": "allocate_work",
+        "question": "Who should handle this support request?",
+        "candidates": [
+          {
+            "id": "human_specialist",
+            "description": "Assign the request to a human specialist.",
+            "attributes": {}
+          },
+          {
+            "id": "support_agent",
+            "description": "Assign the request to the support agent.",
+            "attributes": {}
+          }
+        ],
+        "rule_ids": [
+          "allocation_human_allowed",
+          "allocation_agent_preferred",
+          "allocation_agent_prohibited"
+        ],
+        "dimensions": [
+          {
+            "path": "state.urgent",
+            "values": [
+              false,
+              true
+            ]
+          },
+          {
+            "path": "state.sensitivity",
+            "values": [
+              "standard",
+              "restricted"
+            ]
+          },
+          {
+            "path": "state.agent_available",
+            "values": [
+              true,
+              false
+            ]
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "node:choose_customer_disclosure",
+      "kind": "node",
+      "content": {
+        "id": "choose_customer_disclosure",
+        "kind": "share_information",
+        "question": "Which customer information may be disclosed, or should the request be rejected?",
+        "candidates": [
+          {
+            "id": "full_record",
+            "description": "Provide the full customer record.",
+            "attributes": {}
+          },
+          {
+            "id": "redacted_summary",
+            "description": "Provide a redacted summary.",
+            "attributes": {}
+          },
+          {
+            "id": "reject_disclosure",
+            "description": "Reject the disclosure request when neither disclosure is permitted.",
+            "attributes": {}
+          }
+        ],
+        "rule_ids": [
+          "sharing_full_internal",
+          "sharing_full_external_approved",
+          "sharing_full_external_unapproved_denied",
+          "sharing_summary_authorized_external",
+          "sharing_reject_unauthorized_external",
+          "sharing_reject_unrecognized_recipient",
+          "sharing_reject_missing_recipient"
+        ],
+        "dimensions": [
+          {
+            "path": "state.recipient_type",
+            "values": [
+              "internal_project_member",
+              "authorized_external_partner",
+              "unauthorized_external_partner",
+              "other",
+              null
+            ]
+          },
+          {
+            "path": "state.full_record_approval",
+            "values": [
+              false,
+              true,
+              null
+            ]
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "node:choose_refund_action",
+      "kind": "node",
+      "content": {
+        "id": "choose_refund_action",
+        "kind": "select_actions",
+        "question": "Should the refund be executed, submitted for approval, or clarified by requesting its amount?",
+        "candidates": [
+          {
+            "id": "execute_refund",
+            "description": "Execute the refund for the supplied amount.",
+            "attributes": {}
+          },
+          {
+            "id": "request_approval",
+            "description": "Request approval before executing a refund above 1000 units.",
+            "attributes": {}
+          },
+          {
+            "id": "request_amount",
+            "description": "Request the refund amount when its key is absent or its value is explicitly null.",
+            "attributes": {}
+          }
+        ],
+        "rule_ids": [
+          "refund_execute_small",
+          "refund_execute_approved",
+          "refund_execute_large_unapproved_denied",
+          "refund_request_approval",
+          "refund_execute_missing_amount_denied",
+          "refund_request_missing_amount",
+          "refund_execute_null_amount_denied",
+          "refund_request_null_amount"
+        ],
+        "dimensions": [
+          {
+            "path": "state.amount",
+            "values": [
+              0,
+              999,
+              1000,
+              1001,
+              1500,
+              null
+            ]
+          },
+          {
+            "path": "state.refund_approved",
+            "values": [
+              false,
+              true,
+              null
+            ]
+          }
+        ]
+      },
+      "status": "pending",
+      "review": null
+    },
+    {
+      "id": "node:evaluate_delivery",
+      "kind": "node",
+      "content": {
+        "id": "evaluate_delivery",
+        "kind": "evaluate_outcomes",
+        "question": "Do the documented checks and evidence conditions permit acceptance or a revision request?",
+        "candidates": [
+          {
+            "id": "accept_delivery",
+            "description": "Accept the delivery after acceptance checks pass and required evidence is complete.",
+            "attributes": {}
+          },
+          {
+            "id": "request_revision",
+            "description": "Request revision when acceptance checks or supporting evidence are incomplete.",
+            "attributes": {}
+          }
+        ],
+        "rule_ids": [
+          "outcome_accept",
+          "outcome_request_revision"
+        ],
+        "dimensions": [
+          {
+            "path": "state.acceptance_checks_status",
+            "values": [
+              "passed",
+              "incomplete",
+              "failed"
+            ]
+          },
+          {
+            "path": "state.evidence_status",
+            "values": [
+              "complete",
+              "incomplete"
+            ]
+          }
+        ]
+      },
+      "status": "rejected",
+      "review": {
+        "fingerprint": "d95b9c05edda28480c7f7f6609f7b752418572531b66200993f24b9db5f6e218",
+        "item_id": "node:evaluate_delivery",
+        "decision": "rejected",
+        "reviewer": "codex-semantic-review",
+        "reason": "Reference case evaluate_outcomes-01 expects revision after failed checks with complete evidence. The source explicitly says incomplete checks; this draft distinguishes failed from incomplete. The reference disagreement needs policy clarification. Preserve the original 31/32 result.",
+        "recorded_at": "2026-10-30T18:23:05.104529+00:00",
+        "previous": null,
+        "hash": "c2a271c73e059a179942735c8f170cd26876fff0c729bf1ff1c56ab32980d0fb"
+      }
+    }
+  ],
+  "ready": false,
+  "pending": 23,
+  "rejected": 1
+}

@@ -84,8 +84,8 @@ def main():
         ),
         rule(
             "execute",
-            "Execute when the amount is at most 1000 or the refund has approval (score 2).",
-            [p("candidate.id", "eq", "execute"), p("state.amount", "exists", True)],
+            "Execute a refund with a specified amount when it is at most 1000 or has approval (score 2).",
+            [p("candidate.id", "eq", "execute"), p("state.amount", "exists", True), p("state.amount", "ne", None)],
             "Refunds up to and including 1000 units may be executed immediately.",
             2,
             [p("state.amount", "lte", 1000), p("state.approved", "eq", True)],
@@ -103,10 +103,11 @@ def main():
         ),
         rule(
             "clarify",
-            "Request the amount when it is missing (score 1).",
-            [p("candidate.id", "eq", "clarify"), p("state.amount", "exists", False)],
+            "Request the amount when its field is absent or null (score 1).",
+            [p("candidate.id", "eq", "clarify")],
             "Request the missing amount before deciding whether to execute a refund.",
             1,
+            [p("state.amount", "exists", False), p("state.amount", "eq", None)],
         ),
         rule(
             "accept",

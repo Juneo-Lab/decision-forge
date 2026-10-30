@@ -1,0 +1,93 @@
+[
+  {
+    "source_id": "handbook",
+    "start": 129,
+    "end": 181,
+    "quote": "A human specialist may handle every support request.",
+    "kind": "allocate_work"
+  },
+  {
+    "source_id": "handbook",
+    "start": 182,
+    "end": 281,
+    "quote": "Prefer the support agent for non-urgent, standard-sensitivity requests when the agent is available.",
+    "kind": "allocate_work"
+  },
+  {
+    "source_id": "handbook",
+    "start": 282,
+    "end": 387,
+    "quote": "Use the human specialist for urgent or restricted requests and whenever the support agent is unavailable.",
+    "kind": "allocate_work"
+  },
+  {
+    "source_id": "handbook",
+    "start": 413,
+    "end": 475,
+    "quote": "Internal project members may receive the full customer record.",
+    "kind": "share_information"
+  },
+  {
+    "source_id": "handbook",
+    "start": 476,
+    "end": 571,
+    "quote": "External partners may receive the full customer record only with explicit full-record approval.",
+    "kind": "share_information"
+  },
+  {
+    "source_id": "handbook",
+    "start": 572,
+    "end": 632,
+    "quote": "Authorized external partners may receive a redacted summary.",
+    "kind": "share_information"
+  },
+  {
+    "source_id": "handbook",
+    "start": 633,
+    "end": 734,
+    "quote": "Prefer the most informative permitted disclosure; reject the request when no disclosure is permitted.",
+    "kind": "share_information"
+  },
+  {
+    "source_id": "handbook",
+    "start": 757,
+    "end": 824,
+    "quote": "Refunds up to and including 1000 units may be executed immediately.",
+    "kind": "select_actions"
+  },
+  {
+    "source_id": "handbook",
+    "start": 825,
+    "end": 884,
+    "quote": "Refunds above 1000 units require approval before execution.",
+    "kind": "select_actions"
+  },
+  {
+    "source_id": "handbook",
+    "start": 885,
+    "end": 941,
+    "quote": "An approved refund may be executed regardless of amount.",
+    "kind": "select_actions"
+  },
+  {
+    "source_id": "handbook",
+    "start": 942,
+    "end": 1013,
+    "quote": "Request the missing amount before deciding whether to execute a refund.",
+    "kind": "select_actions"
+  },
+  {
+    "source_id": "handbook",
+    "start": 1038,
+    "end": 1131,
+    "quote": "Accept a delivery only when its acceptance checks pass and the required evidence is complete.",
+    "kind": "evaluate_outcomes"
+  },
+  {
+    "source_id": "handbook",
+    "start": 1132,
+    "end": 1217,
+    "quote": "Request revision when either acceptance checks or supporting evidence are incomplete.",
+    "kind": "evaluate_outcomes"
+  }
+]
