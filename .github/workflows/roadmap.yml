@@ -1,0 +1,44 @@
+name: Sync roadmap
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/roadmap.json
+      - .github/workflows/roadmap.yml
+      - scripts/publish_github.py
+permissions:
+  contents: read
+concurrency:
+  group: roadmap-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked --no-dev --python 3.12
+      - name: Synchronize milestones and issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORGE_REPOSITORY: ${{ github.repository }}
+        run: |
+          uv run --no-sync python - <<'PY'
+          import json
+          import os
+          import runpy
+          from pathlib import Path
+
+          module = runpy.run_path("scripts/publish_github.py")
+          api = module["GitHub"](os.environ["GH_TOKEN"])
+          try:
+              roadmap = json.loads(Path(".github/roadmap.json").read_text())
+              result = module["publish"](api, os.environ["FORGE_REPOSITORY"], roadmap)
+              print(json.dumps(result, indent=2))
+          finally:
+              api.client.close()
+          PY
