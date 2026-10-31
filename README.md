@@ -2,6 +2,8 @@
 
 **Compile organizational policy into verifiable decision training data.**
 
+![Decision Forge pipeline: compile and review organizational knowledge, shape scenarios across four decision surfaces and distributions, verify labels through policy replay, and export training data.](docs/assets/decision-forge-overview-v2.png)
+
 Organizational decisions depend on policies, thresholds, escalation rules, and acceptance criteria
 recorded in handbooks, SOPs, and workflow definitions. Decision Forge turns that knowledge into
 reproducible supervision for decision models.
@@ -10,19 +12,6 @@ The document compiler proposes a rule specification with source quotations for b
 The data pipeline evaluates scenarios against the approved rules and exports decision examples with
 verified labels, source provenance, and stable family assignments. The result is training data you
 can audit, reproduce, and hand to a trainer.
-
-```mermaid
-flowchart LR
-    A[Organizational documents] -->|model-assisted compilation| B[Rule specification]
-    B -->|human review gate| C[Scenario families]
-    C --> D[Policy replay]
-    D --> E[Verified labels]
-    E --> F[Training exports]
-    E --> G[Executable decision tasks]
-    F -->|candidate readout| H[Trainer]
-    G --> I[Independent trace grading]
-    I -.->|reviewed feedback| C
-```
 
 **Status: `v0.3.0` alpha — organizational decision data pipeline.**
 Reviewed or authored specifications build into training data locally, without model credentials.

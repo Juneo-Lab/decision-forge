@@ -4,6 +4,8 @@ Decision Forge compiles organizational workflows into evidence-linked decision t
 The four decision surfaces are work allocation, information sharing, action selection, and outcome
 evaluation.
 
+![Decision Forge pipeline: compile and review organizational knowledge, shape scenarios across four decision surfaces and distributions, verify labels through policy replay, and export training data.](assets/decision-forge-overview-v2.png)
+
 ## Quick start
 
 From a source checkout with Python 3.11+ and uv installed:
