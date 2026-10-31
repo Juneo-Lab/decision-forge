@@ -95,8 +95,9 @@ uv run decision-forge dedup runs/merged
 Scenario-local identity cannot see that two scenarios describe the same decision problem, because it
 includes the scenario ID. Deduplication therefore works on the model-visible input:
 
-1. A **structural key** (`state` + candidate identities and attributes) groups examples that pose the
-   same problem. Wording can only be compared inside a group.
+1. A **structural key** (organization, policy version/context, state, and candidate identities/attributes)
+   groups examples that pose the same problem. Different visible policies remain separate.
+   Wording can only be compared inside a group.
 2. **MinHash over normalized word tokens** estimates presentation similarity inside a group, so a
    cosmetic edit collapses. Word tokens are used instead of character n-grams because a one-word edit
    in a short presentation changes most character n-grams.
@@ -116,9 +117,9 @@ uv run decision-forge build examples/customer_support/project.yaml \
   --expansion runs/expansion
 ```
 
-The build re-verifies every synthesized row (node/rule lineage, source hashes, policy replay, policy
-fingerprint) before merging it, so a hand-edited expansion artifact cannot inject a wrong label. The
-merged pool is deduplicated, then quotas are applied. `report.json` gains `synthesized`, `dedup`, and a
+The build re-verifies every synthesized row (current scenario/family/node lineage, family split,
+source hashes, policy replay, and policy fingerprint) before merging it, so a hand-edited expansion
+artifact cannot inject a wrong label. The merged pool is deduplicated, then quotas are applied. `report.json` gains `synthesized`, `dedup`, and a
 `generation_cost` block with real provider calls and cost basis.
 
 ## 5. Measure whether the data helps

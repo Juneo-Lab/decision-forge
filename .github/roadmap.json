@@ -93,7 +93,7 @@
       "milestone": "m2",
       "title": "Add stratum budgets and constrained decision-family transformations",
       "state": "open",
-      "body": "Make organization-specific training distributions explicit.\n\nAcceptance criteria:\n- [x] Configure routine, boundary, change, and development-feedback budgets.\n- [x] Check feasibility and expected answer relationships after transformations.\n- [x] Add semantics-preserving rewrites and duplicate detection.\n\nImplementation evidence: dedup.py reports exact, near, split-leak and metadata conflicts over structural groups; transformations.py publishes presentation rewrites only after numeric-invariant checks and an independent equivalence decision.\n- [x] Report requested, generated, filtered, and accepted distributions."
+      "body": "Make organization-specific training distributions explicit.\n\nAcceptance criteria:\n- [x] Configure routine, boundary, change, and development-feedback budgets.\n- [x] Check feasibility and expected answer relationships after transformations.\n- [x] Add semantics-preserving rewrites and duplicate detection.\n\nImplementation evidence: dedup.py reports exact, near, split-leak and metadata conflicts over structural groups; transformations.py publishes presentation rewrites only after numeric-invariant checks and an independent equivalence decision.\n- [x] Report requested, generated, filtered, and accepted distributions.\n\nDecision training integration: candidate-readout exports preserve explicit target probabilities, family identity and source provenance. Policy-aware duplicate grouping preserves distinct organizational rules; expansion loading checks current scenario/family/split lineage. Training budget selection is applied to actual exported rows."
     },
     {
       "id": "persistent-orchestration",
@@ -142,7 +142,7 @@
       "milestone": "m4",
       "title": "Use reviewed development feedback to update generation priorities",
       "state": "open",
-      "body": "Close the data improvement loop while preserving evaluation independence.\n\nAcceptance criteria:\n- [x] Convert development errors into traceable generation requests.\n- [x] Keep test families outside adaptive generation.\n- [ ] Compare recipes under fixed training budgets.\n- [ ] Publish coverage, quality, and cost deltas per dataset version."
+      "body": "Close the data improvement loop while preserving evaluation independence.\n\nAcceptance criteria:\n- [x] Convert development errors into traceable generation requests.\n- [x] Keep test families outside adaptive generation.\n- [ ] Compare recipes under fixed training budgets.\n- [ ] Publish coverage, quality, and cost deltas per dataset version.\n\nCurrent implementation: fixed-budget candidate-readout handoff with selected IDs and file digests; endpoint comparisons require identical dataset, case order, and prompt. The training-quality comparison remains unmeasured and its acceptance boxes remain open."
     },
     {
       "id": "stable-extension-api",

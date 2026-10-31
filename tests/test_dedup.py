@@ -99,3 +99,22 @@ def test_duplicate_group_with_conflicting_metadata_is_reported(example_path, tmp
     conflict = report["metadata_conflicts"][0]
     assert sorted(conflict["strata"]) == sorted([parent.stratum, "label-conflict"])
     assert report["removed"] == 1
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("policy_context", ["Requests require approval under the updated policy."]),
+        ("organization_id", "different-organization"),
+        ("policy_version", "different-version"),
+    ],
+)
+def test_different_visible_policies_never_collapse(example_path, tmp_path, field, value):
+    build(example_path, tmp_path / "run")
+    parent = load_run(tmp_path / "run")[0]
+    changed = clone(parent, id="ep-different-policy", **{field: value})
+    assert duplicate_verdict(changed, [parent]) is None
+    kept, report = deduplicate([parent, changed])
+    assert len(kept) == 2
+    assert report["removed"] == 0
+    assert report["structural_groups"] == 2

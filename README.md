@@ -9,7 +9,9 @@ to the judgments that people and agents make throughout a workflow.
 **Status: active alpha.** The offline compiler, exact distribution quotas, multi-step mock business
 workflows, independent trace grading, reviewed feedback, and split-preserving dataset updates are
 implemented. Optional Data Designer and LangGraph adapters have executable SDK contract tests.
-Remaining acceptance work is tracked explicitly in the [roadmap](ROADMAP.md).
+Recipe planning, policy-verified model synthesis, policy-aware deduplication, and candidate-readout
+training exports are implemented. See [project status](docs/status.md) and the [roadmap](ROADMAP.md)
+for remaining acceptance work.
 
 ```mermaid
 flowchart LR

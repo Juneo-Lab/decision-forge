@@ -49,10 +49,13 @@ model-written scenario synthesis publishes only proposals whose label is replaye
 policy; global duplicate detection reports held-out leaks. Fine-tuning evidence is still outstanding —
 see [generation planning](docs/generation.md#5-measure-whether-the-data-helps).
 
-Implemented increment: exact accepted-example quotas, feasibility/divergence reports, executable
-counterfactual relations, candidate-order rewrites, pinned Data Designer ordered-seed processing,
-and durable LangGraph review/build/export jobs. Model-generated synthesis, semantic paraphrase
-validation, broader deduplication and recipe-planning agent tools remain open.
+Decision training now exports candidate-readout rows with explicit target probabilities, family
+grouping, source provenance, and native candidate-label encoding. Fixed budgets limit the actual
+training files. Policy-aware deduplication and current-family validation protect decision context
+and held-out isolation. Data Designer conditional generation, a multi-provider recovery campaign,
+and measured downstream training gains remain acceptance work.
+
+See the [current implementation status](docs/status.md) for completed paths and remaining validation.
 
 ## M3 · v0.4 · Executable organization tasks
 

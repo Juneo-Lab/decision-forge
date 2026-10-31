@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Consolidate dependency upgrades for checkout, setup-uv, mypy, filelock, pytest-cov, and pytest.
+- Preserve subprocess coverage when migrating to pytest-cov 7.
+- Deep-copy nested synthesis state so accepted and rejected proposals cannot mutate parent examples.
+- Keep different organizational policies separate during near-duplicate detection.
+- Reject stale expansion scenario, family, source, and split assignments before dataset publication.
+- Reconcile roadmap status with implemented decision generation and training interfaces.
+
 - Add decision-only candidate-probability exports with family grouping and source provenance.
 - Preserve explicit soft targets in validated external rows and encode native single-token candidates.
 - Keep target probabilities aligned through candidate shuffling; reject truncation and label collisions.

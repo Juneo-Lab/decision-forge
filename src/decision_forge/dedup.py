@@ -5,8 +5,8 @@ same wording. Scenario-local identity cannot see that, because it includes the s
 
 So duplicates are found in two stages:
 
-1. A structural key (`state` + candidate identities and attributes + question) groups examples that
-   pose the same problem. Groups are where wording can be compared at all.
+1. A structural key (organization + policy version/context + state + candidate identities/attributes)
+   groups examples that pose the same problem. Groups are where wording can be compared at all.
 2. Within a group, MinHash over normalized word tokens estimates presentation similarity, so a
    cosmetic edit collapses instead of training the model on the same sentence twice. Word tokens
    rather than character n-grams are used because a one-word edit in a short presentation changes
@@ -47,6 +47,9 @@ def structure_key(episode: Episode) -> str:
     """The decision situation, excluding wording and provenance."""
     return canonical(
         {
+            "organization_id": episode.organization_id,
+            "policy_version": episode.policy_version,
+            "policy_context": episode.policy_context,
             "state": episode.state,
             "candidates": [
                 {"id": candidate.id, "attributes": candidate.attributes} for candidate in episode.candidates
@@ -210,7 +213,7 @@ def find_duplicates(
     dropped_ids = {row["id"] for row in dropped}
     kept = [e for e in episodes if e.id not in dropped_ids]
     return {
-        "protocol": "structural-group-token-minhash-v1",
+        "protocol": "policy-aware-structural-token-minhash-v2",
         "threshold": threshold,
         "shingle_size": SHINGLE_SIZE,
         "permutations": permutations,

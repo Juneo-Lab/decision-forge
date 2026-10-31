@@ -233,3 +233,65 @@ def test_partial_success_publishes_verified_rows_and_reports_the_shortfall(synth
     assert summary["published"] == 1
     assert summary["complete_requests"] is False
     assert summary["shortfalls"] == [{"request": request.model_dump(mode="json"), "requested": 3, "verified": 1}]
+
+
+@pytest.mark.parametrize("reject", [False, True])
+def test_nested_proposals_never_mutate_the_parent(synthesis_project, tmp_path, reject):
+    from decision_forge.dedup import duplicate_verdict
+    from decision_forge.expansion import ProposedState, allowed_state_paths, materialize
+
+    spec = read_json(synthesis_project)
+    for rule in spec["organization"]["rules"]:
+        for predicate in rule["when"]["all_of"]:
+            if predicate["path"] == "state.tier":
+                predicate["path"] = "state.customer.tier"
+    spec["scenarios"][0]["state"]["customer"] = {"tier": "silver"}
+    write_json(synthesis_project, spec)
+    run = tmp_path / "run"
+    build(synthesis_project, run)
+    project, _ = snapshot(run)
+    base = load_run(run)[0]
+    before = base.model_dump(mode="json")
+    proposal = ProposedState.model_validate(
+        {"bindings": [{"path": "state.customer.tier", "value": "gold"}], "rationale": "Gold accounts escalate."}
+    )
+    request = escalate_request()
+    if reject:
+        request.valid_choices = ["execute"]
+        with pytest.raises(ValueError, match="Policy replay"):
+            materialize(project, base, proposal, request, allowed_state_paths(project, project.nodes[0]), {})
+    else:
+        child = materialize(project, base, proposal, request, allowed_state_paths(project, project.nodes[0]), {})
+        assert child.state["customer"]["tier"] == "gold"
+        assert duplicate_verdict(child, [base]) is None
+    assert base.model_dump(mode="json") == before
+
+
+@pytest.mark.parametrize("split", ["test", "development"])
+def test_expansion_cannot_cross_updated_family_splits(synthesis_project, tmp_path, split):
+    run = tmp_path / "run"
+    build(synthesis_project, run)
+    expand(run, [escalate_request()], tmp_path / "expansion", ScriptedStates([GOLD]))
+    spec = read_json(synthesis_project)
+    spec["recipe"]["family_splits"] = {"family": split}
+    write_json(synthesis_project, spec)
+    with pytest.raises(ValueError, match="Held-out|stale family split"):
+        build(synthesis_project, tmp_path / "merged", expansion=tmp_path / "expansion")
+    assert not (tmp_path / "merged/episodes.jsonl").exists()
+
+
+@pytest.mark.parametrize("change", ["missing_scenario", "family", "node"])
+def test_expansion_requires_current_scenario_lineage(synthesis_project, tmp_path, change):
+    run = tmp_path / "run"
+    build(synthesis_project, run)
+    expand(run, [escalate_request()], tmp_path / "expansion", ScriptedStates([GOLD]))
+    project, manifest = snapshot(run)
+    scenario = project.scenarios[0]
+    if change == "missing_scenario":
+        scenario.id = "new-scenario"
+    elif change == "family":
+        scenario.family_id = "new-family"
+    else:
+        scenario.node_id = "other-node"
+    with pytest.raises(ValueError, match="scenario or family lineage"):
+        load_expansion(tmp_path / "expansion", project, manifest["source_hashes"])

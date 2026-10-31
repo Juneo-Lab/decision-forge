@@ -10,6 +10,7 @@ contaminate the split it is supposed to measure.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -17,7 +18,7 @@ from typing import Any, Literal
 from pydantic import Field, JsonValue, ValidationError, model_validator
 
 from decision_forge.dedup import duplicate_verdict
-from decision_forge.generation import policy_fingerprint, set_path
+from decision_forge.generation import policy_fingerprint, set_path, split_plan
 from decision_forge.io import atomic_text, canonical, digest, load_sources, read_json, write_json
 from decision_forge.models import (
     CandidateIdentifier,
@@ -32,7 +33,7 @@ from decision_forge.pipeline import load_run, load_run_project
 from decision_forge.policy import best_choices, evaluate
 from decision_forge.providers import StructuredProvider
 
-EXPANSION_VERSION = "verified-synthesis-v1"
+EXPANSION_VERSION = "verified-synthesis-v2"
 
 SYSTEM_PROMPT = """You propose decision-time situations for an organizational decision.
 The organization's policy is fixed; you never choose or state the answer.
@@ -189,7 +190,7 @@ def materialize(
     provenance: dict[str, Any],
 ) -> Episode:
     """Apply bindings, replay the policy, and require the requested answer set."""
-    state = dict(base.state)
+    state = deepcopy(base.state)
     applied: dict[str, Any] = {}
     for binding in proposal.bindings:
         name = binding.path.removeprefix("state.")
@@ -201,7 +202,7 @@ def materialize(
                 raise ValueError(f"Proposal value outside the declared dimension domain: {name}")
         elif isinstance(binding.value, (dict, list)):
             raise ValueError(f"Proposal value for {name} must be a scalar")
-        set_path(state, name, binding.value)
+        set_path(state, name, deepcopy(binding.value))
         applied[name] = binding.value
     if not applied:
         raise ValueError("Proposal produced no state change")
@@ -496,15 +497,32 @@ def load_expansion(
     if digest([row.model_dump(mode="json") for row in rows]) != summary.get("accepted_digest"):
         raise ValueError("Expansion integrity check failed")
     verified: list[Episode] = []
+    family_splits = split_plan(project)
+    scenarios = {scenario.id: scenario for scenario in project.scenarios}
     for episode in rows:
         node = next((n for n in project.nodes if n.id == episode.node_id), None)
         if node is None or set(episode.rule_ids) != set(node.rule_ids):
             raise ValueError(f"Expanded episode has stale node or rule lineage: {episode.id}")
-        if episode.split == "test":
+        scenario = scenarios.get(episode.scenario_id)
+        if (
+            scenario is None
+            or scenario.node_id != episode.node_id
+            or scenario.family_id != episode.family_id
+            or episode.organization_id != project.organization.id
+            or episode.policy_version != project.organization.policy_version
+        ):
+            raise ValueError(f"Expanded episode has stale scenario or family lineage: {episode.id}")
+        current_split = family_splits[scenario.family_id]
+        if episode.split == "test" or current_split == "test":
             raise ValueError("Held-out splits cannot contain synthesized examples")
-        if episode.source_hashes != {key: source_hashes[key] for key in episode.source_ids}:
-            raise ValueError(f"Expanded episode was synthesized from different sources: {episode.id}")
+        if episode.split != current_split:
+            raise ValueError(f"Expanded episode has stale family split: {episode.id}")
         rules = [rule for rule in project.organization.rules if rule.id in node.rule_ids]
+        expected_sources = set(scenario.source_ids) | {e.source_id for rule in rules for e in rule.evidence}
+        if set(episode.source_ids) != expected_sources or episode.source_hashes != {
+            key: source_hashes[key] for key in expected_sources
+        }:
+            raise ValueError(f"Expanded episode was synthesized from different sources: {episode.id}")
         choices = best_choices(evaluate(episode.state, episode.candidates, rules))
         if choices != episode.valid_choices or not choices:
             raise ValueError(f"Expanded episode label fails policy replay: {episode.id}")
