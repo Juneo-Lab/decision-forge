@@ -15,9 +15,10 @@ uv run decision-forge build examples/customer_support/project.yaml --output runs
 uv run decision-forge export runs/demo --output runs/demo-typed --format typed
 ```
 
-The fictional example builds 336 episodes. All variants of a customer case share one split. Hash-based
-splitting preserves family membership; small datasets may differ from requested split proportions.
-The report records realized counts. No model credentials are required for this workflow.
+The fictional example builds 336 episodes. All variants of a customer case share one split. Families
+are ranked by a stable hash and then sliced into quotas computed from the recipe, so realized split
+sizes track the configured proportions; the report records requested and realized counts. No model
+credentials are required for this workflow.
 
 ## Command reference
 

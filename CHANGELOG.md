@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
+
+The first release after 0.1.0. It folds in the unreleased organization-compiler work (0.2) and the
+distribution-aware synthesis work (0.3), so engine fingerprints and build manifests from earlier local
+runs will not resume; regenerate runs into new output directories.
 
 - Add decision-only candidate-probability exports with family grouping and source provenance.
 - Preserve explicit soft targets in validated external rows and encode native single-token candidates.
