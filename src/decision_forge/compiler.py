@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from decision_forge.io import MAX_SOURCE_BYTES, atomic_text, canonical, digest, write_json
+from decision_forge.io import (
+    MAX_SOURCE_BYTES,
+    atomic_text,
+    canonical,
+    collapse_whitespace,
+    digest,
+    quote_span,
+    write_json,
+)
 from decision_forge.models import Project
 from decision_forge.providers import StructuredProvider
 
@@ -27,7 +35,9 @@ predicate on candidate.id (or a distinguishing candidate attribute). For example
 A denial of one candidate does not permit another: explicitly allow escalation, clarification,
 revision or rejection actions in their applicable states. Do not emit blanket allow rules for
 statements about preferring a particular candidate. Missing fields and null are distinct; exists
-checks key presence, and numeric comparisons with null are false. Include candidate bindings in
+checks key presence, is true when a key is present even with a null value, and may omit its boolean
+value to mean true. Combine exists with a null check for present-and-non-null. Numeric comparisons
+with null are false. Include candidate bindings in
 rule descriptions so model-visible policies convey the same action semantics.
 The highest matched priority governs; deny wins at equal priority; unmatched candidates are denied.
 Among permitted candidates the highest score wins; ties preserve all valid choices.
@@ -70,14 +80,16 @@ def compile_documents(sources: list[Path], output: Path, provider: StructuredPro
     for rule in project.organization.rules:
         for evidence in rule.evidence:
             text = provided[evidence.source_id]["text"]
-            start = text.find(evidence.quote)
-            if start < 0:
-                raise ValueError(f"Compiler produced unsupported evidence for rule {rule.id}")
-            if evidence.start is not None:
-                if text[evidence.start : evidence.end] != evidence.quote:
+            try:
+                start, end = quote_span(text, evidence.quote)
+            except ValueError as exc:
+                raise ValueError(f"Compiler produced unsupported evidence for rule {rule.id}: {exc}") from None
+            if evidence.start is not None and evidence.end is not None:
+                span = text[evidence.start : evidence.end]
+                if collapse_whitespace(span)[0] != collapse_whitespace(evidence.quote)[0]:
                     raise ValueError(f"Compiler produced invalid evidence span for rule {rule.id}")
-            elif text.find(evidence.quote, start + 1) < 0:
-                evidence.start, evidence.end = start, start + len(evidence.quote)
+            else:
+                evidence.start, evidence.end = start, end
             # The legacy text compiler has no page/section locator adapter.
             evidence.locator = None
     output.mkdir(parents=True, exist_ok=True)

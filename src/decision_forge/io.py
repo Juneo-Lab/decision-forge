@@ -24,7 +24,65 @@ def digest(value: Any) -> str:
     return hashlib.sha256(canonical(value).encode()).hexdigest()
 
 
-def atomic_text(path: Path, content: str) -> None:
+def collapse_whitespace(text: str) -> tuple[str, list[int]]:
+    """Collapse each whitespace run to one space, keeping a map back to original offsets."""
+    collapsed: list[str] = []
+    positions: list[int] = []
+    index = 0
+    while index < len(text):
+        if text[index].isspace():
+            end = index
+            while end < len(text) and text[end].isspace():
+                end += 1
+            # A run between two tokens becomes one space; leading and trailing runs vanish.
+            if collapsed and end < len(text):
+                collapsed.append(" ")
+                positions.append(index)
+            index = end
+            continue
+        collapsed.append(text[index])
+        positions.append(index)
+        index += 1
+    return "".join(collapsed), positions
+
+
+def _find_all(haystack: str, needle: str) -> list[tuple[int, int]]:
+    hits: list[tuple[int, int]] = []
+    start = haystack.find(needle)
+    while start >= 0:
+        hits.append((start, start + len(needle)))
+        start = haystack.find(needle, start + 1)
+    return hits
+
+
+def quote_span(text: str, quote: str) -> tuple[int, int]:
+    """Locate exactly one source span for a quote, tolerating whitespace-only differences.
+
+    Extracted text from PDF and office documents hard-wraps sentences, so a model that
+    collapses those line breaks still describes the same source span. The returned span
+    always covers the original text, so its length can differ from a whitespace-collapsed quote.
+    """
+    if not quote:
+        raise ValueError("Quote must not be empty")
+    exact = _find_all(text, quote)
+    if len(exact) == 1:
+        return exact[0]
+    if len(exact) > 1:
+        raise ValueError("Quote matches more than one source span")
+    collapsed_text, positions = collapse_whitespace(text)
+    collapsed_quote, _ = collapse_whitespace(quote)
+    if not collapsed_quote:
+        raise ValueError("Quote must not be empty")
+    hits = _find_all(collapsed_text, collapsed_quote)
+    if len(hits) == 1:
+        start, end = hits[0]
+        return positions[start], positions[end - 1] + 1
+    if len(hits) > 1:
+        raise ValueError("Quote matches more than one source span")
+    raise ValueError("Quote is not present in the source text")
+
+
+def atomic_text(path: Path, content: str, mode: int = 0o644) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, name = tempfile.mkstemp(prefix=".forge-", dir=path.parent)
     try:
@@ -32,6 +90,8 @@ def atomic_text(path: Path, content: str) -> None:
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
+        # mkstemp creates 0600 files; artifacts must be readable by other users and tools.
+        os.chmod(name, mode)
         os.replace(name, path)
     finally:
         if os.path.exists(name):
@@ -79,11 +139,15 @@ def load_sources(project: Project, root: Path) -> tuple[dict[str, str], dict[str
             raise ValueError(f"Source content hash changed: {source.id}")
     for rule in project.organization.rules:
         for evidence in rule.evidence:
-            if evidence.quote not in contents[evidence.source_id]:
-                raise ValueError(f"Evidence quote not found for rule {rule.id}")
-            if (
-                evidence.start is not None
-                and contents[evidence.source_id][evidence.start : evidence.end] != evidence.quote
-            ):
+            source_text = contents[evidence.source_id]
+            quoted, _ = collapse_whitespace(evidence.quote)
+            if evidence.start is None or evidence.end is None:
+                try:
+                    quote_span(source_text, evidence.quote)
+                except ValueError as exc:
+                    raise ValueError(f"Evidence quote rejected for rule {rule.id}: {exc}") from None
+                continue
+            span = source_text[evidence.start : evidence.end]
+            if len(span) < len(evidence.quote) or collapse_whitespace(span)[0] != quoted:
                 raise ValueError(f"Evidence span does not match for rule {rule.id}")
     return contents, hashes

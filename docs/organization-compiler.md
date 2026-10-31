@@ -79,7 +79,10 @@ Shared content-addressed caches live in `.forge-compile-cache` next to output di
 include source identity/version/text, prompt, schema, and endpoint/model configuration identity.
 Changed documents invalidate their extraction results; unchanged chunks can be reused in a new run.
 Changed sources or compilation configuration require a new output directory. Failed validation is
-never cached as a usable response. Reviewed project edits are preserved when a resume is attempted.
+never cached as a usable response. Rejected drafts are repaired with bounded, checkpointed prompts that
+include the contract message for each violation, because a bare error location does not describe the
+defect. Reviewer edits to an assembled draft are accepted on resume as long as the result stays bound
+to extracted claim spans; edits that cite unknown evidence are refused.
 
 The initial implementation bounds individual source files to 2 MB, corpora to 32 MB, individual PDFs
 to 500 pages, and assembled claim context to 1 MB. Partition larger claim collections by workflow.
@@ -101,14 +104,17 @@ uv run decision-forge build runs/compiled/project.json --output runs/reviewed-da
 ```
 
 Review every rule, decision node, and flagged conflict. Nodes expose candidates, rules, and generation
-dimensions for inspection. Equal-priority allow/deny rules enter the conflict queue when their
-conditions are identical or jointly match a seed scenario/candidate. This conflict analysis detects
-concrete witnesses; it does not exhaust every possible state. Reviewers examine the full rule context.
+dimensions for inspection. Allow/deny pairs enter the queue in three cases: identical conditions,
+joint witnesses from a seed scenario/candidate, or a priority override where the higher-priority rule
+resolves the same conflict. Rules that a higher-priority rule of the same effect always outranks enter
+the queue as shadowed, dead rules. This analysis detects concrete witnesses; it does not exhaust every
+possible state. Reviewers examine the full rule context.
 
-A review records identity, reason, time, decision, and the exact project/source fingerprint. Any
-rule, workflow, metadata, or source-content change invalidates prior acceptance for the revised
-project. A hash-linked history detects accidental modification. Identity is operator-supplied;
-organization SSO and cryptographic reviewer authentication are future integration work.
+A review records identity, reason, time, decision, and the fingerprint of the reviewed item plus the
+sources its evidence cites. Editing an unrelated rule no longer invalidates an accepted decision,
+while any change to the reviewed rule, its evidence, or a cited source re-opens that item. A
+hash-linked history detects accidental modification. Identity is operator-supplied; organization SSO
+and cryptographic reviewer authentication are future integration work.
 
 Builds of compiler outputs require current acceptance for every item. Hand-authored specifications
 retain the offline example workflow. The gate is a local correctness mechanism, not a security boundary

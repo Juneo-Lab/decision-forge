@@ -103,6 +103,8 @@ class OpenAICompatibleProvider:
         self.last_response_metadata: dict[str, Any] | None = None
         self.last_response_mode: str | None = None
         self.last_usage: dict[str, int | float] | None = None
+        # Capability negotiation learned at runtime; explicit response_mode values never degrade.
+        self.structured_mode_unavailable = False
 
     @property
     def configuration(self) -> dict[str, Any]:
@@ -122,7 +124,15 @@ class OpenAICompatibleProvider:
         normalized = strict_schema(schema)
         if self.response_mode == "json_schema" and normalized is None:
             raise ValueError("Schema contains free-form maps; select auto or json_object with local validation")
-        mode = "json_object" if self.response_mode == "json_object" or normalized is None else "json_schema"
+        if self.response_mode == "json_object" or self.structured_mode_unavailable:
+            mode = "json_object"
+        else:
+            mode = "json_object" if normalized is None else "json_schema"
+        return self._payload(system, user, schema, normalized, mode)
+
+    def _payload(
+        self, system: str, user: str, schema: dict[str, Any], normalized: dict[str, Any] | None, mode: str
+    ) -> dict[str, Any]:
         if mode == "json_object":
             system += "\nReturn one JSON object satisfying this schema. Local validation is mandatory.\n" + json.dumps(
                 schema
@@ -145,9 +155,37 @@ class OpenAICompatibleProvider:
             }
         return payload
 
-    def input_bytes(self, system: str, user: str, schema: dict[str, Any]) -> int:
-        payload = self.request_payload(system, user, schema)
+    def _transport_bytes(self, payload: dict[str, Any]) -> int:
         return len(httpx.Request("POST", f"{self.base_url}/chat/completions", json=payload).content)
+
+    def input_bytes(self, system: str, user: str, schema: dict[str, Any]) -> int:
+        """Upper bound on transport bytes, including a possible response-mode downgrade."""
+        size = self._transport_bytes(self.request_payload(system, user, schema))
+        if self.response_mode == "auto" and not self.structured_mode_unavailable:
+            # auto may fall back to json_object, whose system prompt carries the whole schema.
+            fallback = self._payload(system, user, schema, strict_schema(schema), "json_object")
+            size = max(size, self._transport_bytes(fallback))
+        return size
+
+    def _error_message(self, response: httpx.Response) -> str:
+        """Return the provider's own diagnostic without echoing prompts or credentials."""
+        try:
+            data = response.json()
+        except (ValueError, UnicodeError):
+            return ""
+        error = data.get("error") if isinstance(data, dict) else None
+        message = error.get("message") if isinstance(error, dict) else None
+        if not isinstance(message, str):
+            return ""
+        return message.strip()[:300]
+
+    def _rejects_structured_mode(self, response: httpx.Response) -> bool:
+        if response.status_code != 400 or self.response_mode != "auto" or self.structured_mode_unavailable:
+            return False
+        message = self._error_message(response).lower()
+        if "response_format" in message:
+            return True
+        return "json_schema" in message or "json schema" in message
 
     def generate(self, system: str, user: str, schema: dict[str, Any]) -> dict[str, Any]:
         self.last_usage = None
@@ -160,19 +198,32 @@ class OpenAICompatibleProvider:
         owned = self.client is None
         client = self.client or httpx.Client(timeout=httpx.Timeout(self.timeout_seconds, connect=10))
         try:
-            for attempt in range(self.retries + 1):
+            attempt = 0
+            while True:
                 try:
                     response = client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
                 except (httpx.TimeoutException, httpx.NetworkError) as exc:
-                    if attempt == self.retries:
+                    if attempt >= self.retries:
                         raise ValueError("Model endpoint request failed; no source content was logged") from exc
                     time.sleep(2**attempt)
+                    attempt += 1
+                    continue
+                if self._rejects_structured_mode(response):
+                    # The endpoint cannot enforce JSON Schema. Degrade once, stay degraded, and retry
+                    # without spending a transport retry, because no model generation happened.
+                    self.structured_mode_unavailable = True
+                    payload = self.request_payload(system, user, schema)
+                    self.last_response_mode = payload["response_format"]["type"]
                     continue
                 if (response.status_code == 429 or response.status_code >= 500) and attempt < self.retries:
                     time.sleep(2**attempt)
+                    attempt += 1
                     continue
                 if response.is_error:
-                    raise ValueError(f"Model endpoint returned HTTP {response.status_code}")
+                    detail = self._error_message(response)
+                    raise ValueError(
+                        f"Model endpoint returned HTTP {response.status_code}" + (f": {detail}" if detail else "")
+                    )
                 try:
                     data = response.json()
                     usage = data.get("usage") if isinstance(data, dict) else None
@@ -202,7 +253,6 @@ class OpenAICompatibleProvider:
                     return result
                 except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
                     raise ValueError("Model returned an invalid structured response") from exc
-            raise ValueError("Model request exhausted retries")
         finally:
             if owned:
                 client.close()

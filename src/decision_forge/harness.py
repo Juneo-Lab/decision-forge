@@ -94,11 +94,12 @@ output.mkdir(parents=True, exist_ok=True)
 (output / "reward.txt").write_text("1" if correct else "0")
 """
         atomic_text(task / "tests/verify.py", verifier)
-        atomic_text(task / "tests/test.sh", "#!/bin/sh\nset -eu\npython /tests/verify.py\n")
+        atomic_text(task / "tests/test.sh", "#!/bin/sh\nset -eu\npython /tests/verify.py\n", mode=0o755)
         solution = json.dumps({"choice": episode.valid_choices[0]})
         atomic_text(
             task / "solution/solve.sh",
             "#!/bin/sh\nset -eu\ncat > /workspace/answer.json <<'ANSWER'\n" + solution + "\nANSWER\n",
+            mode=0o755,
         )
     write_json(
         output / "manifest.json",

@@ -10,7 +10,7 @@ from typing import Any
 from filelock import FileLock
 
 from decision_forge import __version__
-from decision_forge.generation import generate_family
+from decision_forge.generation import generate_family, requested_variants, split_plan
 from decision_forge.io import (
     atomic_text,
     canonical,
@@ -88,10 +88,15 @@ def _build(
     accepted: list[Episode] = []
     rejected: list[Episode] = []
     cache_hits = 0
+    plan = split_plan(project)
+    requested = 0
+    shortfalls: dict[str, int] = {}
     for scenario in project.scenarios:
         key = scenario_fingerprint(project, scenario, hashes)
         manifest["scenario_fingerprints"][scenario.id] = key
         cache_path = cache / f"{key}.json"
+        wanted = requested_variants(project, scenario)
+        requested += wanted
         if cache_path.exists():
             record = read_json(cache_path)
             if record.get("fingerprint") != key or digest(record["episodes"]) != record.get("digest"):
@@ -99,9 +104,11 @@ def _build(
             episodes = [Episode.model_validate(row) for row in record["episodes"]]
             cache_hits += 1
         else:
-            episodes = generate_family(project, scenario, hashes)
+            episodes = generate_family(project, scenario, hashes, plan[scenario.family_id])
             rows = [episode.model_dump(mode="json") for episode in episodes]
             write_json(cache_path, {"fingerprint": key, "digest": digest(rows), "episodes": rows})
+        if len(episodes) != wanted:
+            shortfalls[scenario.id] = wanted - len(episodes)
         for episode in episodes:
             (accepted if episode.valid_choices else rejected).append(episode)
     accepted.sort(key=lambda e: e.id)
@@ -113,6 +120,10 @@ def _build(
         "rejected_no_valid_choice": len(rejected),
         "ambiguous_best_choice": sum(len(e.valid_choices) > 1 for e in accepted),
         "families": len({e.family_id for e in accepted}),
+        "requested_episodes": requested,
+        "realized_episodes": len(accepted) + len(rejected),
+        "episodes_collapsed_as_duplicates": requested - len(accepted) - len(rejected),
+        "scenarios_below_requested_variants": shortfalls,
         "cache_hits": cache_hits,
         "by_kind": dict(Counter(e.kind.value for e in accepted)),
         "by_split": dict(Counter(e.split for e in accepted)),

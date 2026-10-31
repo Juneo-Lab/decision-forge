@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import Field, JsonValue
 
-from decision_forge.generation import set_path
+from decision_forge.generation import candidate_for, set_path
 from decision_forge.io import digest
 from decision_forge.models import Contract, DecisionKind, Project, ensure_unique
 from decision_forge.policy import best_choices, evaluate, json_equal
@@ -86,10 +86,9 @@ def evaluate_decisions(
             if field.path.startswith("state."):
                 set_path(state, field.path.removeprefix("state."), value)
             else:
-                matches = [c for c in candidates if field.path.startswith(f"candidates.{c.id}.")]
-                if not matches:
-                    raise ValueError("Evaluation binding references an unknown candidate")
-                candidate = max(matches, key=lambda c: len(c.id))
+                resolved = candidate_for(node, field.path)
+                # Bind into the working copy, never into the loaded project.
+                candidate = next(c for c in candidates if c.id == resolved.id)
                 path = field.path.removeprefix(f"candidates.{candidate.id}.")
                 if path == "id" or path.startswith("id."):
                     raise ValueError("Evaluation bindings cannot change candidate identifiers")

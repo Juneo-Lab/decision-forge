@@ -10,7 +10,15 @@ MISSING = object()
 
 
 def json_equal(left: Any, right: Any) -> bool:
-    """JSON equality with recursive type identity, including nested booleans."""
+    """JSON equality with recursive type identity, except that numbers compare by value.
+
+    Booleans never equal numbers. Integers and floats do compare equal, because YAML sources
+    and model-generated JSON legitimately disagree about ``1000`` versus ``1000.0``.
+    """
+    if isinstance(left, bool) or isinstance(right, bool):
+        return type(left) is type(right) and bool(left) == bool(right)
+    if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+        return left == right
     if type(left) is not type(right):
         return False
     if isinstance(left, dict):

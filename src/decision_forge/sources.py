@@ -111,8 +111,13 @@ class WorkflowAdapter:
 
     def extract(self, path: Path) -> tuple[str, list[Span]]:
         data = read_yaml(path)
-        # JSON round-trip rejects non-JSON YAML values and cyclic aliases.
-        data = json.loads(canonical(data))
+        try:
+            # JSON round-trip rejects non-JSON YAML values and cyclic aliases.
+            data = json.loads(canonical(data))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "Workflow source contains values that are not JSON (for example YAML dates); quote them as strings"
+            ) from exc
         if not isinstance(data, (dict, list)):
             raise ValueError("A workflow source must be a JSON/YAML object or array")
         segments: list[tuple[str, str]] = []

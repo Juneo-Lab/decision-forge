@@ -16,9 +16,11 @@ from decision_forge.io import (
     MAX_SOURCE_BYTES,
     atomic_text,
     canonical,
+    collapse_whitespace,
     digest,
     load_project,
     load_sources,
+    quote_span,
     read_json,
     write_json,
 )
@@ -88,14 +90,15 @@ def _validate_claims(data: dict[str, Any], text: str) -> list[Claim]:
     claims = ClaimBatch.model_validate(data).claims
     for claim in claims:
         if claim.start is None and claim.end is None:
-            start = text.find(claim.quote)
-            if start < 0 or text.find(claim.quote, start + 1) >= 0:
-                raise ValueError("Claim quote needs one unambiguous source span")
-            claim.start, claim.end = start, start + len(claim.quote)
+            start, end = quote_span(text, claim.quote)
+            claim.start, claim.end = start, end
         if claim.start is None or claim.end is None:
             raise ValueError("Claim requires both span offsets or neither")
-        if text[claim.start : claim.end] != claim.quote or claim.end > len(text):
+        if claim.end > len(text) or claim.end <= claim.start:
             raise ValueError("Extracted claim has an invalid evidence span")
+        span = text[claim.start : claim.end]
+        if len(span) < len(claim.quote) or collapse_whitespace(span)[0] != collapse_whitespace(claim.quote)[0]:
+            raise ValueError("Extracted claim span does not reproduce the quote")
     return claims
 
 
@@ -190,10 +193,12 @@ def _cached_call(
             if validate:
                 validate(result)
         except ValueError as exc:
+            # Contract violations raise a bare message; model validators raise pydantic errors.
+            # The message is the only part the model can act on, so it must be forwarded.
             errors = (
-                [{"location": list(e["loc"]), "type": e["type"]} for e in exc.errors()]
+                [{"location": list(e["loc"]), "type": e["type"], "message": e["msg"]} for e in exc.errors()]
                 if isinstance(exc, ValidationError)
-                else [{"type": "evidence_or_contract", "message": str(exc)}]
+                else [{"location": [], "type": "contract_violation", "message": str(exc)}]
             )
             journal.events[-1]["validation"] = {"status": "rejected", "errors": errors}
             write_json(journal.path, journal.events)
@@ -251,7 +256,20 @@ def compile_corpus(
         if state_path.exists() and (output / "project.json").exists():
             previous = read_json(state_path)
             if previous.get("project_digest") != digest(read_json(output / "project.json")):
-                raise ValueError("Project has been edited after assembly; preserve it and use a new output directory")
+                # Business reviewers correct extracted rules in place. Accept the edit only when the
+                # result is still bound to extracted claims, then refresh the review queue.
+                if previous.get("status") != "draft":
+                    raise ValueError("Interrupted compilation must be resumed before accepting project edits")
+                edited = assemble_project(
+                    read_json(output / "project.json"),
+                    corpus_sources(read_json(output / "corpus.json")),
+                    read_json(output / "claims.json"),
+                )
+                serialized = edited.model_dump(mode="json")
+                write_json(output / "project.json", serialized)
+                previous["project_digest"] = digest(serialized)
+                previous["reviewer_edits"] = previous.get("reviewer_edits", 0) + 1
+                write_json(state_path, previous)
             if previous.get("status") == "draft":
                 project = load_project(output / "project.json")
                 load_sources(project, output)
@@ -307,16 +325,7 @@ def compile_corpus(
         write_json(output / "corpus.json", [d.model_dump(mode="json", exclude={"text"}) for d in documents])
         if not rows:
             raise ValueError("No supported decision claims were extracted")
-        sources = [
-            Source(
-                id=d.id,
-                path=f"sources/{d.id}.txt",
-                version=d.version,
-                content_hash=d.content_hash,
-                access=d.access.model_dump(mode="json"),
-            )
-            for d in documents
-        ]
+        sources = corpus_sources([d.model_dump(mode="json", exclude={"text"}) for d in documents])
         assembly = canonical({"sources": [s.model_dump(mode="json") for s in sources], "claims": rows})
         if len(assembly.encode()) > options.max_assembly_bytes:
             raise ValueError("Extracted claims exceed assembly budget; partition the corpus by workflow")
@@ -353,6 +362,20 @@ def compile_corpus(
         status = review_status(output / "project.json")
         write_json(output / "review-queue.json", status)
         return state
+
+
+def corpus_sources(documents: list[dict[str, Any]]) -> list[Source]:
+    """Rebuild the trusted source registry from the persisted corpus snapshot."""
+    return [
+        Source(
+            id=d["id"],
+            path=f"sources/{d['id']}.txt",
+            version=d["version"],
+            content_hash=d["content_hash"],
+            access=d["access"],
+        )
+        for d in documents
+    ]
 
 
 def assemble_project(response: dict[str, Any], sources: list[Source], rows: list[dict[str, Any]]) -> Project:

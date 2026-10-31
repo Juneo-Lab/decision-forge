@@ -49,9 +49,54 @@ def test_rejected_rule_blocks_build_and_revision_invalidates_reviews(example_pat
     project.organization.rules[0].priority += 1
     write_json(spec, project.model_dump(mode="json"))
     current = review_status(spec)
-    assert current["pending"] == len(current["items"])
+    # Only the revision that actually changed loses its decision; unrelated reviews survive.
+    assert current["pending"] == 1
+    assert not current["ready"]
     with pytest.raises(ValueError, match="changed since review"):
         record_review(spec, item, "accepted", "test-reviewer", "Old decision", status["fingerprint"])
+
+
+def test_review_of_unrelated_rule_survives_an_edit(example_path, tmp_path):
+    spec = copied_project(example_path, tmp_path)
+    accept_fixture(spec)
+    status = review_status(spec)
+    edited_rule = load_project(spec).organization.rules[0]
+    survivor = next(i for i in status["items"] if i["id"] == "rule:reject")
+    project = load_project(spec)
+    project.organization.rules[0].priority += 1
+    write_json(spec, project.model_dump(mode="json"))
+    refreshed = review_status(spec)
+    assert edited_rule.id != "reject"
+    kept = next(i for i in refreshed["items"] if i["id"] == survivor["id"])
+    assert kept["status"] == "accepted"
+    assert kept["fingerprint"] == survivor["fingerprint"]
+    record_review(spec, "rule:reject", "accepted", "test-reviewer", "Recheck", kept["fingerprint"])
+
+
+def test_shadowed_rule_enters_queue(example_path, tmp_path):
+    spec = copied_project(example_path, tmp_path)
+    project = load_project(spec)
+    base = project.organization.rules[0]
+    shadow = base.model_copy(deep=True)
+    shadow.id = "shadowing-rule"
+    shadow.priority = base.priority + 10
+    shadow.when.all_of = []
+    project.organization.rules.append(shadow)
+    for node in project.nodes:
+        if base.id in node.rule_ids:
+            node.rule_ids.append(shadow.id)
+    write_json(spec, project.model_dump(mode="json"))
+    items = review_status(spec)["items"]
+    shadowed = [item for item in items if item["kind"] == "shadowed"]
+    assert shadowed, [item["id"] for item in items]
+    assert shadowed[0]["content"]["rule_shadowing"] is True
+    # A reviewer edit to either rule re-opens the item instead of leaving a stale decision.
+    before = shadowed[0]["fingerprint"]
+    project = load_project(spec)
+    project.organization.rules[0].priority += 2
+    write_json(spec, project.model_dump(mode="json"))
+    after = next(item for item in review_status(spec)["items"] if item["id"] == shadowed[0]["id"])
+    assert after["fingerprint"] != before
 
 
 def test_source_change_invalidates_reviews_without_quote_changes(example_path, tmp_path):
@@ -86,3 +131,22 @@ def test_equal_priority_conflicts_enter_queue(example_path, tmp_path):
             node.rule_ids.append(opposite.id)
     write_json(spec, project.model_dump(mode="json"))
     assert any(item["kind"] == "conflict" for item in review_status(spec)["items"])
+
+
+def test_priority_override_conflict_enters_queue(example_path, tmp_path):
+    spec = copied_project(example_path, tmp_path)
+    project = load_project(spec)
+    first = project.organization.rules[0]
+    overriding = first.model_copy(deep=True)
+    overriding.id = "overriding-rule"
+    overriding.effect = "deny" if first.effect == "allow" else "allow"
+    overriding.priority = first.priority + 5
+    project.organization.rules.append(overriding)
+    for node in project.nodes:
+        if first.id in node.rule_ids:
+            node.rule_ids.append(overriding.id)
+    write_json(spec, project.model_dump(mode="json"))
+    items = [item for item in review_status(spec)["items"] if item["kind"] == "override"]
+    assert items, [item["kind"] for item in review_status(spec)["items"]]
+    assert items[0]["content"]["priority_decides"] is True
+    assert items[0]["content"]["identical_condition"] is True

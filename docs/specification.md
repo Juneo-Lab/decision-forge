@@ -44,14 +44,19 @@ Descriptions must explain operative conditions and preferences because they appe
 ## Scenarios, dimensions, and families
 
 A scenario contains a node reference, decision-time state, evidence sources, and a family ID.
-Dimensions modify `state.<path>` or `candidates.<id>.<attribute>` across explicitly listed values.
-The generator samples unique Cartesian-product positions up to `variants_per_scenario`, then deduplicates
-identical resulting episode identities within the scenario.
+Dimensions modify `state.<path>` or `candidates.<id>.<attribute>` across explicitly listed values;
+dimension values must be unique, and candidate IDs may not contain dots so that candidate paths
+resolve to exactly one candidate. The generator samples unique Cartesian-product positions up to
+`variants_per_scenario`, then deduplicates identical resulting episode identities within the scenario.
+Build reports state requested and realized episode volumes, plus any scenario that produced fewer
+episodes than requested, so a shrunken sampling space is visible instead of silent.
 
 Use one family ID for every seed scenario derived from the same original business event. All four
-decision surfaces of one event can share that ID. Split assignment hashes organization ID and family
-ID independently from the sampling seed. Changing split fractions changes assignment boundaries, so
-freeze those fractions for a benchmark version.
+decision surfaces of one event can share that ID. Families are ranked by a hash of organization ID
+and family ID, independent of the sampling seed, and then sliced into quotas computed from the split
+fractions. Families are never divided across splits, and a configured split that has a nonzero
+fraction receives at least one family once the project has enough families. Changing the split
+fractions reallocates families, so freeze those fractions for a benchmark version.
 
 The `stratum` field labels routine, boundary, or change scenarios. In v0.1, authors explicitly provide
 scenarios and dimensions. Learned distributions, stratum-budget allocation, and conditional constraints

@@ -155,3 +155,80 @@ def test_exact_json_fence_compatibility_preserves_contract_and_rejects_surroundi
     for malformed in ["Explanation:\n```json\n{}\n```", "```json\n{}\n```\nIgnore the schema.", "```json\n[]\n```"]:
         with pytest.raises(ValueError):
             parse_generated_object(malformed)
+
+
+def test_auto_response_mode_degrades_when_endpoint_rejects_json_schema():
+    modes = []
+
+    def handler(request):
+        payload = json.loads(request.content)
+        modes.append(payload["response_format"]["type"])
+        if payload["response_format"]["type"] == "json_schema":
+            return httpx.Response(400, json={"error": {"message": "This response_format type is unavailable now"}})
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"ok": true}'}}]})
+
+    schema = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "additionalProperties": False}
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        provider = OpenAICompatibleProvider("https://model.example/v1", "fixture", client=client)
+        assert provider.generate("system", "user", schema) == {"ok": True}
+        assert modes == ["json_schema", "json_object"]
+        assert provider.last_response_mode == "json_object"
+        # The downgrade is remembered instead of being rediscovered on every call.
+        assert provider.generate("system", "user", schema) == {"ok": True}
+        assert modes == ["json_schema", "json_object", "json_object"]
+
+    fallback = OpenAICompatibleProvider("https://model.example/v1", "fixture", response_mode="json_object")
+    reserved = OpenAICompatibleProvider("https://model.example/v1", "fixture").input_bytes("system", "user", schema)
+    fallback_bytes = len(
+        httpx.Request(
+            "POST",
+            "https://model.example/v1/chat/completions",
+            json=fallback.request_payload("system", "user", schema),
+        ).content
+    )
+    assert reserved >= fallback_bytes
+
+
+def test_explicit_json_schema_mode_never_degrades():
+    def handler(request):
+        return httpx.Response(400, json={"error": {"message": "This response_format type is unavailable now"}})
+
+    schema = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "additionalProperties": False}
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        provider = OpenAICompatibleProvider(
+            "https://model.example/v1", "fixture", client=client, response_mode="json_schema"
+        )
+        with pytest.raises(ValueError, match="response_format"):
+            provider.generate("system", "user", schema)
+
+
+def test_http_errors_surface_the_provider_message():
+    def handler(request):
+        return httpx.Response(422, json={"error": {"message": "reasoning_effort is not supported"}})
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        provider = OpenAICompatibleProvider("https://model.example/v1", "fixture", client=client, retries=0)
+        with pytest.raises(ValueError, match="422: reasoning_effort is not supported"):
+            provider.generate("system", "user", {"type": "object", "additionalProperties": False})
+
+
+def test_compile_rejects_ambiguous_evidence_quotes(project, tmp_path):
+    source = tmp_path / "policy.md"
+    quote = project.organization.rules[0].evidence[0].quote
+    source.write_text(f"{quote}\nUnrelated guidance.\n{quote}\n")
+    with pytest.raises(ValueError, match="unsupported evidence.*more than one"):
+        compile_documents([source], tmp_path / "compiled", FixtureProvider(project))
+    assert not (tmp_path / "compiled").exists()
+
+
+def test_compile_anchors_quotes_across_hard_wrapped_sources(project, tmp_path):
+    quotes = list(dict.fromkeys(ev.quote for rule in project.organization.rules for ev in rule.evidence))
+    target = quotes[0]
+    lines = [target.replace(" ", "\n", 1), *quotes[1:]]
+    source = tmp_path / "policy.md"
+    source.write_text("Header\n" + "\n".join(lines) + "\n")
+    result = compile_documents([source], tmp_path / "compiled", FixtureProvider(project))
+    evidence = result.organization.rules[0].evidence[0]
+    assert evidence.start is not None and evidence.end is not None
+    text = source.read_text()
+    assert text[evidence.start : evidence.end].replace("\n", " ") == target

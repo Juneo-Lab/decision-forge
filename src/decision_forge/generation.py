@@ -8,20 +8,77 @@ import random
 from typing import Any
 
 from decision_forge.io import digest
-from decision_forge.models import Episode, Node, Project, Scenario
+from decision_forge.models import Candidate, Episode, Node, Project, Scenario
 from decision_forge.policy import best_choices, evaluate
 
 
-def split_for(family_id: str, project: Project) -> str:
-    # Recipe sampling seeds must never move an existing family into another split.
-    key = f"{project.organization.id}:{family_id}:split-v1"
-    value = int(digest(key)[:16], 16) / 2**64
+def split_plan(project: Project) -> dict[str, str]:
+    """Assign whole scenario families to splits so the realized sizes follow the recipe.
+
+    Hashing each family independently makes split sizes unbounded: a small project can end up
+    with an empty test split, or with more test families than training families. Families are
+    therefore ranked by a stable hash and then sliced into quotas computed from the recipe.
+    """
     splits = project.recipe.splits
-    if value < splits.train:
-        return "train"
-    if value < splits.train + splits.development:
-        return "development"
-    return "test"
+    fractions = [
+        ("train", splits.train),
+        ("development", splits.development),
+        ("test", splits.test),
+    ]
+    order = sorted(
+        {scenario.family_id for scenario in project.scenarios},
+        key=lambda family: digest(f"{project.organization.id}:{family}:split-v2"),
+    )
+    total = len(order)
+    quotas: dict[str, int] = {}
+    remainders: list[tuple[float, str]] = []
+    for name, fraction in fractions:
+        exact = fraction * total
+        base = math.floor(exact)
+        quotas[name] = int(base)
+        remainders.append((exact - base, name))
+    unassigned = total - sum(quotas.values())
+    for _, name in sorted(remainders, key=lambda item: (-item[0], item[1]))[:unassigned]:
+        quotas[name] += 1
+    # Every requested split must own at least one family when the project is large enough,
+    # otherwise a configured split is silently unusable downstream (for example Harbor export).
+    required = [name for name, fraction in fractions if fraction > 0]
+    if total >= len(required):
+        for name in required:
+            if quotas[name] == 0:
+                donor = max(quotas, key=lambda candidate: (quotas[candidate], candidate))
+                quotas[donor] -= 1
+                quotas[name] += 1
+    plan: dict[str, str] = {}
+    cursor = 0
+    for name, _ in fractions:
+        for family in order[cursor : cursor + quotas[name]]:
+            plan[family] = name
+        cursor += quotas[name]
+    return plan
+
+
+def split_for(family_id: str, project: Project) -> str:
+    """Split for one family under the project's quota-based assignment."""
+    try:
+        return split_plan(project)[family_id]
+    except KeyError:
+        raise ValueError(f"Unknown scenario family: {family_id}") from None
+
+
+def requested_variants(project: Project, scenario: Scenario) -> int:
+    """Number of distinct episodes a scenario is configured to contribute."""
+    node: Node = next(n for n in project.nodes if n.id == scenario.node_id)
+    population = math.prod(len(dim.values) for dim in node.dimensions)
+    return min(population, project.recipe.variants_per_scenario)
+
+
+def candidate_for(node: Node, path: str) -> Candidate:
+    """Resolve the single candidate a candidates.<id>.<attribute> path belongs to."""
+    matches = [candidate for candidate in node.candidates if path.startswith(f"candidates.{candidate.id}.")]
+    if len(matches) != 1:
+        raise ValueError(f"Path must identify exactly one candidate: {path}")
+    return matches[0]
 
 
 def set_path(root: dict[str, Any], path: str, value: Any) -> None:
@@ -38,7 +95,9 @@ def set_path(root: dict[str, Any], path: str, value: Any) -> None:
     current[parts[-1]] = copy.deepcopy(value)
 
 
-def generate_family(project: Project, scenario: Scenario, source_hashes: dict[str, str]) -> list[Episode]:
+def generate_family(
+    project: Project, scenario: Scenario, source_hashes: dict[str, str], split: str | None = None
+) -> list[Episode]:
     node: Node = next(n for n in project.nodes if n.id == scenario.node_id)
     rules = [r for r in project.organization.rules if r.id in node.rule_ids]
     widths = [len(dim.values) for dim in node.dimensions]
@@ -46,6 +105,7 @@ def generate_family(project: Project, scenario: Scenario, source_hashes: dict[st
     if population > 10**12:
         raise ValueError("Scenario space exceeds the supported sampling range")
     count = min(population, project.recipe.variants_per_scenario)
+    family_split = split or split_for(scenario.family_id, project)
     rng = random.Random(digest([project.recipe.seed, scenario.id]))
     indices = sorted(rng.sample(range(population), count))
     episodes: dict[str, Episode] = {}
@@ -62,10 +122,7 @@ def generate_family(project: Project, scenario: Scenario, source_hashes: dict[st
             if dimension.path.startswith("state."):
                 set_path(state, dimension.path.removeprefix("state."), value)
             else:
-                candidate = max(
-                    (c for c in candidates if dimension.path.startswith(f"candidates.{c.id}.")),
-                    key=lambda c: len(c.id),
-                )
+                candidate = candidate_for(node, dimension.path)
                 attr_path = dimension.path.removeprefix(f"candidates.{candidate.id}.")
                 if attr_path == "id":
                     raise ValueError("Candidate IDs cannot be mutated")
@@ -90,7 +147,7 @@ def generate_family(project: Project, scenario: Scenario, source_hashes: dict[st
             kind=node.kind,
             scenario_id=scenario.id,
             family_id=scenario.family_id,
-            split=split_for(scenario.family_id, project),  # type: ignore[arg-type]
+            split=family_split,  # type: ignore[arg-type]
             stratum=scenario.stratum,
             state=state,
             question=node.question,

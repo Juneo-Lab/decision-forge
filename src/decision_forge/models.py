@@ -5,11 +5,14 @@ from __future__ import annotations
 import math
 import re
 from enum import StrEnum
-from typing import Annotated, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 Identifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$")]
+# Candidate IDs are embedded in candidate.<id>.<attribute> paths, so a dot would make
+# candidate selection in Node dimensions and evaluation bindings ambiguous.
+CandidateIdentifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$")]
 
 
 class Contract(BaseModel):
@@ -43,20 +46,38 @@ class Evidence(Contract):
     def span_bounds(self) -> Self:
         if (self.start is None) != (self.end is None):
             raise ValueError("Evidence start and end must be supplied together")
-        if self.start is not None and self.end is not None and self.end - self.start != len(self.quote):
-            raise ValueError("Evidence offsets must delimit the exact quote")
+        if self.start is not None and self.end is not None:
+            # Hard-wrapped sources can make the exact span longer than the quote itself.
+            if self.end <= self.start:
+                raise ValueError("Evidence end must be greater than start")
+            if self.end - self.start < len(self.quote):
+                raise ValueError("Evidence offsets must delimit at least the exact quote")
         return self
 
 
 class Predicate(Contract):
     path: str = Field(pattern=r"^(state|candidate)\.[a-zA-Z0-9_.-]+$")
     op: Literal["eq", "ne", "in", "contains", "gt", "gte", "lt", "lte", "exists"]
-    value: JsonValue = None
+    value: JsonValue = Field(
+        default=None,
+        description=(
+            "Comparison operand. Required and list-valued for 'in', boolean for 'exists' "
+            "(omitted means true), numeric for 'gt'/'gte'/'lt'/'lte', any JSON value otherwise."
+        ),
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def default_exists_value(cls, data: Any) -> Any:
+        # 'exists' reads naturally without an operand; defaulting avoids a schema/validator conflict.
+        if isinstance(data, dict) and data.get("op") == "exists" and "value" not in data:
+            return {**data, "value": True}
+        return data
 
     @model_validator(mode="after")
     def operator_value(self) -> Self:
         if self.op == "exists" and not isinstance(self.value, bool):
-            raise ValueError("The exists operator requires a boolean value")
+            raise ValueError("The exists operator requires a boolean value; omit it to mean true")
         if self.op == "in" and not isinstance(self.value, list):
             raise ValueError("The in operator requires a list")
         if self.op in {"gt", "gte", "lt", "lte"} and (
@@ -82,7 +103,7 @@ class Rule(Contract):
 
 
 class Candidate(Contract):
-    id: Identifier
+    id: CandidateIdentifier
     description: str = Field(min_length=1)
     attributes: dict[str, JsonValue] = Field(default_factory=dict)
 
@@ -94,8 +115,18 @@ class Candidate(Contract):
 
 
 class Dimension(Contract):
-    path: str = Field(pattern=r"^(state|candidates\.[a-zA-Z0-9_.-]+)\.[a-zA-Z0-9_.-]+$")
+    path: str = Field(pattern=r"^(state|candidates\.[a-zA-Z0-9_-]+)\.[a-zA-Z0-9_.-]+$")
     values: list[JsonValue] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def unique_values(self) -> Self:
+        # Duplicate values silently shrink the sampled space and inflate the reported population.
+        seen: list[JsonValue] = []
+        for value in self.values:
+            if any(value == other and type(value) is type(other) for other in seen):
+                raise ValueError(f"Dimension values must be unique: {self.path}")
+            seen.append(value)
+        return self
 
 
 class Node(Contract):
@@ -116,10 +147,14 @@ class Node(Contract):
         for dim in self.dimensions:
             if any(path != dim.path and path.startswith(dim.path + ".") for path in paths):
                 raise ValueError("Dimension paths must not overlap")
-            if dim.path.startswith("candidates.") and not any(
-                dim.path.startswith(f"candidates.{i}.") for i in candidate_ids
-            ):
-                raise ValueError(f"Unknown candidate dimension: {dim.path}")
+            if dim.path.startswith("candidates."):
+                matches = [
+                    candidate_id for candidate_id in candidate_ids if dim.path.startswith(f"candidates.{candidate_id}.")
+                ]
+                if not matches:
+                    raise ValueError(f"Unknown candidate dimension: {dim.path}")
+                if len(matches) > 1:
+                    raise ValueError(f"Dimension path is ambiguous across candidates: {dim.path}")
             if any(
                 dim.path == f"candidates.{i}.id" or dim.path.startswith(f"candidates.{i}.id.") for i in candidate_ids
             ):

@@ -181,19 +181,39 @@ def test_cache_integrity_and_provider_identity(tmp_path):
         compile_corpus(manifest, tmp_path / "d", ScriptedProvider(), "provider-a")
 
 
-def test_changed_sources_invalidate_output_and_manual_edits_are_preserved(tmp_path):
+def test_reviewer_edits_are_preserved_and_rebound(tmp_path):
     manifest = corpus_fixture(tmp_path)
     output = tmp_path / "compiled"
     compile_corpus(manifest, output, ScriptedProvider(), "fixture")
     project = read_json(output / "project.json")
     project["organization"]["rules"][0]["description"] = "Reviewer correction"
     write_json(output / "project.json", project)
-    with pytest.raises(ValueError, match="edited after assembly"):
+    resumed = compile_corpus(manifest, output, ScriptedProvider(), "fixture")
+    assert resumed["resumed_complete"]
+    assert resumed["reviewer_edits"] == 1
+    assert read_json(output / "project.json")["organization"]["rules"][0]["description"] == "Reviewer correction"
+
+
+def test_edits_that_break_evidence_binding_are_refused(tmp_path):
+    manifest = corpus_fixture(tmp_path)
+    output = tmp_path / "compiled"
+    compile_corpus(manifest, output, ScriptedProvider(), "fixture")
+    project = read_json(output / "project.json")
+    project["organization"]["rules"][0]["evidence"][0]["quote"] = "This policy was invented."
+    write_json(output / "project.json", project)
+    with pytest.raises(ValueError, match="evidence"):
         compile_corpus(manifest, output, ScriptedProvider(), "fixture")
+
+
+def test_changed_sources_invalidate_output(tmp_path):
+    manifest = corpus_fixture(tmp_path)
+    output = tmp_path / "compiled"
+    compile_corpus(manifest, output, ScriptedProvider(), "fixture")
+    before = read_json(output / "project.json")
     (tmp_path / "policy.md").write_text(POLICY + "\nUpdated policy")
     with pytest.raises(ValueError, match="changed"):
         compile_corpus(manifest, output, ScriptedProvider(), "fixture")
-    assert read_json(output / "project.json") == project
+    assert read_json(output / "project.json") == before
 
 
 def test_budget_is_reserved_before_network_and_assembly_is_bounded(tmp_path):
@@ -346,8 +366,21 @@ def test_unique_quotes_are_anchored_without_model_character_counting():
     response = {"claims": [{"summary": "Approval is required", "quote": "Refunds need approval."}]}
     claim = _validate_claims(response, text)[0]
     assert claim.start == 7 and text[claim.start : claim.end] == claim.quote
-    with pytest.raises(ValueError, match="unambiguous"):
+    with pytest.raises(ValueError, match="more than one source span"):
         _validate_claims(response, text * 2)
+
+
+def test_hard_wrapped_quotes_are_anchored_by_content_not_whitespace():
+    from decision_forge.corpus import _validate_claims
+
+    text = "Intro\nRefunds up to 1000 units may be\nexecuted immediately.\n"
+    quote = "Refunds up to 1000 units may be executed immediately."
+    response = {"claims": [{"summary": "Refund limit", "quote": quote}]}
+    claim = _validate_claims(response, text)[0]
+    assert (claim.start, claim.end) == (6, 59)
+    assert text[claim.start : claim.end].replace("\n", " ") == claim.quote
+    with pytest.raises(ValueError, match="not present"):
+        _validate_claims({"claims": [{"summary": "s", "quote": "Refunds up to 2000 units."}]}, text)
 
 
 def test_wire_byte_budget_includes_transport_schema_and_rejects_before_http(tmp_path, project):
@@ -457,3 +490,66 @@ def test_validation_repair_checkpoint_detects_tampering(tmp_path):
     with pytest.raises(ValueError, match="Repair checkpoint integrity"):
         compile_corpus(manifest, output, provider, "repair", options)
     assert provider.calls == 2
+
+
+class MessageAwareProvider(ScriptedProvider):
+    """Repairs only when the retry prompt explains the defect, as real models require."""
+
+    def __init__(self):
+        super().__init__()
+        self.injected = False
+
+    def generate(self, system, user, schema):
+        self.calls += 1
+        data = json.loads(user)
+        if "original_request" in data:
+            reported = " ".join(str(error.get("message", "")) for error in data["validation_errors"])
+            if "requires a list" not in reported:
+                return data["previous_response"]
+            data = json.loads(data["original_request"])
+        response = response_for({"messages": [{"content": system}, {"content": json.dumps(data)}]})
+        if "claims" in data and "sources" in data and not self.injected:
+            self.injected = True
+            response["organization"]["rules"][0]["when"]["all_of"][0] = {
+                "path": "state.amount",
+                "op": "in",
+                "value": 100,
+            }
+        return response
+
+
+def test_repair_prompt_reports_validator_messages_not_only_locations(tmp_path):
+    provider = MessageAwareProvider()
+    state = compile_corpus(
+        corpus_fixture(tmp_path),
+        tmp_path / "repaired",
+        provider,
+        "fixture-v1",
+        CompilationOptions(validation_retries=2),
+    )
+    assert state["status"] == "draft"
+    assert provider.calls == 3
+    rejected = next((tmp_path / "repaired/rejected").glob("*.json"))
+    rejected = read_json(rejected)
+    assert "requires a list" in rejected["errors"][0]["message"]
+    assert rejected["errors"][0]["location"] == ["organization", "rules", 0, "when", "all_of", 0]
+
+
+def test_unrepairable_response_still_fails_closed(tmp_path):
+    class SilentProvider(MessageAwareProvider):
+        def generate(self, system, user, schema):
+            self.calls += 1
+            data = json.loads(user)
+            if "original_request" in data:
+                return data["previous_response"]
+            return super().generate(system, user, schema)
+
+    with pytest.raises(ValueError):
+        compile_corpus(
+            corpus_fixture(tmp_path),
+            tmp_path / "unrepaired",
+            SilentProvider(),
+            "fixture-v1",
+            CompilationOptions(validation_retries=1),
+        )
+    assert not (tmp_path / "unrepaired/project.json").exists()

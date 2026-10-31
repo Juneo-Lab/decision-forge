@@ -100,3 +100,19 @@ def test_scanned_and_encrypted_pdf_fail_explicitly(tmp_path):
 def test_empty_and_duplicate_source_registry_rejected(tmp_path, sources):
     with pytest.raises(ValueError):
         ingest_manifest(make_manifest(tmp_path, sources))
+
+
+def test_workflow_sources_reject_non_json_yaml_values(tmp_path):
+    source = tmp_path / "workflow.yaml"
+    source.write_text("name: policy\nupdated: 2024-01-01\n")
+    manifest = tmp_path / "corpus.yaml"
+    manifest.write_text(
+        "schema_version: '1.0'\n"
+        "sources:\n"
+        "  - id: workflow\n"
+        "    path: workflow.yaml\n"
+        "    adapter: workflow\n"
+        "    version: '1'\n"
+    )
+    with pytest.raises(ValueError, match="not JSON"):
+        ingest_manifest(manifest)

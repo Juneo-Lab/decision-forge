@@ -2,12 +2,25 @@
 
 ## Unreleased
 
+- Forward contract messages in validation-repair prompts; a bare location cannot describe a defect.
+- Accept `exists` predicates without an operand and document per-operator operand requirements.
+- Degrade `auto` response mode to `json_object` when an endpoint rejects JSON Schema output.
+- Surface the provider error message for HTTP failures instead of the status code alone.
+- Assign dataset splits by family quotas instead of an independent hash per family.
+- Report requested versus realized episode volumes and collapsed duplicates in build reports.
+- Bind review decisions to individual items and re-open them only when that item changes.
+- Detect shadowed dead rules and priority-override conflicts in the review queue.
+- Accept reviewer edits to an assembled draft when they stay bound to extracted claim spans.
+- Anchor quotes across hard-wrapped sources by content, with distinct not-found and ambiguous errors.
+- Reject duplicate dimension values, and forbid dots in candidate IDs to keep paths unambiguous.
+- Compare integers and floats by value while keeping booleans out of numeric comparisons.
+- Write artifacts with readable permissions and make exported Harbor scripts executable.
+- Report non-JSON YAML workflow values, such as dates, as input errors instead of tracebacks.
 - Publish reproducible Claude Opus 5.5 and GPT-6.1 Sol compiler experiments with all recorded failures and costs.
 - Add model-neutral decision evaluation with explicit bindings and preserved reference disagreements.
 - Add bounded checkpointed output repair, reasoning configuration, and exact JSON-fence compatibility.
 - Count actual HTTP request bytes and retain usage for failed generated responses.
 - Treat absent and null refund amounts explicitly in the fictional example.
-
 
 - Add versioned text/PDF/workflow ingestion, exact source spans, and access metadata.
 - Add resumable corpus compilation with persistent call reservations and integrity checks.

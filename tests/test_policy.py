@@ -60,3 +60,18 @@ def test_candidate_order_is_semantically_invariant(project):
     state = {"recipient": "partner", "full_approval": False, "partner_authorized": True}
     assert best_choices(evaluate(state, node.candidates, rules)) == ["summary"]
     assert best_choices(evaluate(state, list(reversed(node.candidates)), rules)) == ["summary"]
+
+
+def test_numbers_compare_by_value_but_booleans_stay_distinct():
+    context = {"state": {"limit": 1000, "ratio": 0.5}}
+    assert matches_predicate(Predicate(path="state.limit", op="eq", value=1000.0), context)
+    assert not matches_predicate(Predicate(path="state.limit", op="ne", value=1000.0), context)
+    assert not matches_predicate(Predicate(path="state.limit", op="eq", value=True), context)
+    assert not matches_predicate(Predicate(path="state.limit", op="eq", value=False), context)
+
+
+def test_exists_defaults_to_true_and_still_distinguishes_null():
+    assert Predicate(path="state.amount", op="exists").value is True
+    assert matches_predicate(Predicate(path="state.amount", op="exists"), {"state": {"amount": None}})
+    assert not matches_predicate(Predicate(path="state.amount", op="exists"), {"state": {}})
+    assert matches_predicate(Predicate(path="state.amount", op="exists", value=False), {"state": {}})
