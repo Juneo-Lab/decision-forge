@@ -5,20 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
+from decision_forge.inputs import model_input
 from decision_forge.io import atomic_text, canonical, digest, read_json, write_json
-from decision_forge.models import Episode
 from decision_forge.pipeline import load_run
 
-
-def model_input(episode: Episode) -> dict[str, Any]:
-    return {
-        "organization_id": episode.organization_id,
-        "policy_version": episode.policy_version,
-        "policy_context": episode.policy_context,
-        "state": episode.state,
-        "question": episode.question,
-        "candidates": [c.model_dump(mode="json") for c in episode.candidates],
-    }
+__all__ = ["export_run", "model_input"]
 
 
 def export_run(run: Path, output: Path, format: Literal["canonical", "typed", "sft"] = "typed") -> dict[str, int]:

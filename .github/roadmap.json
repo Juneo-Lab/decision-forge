@@ -86,21 +86,21 @@
       "milestone": "m2",
       "title": "Integrate a version-pinned NeMo Data Designer generation adapter",
       "state": "open",
-      "body": "Compile Forge recipes to a dependency-aware generation backend.\n\nAcceptance criteria:\n- [x] Optional installation leaves the offline core dependency-light.\n- [ ] Map scenario fields, constraints, validators, and artifact metadata.\n- [x] Contract tests pin the supported backend version.\n- [x] Resume tests and per-record generation cost reports pass.\n\nCurrent implementation evidence: Data Designer 0.9.7 executes ordered seed expression processing with real SDK resume tests and zero model-call cost. Model-written scenario synthesis and backend conditional generation remain open; this adapter does not imply their completion."
+      "body": "Compile Forge recipes to a dependency-aware generation backend.\n\nAcceptance criteria:\n- [x] Optional installation leaves the offline core dependency-light.\n- [ ] Map scenario fields, constraints, validators, and artifact metadata.\n- [x] Contract tests pin the supported backend version.\n- [x] Resume tests and per-record generation cost reports pass.\n\nCurrent implementation evidence: Data Designer 0.9.7 executes ordered seed expression processing with real SDK resume tests and zero model-call cost. Model-written scenario synthesis is implemented in expansion.py with policy-replay verification, but it runs through the Forge provider boundary rather than inside Data Designer; backend conditional generation remains open."
     },
     {
       "id": "distribution-planner",
       "milestone": "m2",
       "title": "Add stratum budgets and constrained decision-family transformations",
       "state": "open",
-      "body": "Make organization-specific training distributions explicit.\n\nAcceptance criteria:\n- [x] Configure routine, boundary, change, and development-feedback budgets.\n- [x] Check feasibility and expected answer relationships after transformations.\n- [ ] Add semantics-preserving rewrites and duplicate detection.\n- [x] Report requested, generated, filtered, and accepted distributions."
+      "body": "Make organization-specific training distributions explicit.\n\nAcceptance criteria:\n- [x] Configure routine, boundary, change, and development-feedback budgets.\n- [x] Check feasibility and expected answer relationships after transformations.\n- [x] Add semantics-preserving rewrites and duplicate detection.\n\nImplementation evidence: dedup.py reports exact, near, split-leak and metadata conflicts over structural groups; transformations.py publishes presentation rewrites only after numeric-invariant checks and an independent equivalence decision.\n- [x] Report requested, generated, filtered, and accepted distributions."
     },
     {
       "id": "persistent-orchestration",
       "milestone": "m2",
       "title": "Add a persistent recipe-planning agent and tool registry",
       "state": "open",
-      "body": "Expose discoverable typed tools for analysis, planning, previews, and execution.\n\nAcceptance criteria:\n- [x] Add a LangGraph adapter with durable stage state.\n- [x] Store artifacts outside conversational working memory.\n- [ ] Recover from provider failure without duplicate publication.\n- [x] Route interpretation conflicts to the review queue.\n\nCurrent implementation evidence: LangGraph 1.2.19 and SQLite checkpoint 3.1.3 persist review/build/export stages. Recipe-planning agent tools and provider-failure campaign acceptance remain open."
+      "body": "Expose discoverable typed tools for analysis, planning, previews, and execution.\n\nAcceptance criteria:\n- [x] Add a LangGraph adapter with durable stage state.\n- [x] Store artifacts outside conversational working memory.\n- [x] Recover from provider failure without duplicate publication.\n- [x] Route interpretation conflicts to the review queue.\n\nCurrent implementation evidence: LangGraph 1.2.19 and SQLite checkpoint 3.1.3 persist review/build/export stages. planner.py exposes a typed tool registry with an auditable, resumable ledger; expansion.py reserves calls before each request, checkpoints verified rows, and resumes without duplicate publication. A multi-provider failure campaign remains open."
     },
     {
       "id": "business-environment",

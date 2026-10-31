@@ -180,3 +180,18 @@ def test_harbor_tasks_make_shell_scripts_executable(example_path, tmp_path):
         mode = (task / relative).stat().st_mode
         assert mode & 0o111, relative
     assert (task / "environment/context.json").stat().st_mode & 0o004
+
+
+def test_generation_cost_is_not_reported_as_zero_when_the_endpoint_hides_prices(example_path, tmp_path):
+    report = build(example_path, tmp_path / "run")["report"]
+    assert report["generation_cost"]["provider_cost_usd"] is None
+    assert report["generation_cost"]["cost_basis"] == "no_model_calls"
+    assert report["generation_cost"]["per_accepted_example_usd"] is None
+
+
+def test_filtered_by_distribution_counts_merged_rows(example_path, tmp_path):
+    report = build(example_path, tmp_path / "run")["report"]
+    assert report["filtered_by_distribution"] >= 0
+    assert report["filtered_by_distribution"] == (
+        report["realized_episodes"] - report["dedup"]["removed"] - report["accepted"]
+    )

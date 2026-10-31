@@ -13,6 +13,7 @@ nav:
   - Architecture: architecture.md
   - Specification: specification.md
   - Organization compiler: organization-compiler.md
+  - Generation planning: generation.md
   - Implementation plan: implementation-plan.md
   - Platform workflows: platform-workflows.md
   - Data protocol: data-protocol.md

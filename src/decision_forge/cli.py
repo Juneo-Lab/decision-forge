@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from filelock import Timeout
@@ -75,11 +75,27 @@ def validate(spec: Path) -> None:
 
 @app.command("build")
 def build_command(
-    spec: Path, output: Annotated[Path, typer.Option("--output", "-o")], cache: Path | None = None
+    spec: Path,
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    cache: Path | None = None,
+    recipe_plan: Annotated[Path | None, typer.Option(help="Plan produced by plan-recipe.")] = None,
+    expansion: Annotated[Path | None, typer.Option(help="Verified synthesis directory.")] = None,
+    near_duplicate_threshold: Annotated[
+        float, typer.Option(help="Presentation similarity above which a duplicate is dropped.")
+    ] = 0.9,
 ) -> None:
-    """Generate, verify, checkpoint, and report decision episodes. Runs offline."""
+    """Generate, verify, deduplicate, checkpoint, and report decision episodes. Runs offline."""
     try:
-        display(build(spec, output, cache)["report"])
+        display(
+            build(
+                spec,
+                output,
+                cache,
+                recipe_plan=recipe_plan,
+                expansion=expansion,
+                near_duplicate_threshold=near_duplicate_threshold,
+            )["report"]
+        )
     except (ValueError, OSError, Timeout) as exc:
         fail(exc)
 
@@ -451,6 +467,164 @@ def transform_command(run: Path, episode_id: str, intervention: Path, output: An
             },
         )
         display({"parent": parent.id, "child": child.id, "relation": request.relation, "verified": True})
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("plan-recipe")
+def plan_recipe_command(
+    spec: Path,
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    mode: str = "uniform_cells",
+    per_cell: int = 50,
+    total: int | None = None,
+    stratum: Annotated[list[str] | None, typer.Option(help="Restrict planning to a stratum.")] = None,
+    targets: Annotated[Path | None, typer.Option(help="JSON list of explicit distribution targets.")] = None,
+    base_url: Annotated[str | None, typer.Option(help="Optional advisor model endpoint.")] = None,
+    model: Annotated[str | None, typer.Option(help="Optional advisor model name.")] = None,
+    states_per_call: int = 8,
+) -> None:
+    """Plan exact per-cell quotas from the measured deterministic pool, offline by default."""
+    from decision_forge.models import DistributionTarget
+    from decision_forge.planner import PlanObjective, PlanOptions, plan_recipe
+
+    try:
+        if mode not in {"uniform_cells", "explicit"}:
+            raise ValueError("Choose uniform_cells or explicit")
+        objective = PlanObjective.model_validate(
+            {
+                "mode": mode,
+                "per_cell": per_cell,
+                "total_examples": total,
+                "strata": [value for value in (stratum or []) if value],
+                "targets": [DistributionTarget.model_validate(row) for row in read_json(targets)] if targets else [],
+            }
+        )
+        provider = None
+        if base_url or model:
+            if not (base_url and model):
+                raise ValueError("An advisor model requires both --base-url and --model")
+            provider = OpenAICompatibleProvider(base_url, model, os.environ.get("FORGE_API_KEY", ""))
+        plan = plan_recipe(
+            spec,
+            output,
+            objective,
+            options=PlanOptions(states_per_call=states_per_call),
+            provider=provider,
+        )
+        display(
+            {
+                "status": plan["status"],
+                "cells": len(plan["distribution"]),
+                "requested": plan["feasibility"]["requested"],
+                "available": plan["feasibility"]["available"],
+                "shortfall": plan["feasibility"]["shortfall"],
+                "feasible": plan["feasibility"]["feasible"],
+                "expansion_requests": len(plan["expansion_requests"]),
+                "held_out_shortfall": plan["held_out_shortfall"]["shortfall"],
+                "model_calls_estimate": plan["cost_estimate"]["model_calls"],
+                "output": str(output),
+            }
+        )
+    except (ValueError, OSError, Timeout) as exc:
+        fail(exc)
+
+
+@app.command("expand")
+def expand_command(
+    run: Path,
+    requests: Path,
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    base_url: Annotated[str, typer.Option()],
+    model: Annotated[str, typer.Option()],
+    states_per_call: int = 8,
+    max_calls: int = 20,
+    max_input_bytes: int = 4_000_000,
+    max_output_tokens: int = 4096,
+    near_duplicate_threshold: float = 0.9,
+    reasoning_effort: str | None = None,
+) -> None:
+    """Synthesize extra examples with an explicit model call and verify every label by replay."""
+    from decision_forge.expansion import ExpansionOptions, ProposalBatch, expand
+
+    try:
+        provider = OpenAICompatibleProvider(
+            base_url,
+            model,
+            os.environ.get("FORGE_API_KEY", ""),
+            retries=0,
+            temperature=None,
+            max_output_tokens=max_output_tokens,
+            reasoning_effort=reasoning_effort,
+        )
+        try:
+            batch = ProposalBatch.model_validate({"requests": read_json(requests)})
+        except ValueError as invalid:
+            # Request files hold no source content, so the field location is safe to report.
+            detail: list[dict[str, Any]] = getattr(invalid, "errors", lambda: [])()
+            location = detail[0]["loc"] if detail else "unknown field"
+            raise ValueError(f"Invalid expansion request file; first problem at {location}") from None
+        summary = expand(
+            run,
+            batch.requests,
+            output,
+            provider,
+            ExpansionOptions(
+                states_per_call=states_per_call,
+                max_calls=max_calls,
+                max_input_bytes=max_input_bytes,
+                near_duplicate_threshold=near_duplicate_threshold,
+            ),
+            provider_id=digest({"endpoint": base_url, "model": model}),
+        )
+        display(summary)
+    except (ValueError, OSError, Timeout) as exc:
+        fail(exc)
+
+
+@app.command("dedup")
+def dedup_command(run: Path, output: Path | None = None, threshold: float = 0.9) -> None:
+    """Report duplicate inputs and held-out leaks in a completed run."""
+    from decision_forge.dedup import find_duplicates
+    from decision_forge.pipeline import load_run
+
+    try:
+        report = find_duplicates(load_run(run), threshold=threshold)
+        if output:
+            write_json(output, report)
+        display(
+            {key: report[key] for key in ("protocol", "threshold", "examples", "kept", "removed", "cross_split_pairs")}
+        )
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("rewrite")
+def rewrite_command(
+    run: Path,
+    episode_id: str,
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    base_url: Annotated[str, typer.Option()],
+    model: Annotated[str, typer.Option()],
+    verifier_model: Annotated[str | None, typer.Option(help="Independent verifier model name.")] = None,
+) -> None:
+    """Paraphrase one presentation and publish it only after independent verification."""
+    from decision_forge.pipeline import load_run, load_run_project
+    from decision_forge.transformations import rewrite_presentation
+
+    try:
+        provider = OpenAICompatibleProvider(base_url, model, os.environ.get("FORGE_API_KEY", ""), temperature=None)
+        verifier = (
+            OpenAICompatibleProvider(base_url, verifier_model, os.environ.get("FORGE_API_KEY", ""), temperature=None)
+            if verifier_model
+            else None
+        )
+        parent = next((e for e in load_run(run) if e.id == episode_id), None)
+        if parent is None:
+            raise ValueError("Unknown episode ID")
+        child = rewrite_presentation(load_run_project(run), parent, provider, verifier)
+        write_json(output, {"parent": parent.model_dump(mode="json"), "child": child.model_dump(mode="json")})
+        display({"parent": parent.id, "child": child.id, "verified": True})
     except (ValueError, OSError) as exc:
         fail(exc)
 

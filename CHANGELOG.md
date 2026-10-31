@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Add a recipe-planning agent with a typed tool registry, an auditable ledger, and resumable plans.
+- Separate synthesizable shortfalls from held-out and exhausted-state shortfalls before spending calls.
+- Add verified model-written scenario synthesis: models propose state only, labels are replayed.
+- Never synthesize held-out data, and refuse any synthesized row in a test split at build time.
+- Checkpoint synthesis after every call so a provider failure cannot republish verified rows.
+- Add global duplicate detection over structural groups with MinHash presentation similarity.
+- Report cross-split duplicate leaks and metadata conflicts instead of silently dropping rows.
+- Add semantics-preserving presentation rewrites gated on invariants plus an independent verifier.
+- Report provider cost as unknown rather than zero when the endpoint returns no price.
+- Add a fixed-budget fine-tuning and held-out evaluation loop with dataset-digest-bound comparisons.
+
 - Add exact node/stratum/split/answer-set quotas with feasibility and divergence reports.
 - Add verified counterfactuals and candidate-order rewrites that retain family ownership.
 - Add resettable four-surface business workflows and independent trace grading.

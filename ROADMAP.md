@@ -43,6 +43,12 @@ Acceptance: requested and realized distributions are reported; family relations 
 checks; interrupted jobs resume; generation cost is recorded per accepted example; the offline core
 continues to work without integration dependencies.
 
+Implementation evidence: quotas, feasibility, and Jensen-Shannon distribution reporting are
+implemented; a recipe-planning agent with a typed tool registry produces auditable, resumable plans;
+model-written scenario synthesis publishes only proposals whose label is replayed from declared
+policy; global duplicate detection reports held-out leaks. Fine-tuning evidence is still outstanding —
+see [generation planning](docs/generation.md#5-measure-whether-the-data-helps).
+
 Implemented increment: exact accepted-example quotas, feasibility/divergence reports, executable
 counterfactual relations, candidate-order rewrites, pinned Data Designer ordered-seed processing,
 and durable LangGraph review/build/export jobs. Model-generated synthesis, semantic paraphrase

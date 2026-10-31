@@ -10,6 +10,7 @@ from typing import Any
 from filelock import FileLock
 
 from decision_forge import __version__
+from decision_forge.dedup import deduplicate
 from decision_forge.distribution import select_distribution
 from decision_forge.generation import generate_family, requested_variants, split_plan
 from decision_forge.io import (
@@ -66,19 +67,53 @@ def scenario_fingerprint(
     )
 
 
-def build(spec: Path, output: Path, cache: Path | None = None) -> dict[str, Any]:
+def build(
+    spec: Path,
+    output: Path,
+    cache: Path | None = None,
+    recipe_plan: Path | None = None,
+    expansion: Path | None = None,
+    near_duplicate_threshold: float = 0.9,
+) -> dict[str, Any]:
     project = load_project(spec)
     require_review(spec)
     contents, hashes = load_sources(project, spec.parent)
+    if recipe_plan is not None:
+        # A plan is an overlay, never an edit: the specification on disk stays the reviewed source.
+        from decision_forge.planner import load_plan
+
+        project.recipe.distribution = load_plan(recipe_plan, project, hashes)
+    expanded: list[Episode] = []
+    expansion_summary: dict[str, Any] | None = None
+    if expansion is not None:
+        from decision_forge.expansion import load_expansion
+
+        expanded, expansion_summary = load_expansion(expansion, project, hashes)
     output.mkdir(parents=True, exist_ok=True)
     cache = cache or output.parent / ".forge-cache"
     cache.mkdir(parents=True, exist_ok=True)
     with FileLock(str(output / ".build.lock"), timeout=0):
-        return _build(project, contents, hashes, output, cache)
+        return _build(
+            project,
+            contents,
+            hashes,
+            output,
+            cache,
+            expanded,
+            expansion_summary,
+            near_duplicate_threshold,
+        )
 
 
 def _build(
-    project: Project, contents: dict[str, str], hashes: dict[str, str], output: Path, cache: Path
+    project: Project,
+    contents: dict[str, str],
+    hashes: dict[str, str],
+    output: Path,
+    cache: Path,
+    expanded: list[Episode] | None = None,
+    expansion_summary: dict[str, Any] | None = None,
+    near_duplicate_threshold: float = 0.9,
 ) -> dict[str, Any]:
     fingerprint = digest(
         {
@@ -132,8 +167,15 @@ def _build(
         for episode in episodes:
             (accepted if episode.valid_choices else rejected).append(episode)
     generated_accepted = len(accepted)
+    synthesized = list(expanded or [])
+    accepted.extend(synthesized)
+    # Duplicate inputs are removed before quotas are applied, so a quota can never be satisfied by
+    # the same example twice; cross-split duplicates keep the held-out copy and drop the leak.
+    accepted, dedup_report = deduplicate(accepted, threshold=near_duplicate_threshold)
+    merged_accepted = len(accepted)
     accepted, distribution = select_distribution(project, accepted, rejected)
     write_json(output / "distribution.json", distribution)
+    write_json(output / "dedup.json", dedup_report)
     if not distribution["feasible"] and project.recipe.require_full_distribution:
         manifest.update(status="distribution_shortfall", distribution=distribution)
         write_json(manifest_path, manifest)
@@ -150,13 +192,28 @@ def _build(
         "requested_episodes": requested,
         "realized_episodes": generated_accepted + len(rejected),
         "episodes_collapsed_as_duplicates": requested - generated_accepted - len(rejected),
-        "filtered_by_distribution": generated_accepted - len(accepted),
+        "filtered_by_distribution": merged_accepted - len(accepted),
+        "synthesized": len(synthesized),
         "distribution": distribution,
+        "dedup": {
+            "protocol": dedup_report["protocol"],
+            "threshold": dedup_report["threshold"],
+            "removed": dedup_report["removed"],
+            "split_leaks": dedup_report["cross_split_pairs"],
+        },
         "generation_cost": {
-            "provider_calls": 0,
-            "provider_cost_usd": 0,
-            "per_accepted_example_usd": 0 if accepted else None,
-            "scope": "offline_generation_only",
+            "provider_calls": int(((expansion_summary or {}).get("calls")) or 0),
+            # None means the endpoint reported no price; reporting 0 would read as free data.
+            "provider_cost_usd": ((expansion_summary or {}).get("usage") or {}).get("cost_usd"),
+            "cost_basis": (
+                "provider_reported"
+                if ((expansion_summary or {}).get("usage") or {}).get("cost_usd") is not None
+                else ("no_model_calls" if not synthesized else "unreported_by_endpoint")
+            ),
+            "per_accepted_example_usd": ((expansion_summary or {}).get("usage") or {}).get("per_published_example_usd"),
+            "offline_examples": generated_accepted,
+            "synthesized_examples": len(synthesized),
+            "scope": "offline_generation_plus_verified_synthesis" if synthesized else "offline_generation_only",
         },
         "scenarios_below_requested_variants": shortfalls,
         "cache_hits": cache_hits,
@@ -192,6 +249,11 @@ def _build(
         "",
     ]
     atomic_text(output / "report.md", "\n".join(lines))
+    manifest["dedup_digest"] = digest(dedup_report)
+    manifest["expansion"] = {
+        "published": len(synthesized),
+        "accepted_digest": (expansion_summary or {}).get("accepted_digest"),
+    }
     manifest.update(status="complete", dataset_digest=digest([e.model_dump() for e in accepted]), report=report)
     write_json(manifest_path, manifest)
     return manifest
