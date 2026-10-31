@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from decision_forge.exporters import model_input
-from decision_forge.io import atomic_text, read_json, write_json
+from decision_forge.io import atomic_text, digest, read_json, write_json
+from decision_forge.models import Episode
 from decision_forge.pipeline import load_run
 
 
@@ -55,12 +56,23 @@ def export_harbor(run: Path, output: Path, limit: int = 20, split: str = "test")
         raise ValueError("Task limit must be positive")
     if output.exists() and any(output.iterdir()):
         raise ValueError("Task output directory must be empty")
-    episodes = [e for e in load_run(run) if e.split == split][:limit]
+    population = [e for e in load_run(run) if e.split == split]
+    buckets: dict[tuple[str, str], list[Episode]] = {}
+    for episode in population:
+        buckets.setdefault((episode.kind.value, episode.stratum), []).append(episode)
+    for group in buckets.values():
+        group.sort(key=lambda e: digest(["harbor-stratified-v1", e.id]))
+    episodes: list[Episode] = []
+    while len(episodes) < limit and any(buckets.values()):
+        for key in sorted(buckets):
+            if buckets[key] and len(episodes) < limit:
+                episodes.append(buckets[key].pop(0))
     if not episodes:
         raise ValueError(f"No episodes in split {split}")
     for episode in episodes:
         task = output / episode.id
         write_json(task / "environment/context.json", model_input(episode))
+        (task / "environment/context.json").chmod(0o644)
         atomic_text(
             task / "environment/Dockerfile",
             "FROM python:3.12-slim\nWORKDIR /workspace\nCOPY context.json /workspace/context.json\n",
@@ -101,12 +113,19 @@ output.mkdir(parents=True, exist_ok=True)
             "#!/bin/sh\nset -eu\ncat > /workspace/answer.json <<'ANSWER'\n" + solution + "\nANSWER\n",
             mode=0o755,
         )
+        # Harbor copies these files into an isolated runtime under another user.
+        for path in task.rglob("*"):
+            if path.is_file() and path.suffix != ".sh":
+                path.chmod(0o644)
     write_json(
         output / "manifest.json",
         {
             "format": "harbor-single-step",
             "split": split,
             "tasks": len(episodes),
+            "episode_ids": [e.id for e in episodes],
+            "sampling": "deterministic-round-robin-kind-stratum-v1",
+            "dataset_digest": read_json(run / "manifest.json")["dataset_digest"],
             "scope": "Decision tasks; full business workflow environments are planned.",
         },
     )

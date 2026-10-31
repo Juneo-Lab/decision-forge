@@ -33,5 +33,8 @@ The foundation is published. The M1 implementation increment adds versioned sour
 source-span claims, resumable bounded compilation, review records, and exact-span evaluation.
 Live Opus 5.5 and GPT-6.1 Sol evidence and semantic review disagreements are preserved in
 `experiments/2026-10-m1`. Both model drafts remain blocked by review. Remaining M1 corpus-scale
-requirements and M2–M5 stay open. Milestone states reflect acceptance evidence;
+requirements remain open. Subsequent increments implement exact distribution quotas, verified
+interventions, real optional SDK adapters, local multi-step workflows, independent grading, and
+reviewed development feedback. M2–M5 remain open until their full acceptance evidence is available.
+Milestone states reflect acceptance evidence;
 adding an interface or configuration file alone does not complete an integration.

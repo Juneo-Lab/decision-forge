@@ -7,6 +7,7 @@ from typing import Any
 
 from pydantic import Field, JsonValue
 
+from decision_forge.compatibility import project_payload
 from decision_forge.generation import candidate_for, set_path
 from decision_forge.io import digest
 from decision_forge.models import Contract, DecisionKind, Project, ensure_unique
@@ -111,7 +112,7 @@ def evaluate_decisions(
     correct = Counter(row["kind"] for row in rows if row["correct"])
     return {
         "protocol": reference.protocol,
-        "project_digest": digest(project.model_dump(mode="json")),
+        "project_digest": digest(project_payload(project)),
         "reference_digest": digest(reference.model_dump(mode="json")),
         "bindings_digest": digest({key: value.model_dump(mode="json") for key, value in bindings.items()}),
         "cases": len(rows),

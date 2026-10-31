@@ -1,0 +1,6 @@
+{
+  "model": "openai/gpt-6.1-sol",
+  "task_digest": "948be0c41c4bd7f74455850376496cf8b8f61290d10d9dfb6d92234ef97e38f6",
+  "project_digest": "0b091a655efb12459081a4d6430af991edcb28c0c2e4b8923977db69ebe745f3",
+  "reasoning_effort": "high"
+}

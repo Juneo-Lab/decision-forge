@@ -2,10 +2,24 @@
 
 ## Unreleased
 
+- Add exact node/stratum/split/answer-set quotas with feasibility and divergence reports.
+- Add verified counterfactuals and candidate-order rewrites that retain family ownership.
+- Add resettable four-surface business workflows and independent trace grading.
+- Add idempotent runtime events, reviewed development feedback, lineage, and targeted updates.
+- Add pinned Data Designer expression processing and durable LangGraph orchestration.
+- Preserve a cumulative family split registry across removal and restoration.
+- Bind review approvals to dependent rules, scenarios, source metadata and dataset recipes.
+- Fix candidate-dimension mutations, split-cache leakage, and out-of-bounds evidence spans.
+- Resolve repeated claim text through explicit trusted claim IDs.
+- Reserve every HTTP attempt, including response-mode negotiation; add aggregate token reservations.
+- Keep source-derived files private and sanitize remote error text.
+- Record export file digests, split-specific ambiguity counts and stratified Harbor task IDs.
+
+
 - Forward contract messages in validation-repair prompts; a bare location cannot describe a defect.
 - Accept `exists` predicates without an operand and document per-operator operand requirements.
 - Degrade `auto` response mode to `json_object` when an endpoint rejects JSON Schema output.
-- Surface the provider error message for HTTP failures instead of the status code alone.
+- Report HTTP status and recognized parameter names while excluding arbitrary provider error text.
 - Assign dataset splits by family quotas instead of an independent hash per family.
 - Report requested versus realized episode volumes and collapsed duplicates in build reports.
 - Bind review decisions to individual items and re-open them only when that item changes.
@@ -14,7 +28,7 @@
 - Anchor quotes across hard-wrapped sources by content, with distinct not-found and ambiguous errors.
 - Reject duplicate dimension values, and forbid dots in candidate IDs to keep paths unambiguous.
 - Compare integers and floats by value while keeping booleans out of numeric comparisons.
-- Write artifacts with readable permissions and make exported Harbor scripts executable.
+- Give exported Harbor task files portable permissions and make shell scripts executable.
 - Report non-JSON YAML workflow values, such as dates, as input errors instead of tracebacks.
 - Publish reproducible Claude Opus 5.5 and GPT-6.1 Sol compiler experiments with all recorded failures and costs.
 - Add model-neutral decision evaluation with explicit bindings and preserved reference disagreements.

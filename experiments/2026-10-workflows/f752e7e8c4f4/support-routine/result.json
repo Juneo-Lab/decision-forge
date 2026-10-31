@@ -1,0 +1,199 @@
+{
+  "task_id": "support-routine",
+  "family_id": "workflow-demo",
+  "split": "development",
+  "solver_error": null,
+  "trace": [
+    {
+      "sequence": 0,
+      "step_id": "assign",
+      "tool": "crm.assign",
+      "choice": "agent",
+      "before": {
+        "urgent": false,
+        "sensitivity": "standard",
+        "recipient": "partner",
+        "partner_authorized": true,
+        "full_approval": false,
+        "amount": 1000,
+        "approved": false,
+        "checks_pass": true,
+        "evidence_complete": true
+      },
+      "after": {
+        "urgent": false,
+        "sensitivity": "standard",
+        "recipient": "partner",
+        "partner_authorized": true,
+        "full_approval": false,
+        "amount": 1000,
+        "approved": false,
+        "checks_pass": true,
+        "evidence_complete": true,
+        "assignee": "agent"
+      },
+      "next_step": "share",
+      "permitted": true,
+      "escalated": false
+    },
+    {
+      "sequence": 1,
+      "step_id": "share",
+      "tool": "documents.share",
+      "choice": "summary",
+      "before": {
+        "urgent": false,
+        "sensitivity": "standard",
+        "recipient": "partner",
+        "partner_authorized": true,
+        "full_approval": false,
+        "amount": 1000,
+        "approved": false,
+        "checks_pass": true,
+        "evidence_complete": true,
+        "assignee": "agent"
+      },
+      "after": {
+        "urgent": false,
+        "sensitivity": "standard",
+        "recipient": "partner",
+        "partner_authorized": true,
+        "full_approval": false,
+        "amount": 1000,
+        "approved": false,
+        "checks_pass": true,
+        "evidence_complete": true,
+        "assignee": "agent",
+        "disclosure": "summary"
+      },
+      "next_step": "act",
+      "permitted": true,
+      "escalated": false
+    },
+    {
+      "sequence": 2,
+      "step_id": "act",
+      "tool": "approvals.act",
+      "choice": "execute",
+      "before": {
+        "urgent": false,
+        "sensitivity": "standard",
+        "recipient": "partner",
+        "partner_authorized": true,
+        "full_approval": false,
+        "amount": 1000,
+        "approved": false,
+        "checks_pass": true,
+        "evidence_complete": true,
+        "assignee": "agent",
+        "disclosure": "summary"
+      },
+      "after": {
+        "urgent": false,
+        "sensitivity": "standard",
+        "recipient": "partner",
+        "partner_authorized": true,
+        "full_approval": false,
+        "amount": 1000,
+        "approved": false,
+        "checks_pass": true,
+        "evidence_complete": true,
+        "assignee": "agent",
+        "disclosure": "summary",
+        "refund_executed": true
+      },
+      "next_step": "submit",
+      "permitted": true,
+      "escalated": false
+    },
+    {
+      "sequence": 3,
+      "step_id": "submit",
+      "tool": "quality.submit",
+      "choice": "accept",
+      "before": {
+        "urgent": false,
+        "sensitivity": "standard",
+        "recipient": "partner",
+        "partner_authorized": true,
+        "full_approval": false,
+        "amount": 1000,
+        "approved": false,
+        "checks_pass": true,
+        "evidence_complete": true,
+        "assignee": "agent",
+        "disclosure": "summary",
+        "refund_executed": true
+      },
+      "after": {
+        "urgent": false,
+        "sensitivity": "standard",
+        "recipient": "partner",
+        "partner_authorized": true,
+        "full_approval": false,
+        "amount": 1000,
+        "approved": false,
+        "checks_pass": true,
+        "evidence_complete": true,
+        "assignee": "agent",
+        "disclosure": "summary",
+        "refund_executed": true,
+        "delivery": "accepted"
+      },
+      "next_step": null,
+      "permitted": true,
+      "escalated": false
+    }
+  ],
+  "grading": {
+    "protocol": "independent-workflow-replay-v1",
+    "task_digest": "a8c757df98c05e2577771e7318c40a4479b052bf71fd346265d4f95509b20219",
+    "project_digest": "0b091a655efb12459081a4d6430af991edcb28c0c2e4b8923977db69ebe745f3",
+    "trace_digest": "8226a773696d5f22e66a2236eb223ffe9c552eb3131589f6f034bdd8d60c0f5b",
+    "trace_valid": true,
+    "trace_error": null,
+    "completed": true,
+    "task_utility": 1,
+    "policy_compliance": 1.0,
+    "best_choice_rate": 1.0,
+    "escalations": 0,
+    "steps": 4
+  },
+  "calls": [
+    {
+      "usage": {
+        "prompt_tokens": 213,
+        "completion_tokens": 42,
+        "cost": 0.000846
+      },
+      "latency_seconds": 4.159329749993049
+    },
+    {
+      "usage": {
+        "prompt_tokens": 260,
+        "completion_tokens": 37,
+        "cost": 0.00089
+      },
+      "latency_seconds": 4.214378917007707
+    },
+    {
+      "usage": {
+        "prompt_tokens": 264,
+        "completion_tokens": 38,
+        "cost": 0.000908
+      },
+      "latency_seconds": 5.658465332933702
+    },
+    {
+      "usage": {
+        "prompt_tokens": 229,
+        "completion_tokens": 38,
+        "cost": 0.000838
+      },
+      "latency_seconds": 3.0842893340159208
+    }
+  ],
+  "known_cost_usd": 0.003482,
+  "unmetered_calls": 0,
+  "latency_seconds": 17.118301415932365
+}

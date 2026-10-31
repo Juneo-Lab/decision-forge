@@ -14,6 +14,7 @@ nav:
   - Specification: specification.md
   - Organization compiler: organization-compiler.md
   - Implementation plan: implementation-plan.md
+  - Platform workflows: platform-workflows.md
   - Data protocol: data-protocol.md
   - References: references.md
 markdown_extensions:

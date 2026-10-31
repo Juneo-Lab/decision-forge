@@ -54,15 +54,22 @@ source positions from unique exact quotes without asking models to count charact
 extracted claims and source metadata, which allows rules to refer across documents. The output remains
 a review draft.
 
-`--max-calls` bounds provider invocations; `--max-input-bytes` bounds serialized HTTP request-body
+`--max-calls` bounds actual HTTP attempts for the built-in provider; `--max-input-bytes` bounds serialized HTTP request-body
 bytes for the OpenAI-compatible provider, including transport-added schema instructions. Custom
 providers can implement `input_bytes(system, user, schema)` to meter their wire representation;
 otherwise the journal explicitly labels its logical prompt/schema measurement.
-The OpenAI-compatible provider uses one HTTP attempt per invocation in this pipeline. A failed or
-interrupted call consumes its reservation. Resume explicitly after a failure; an operator can increase
+Response-format fallback reserves a second HTTP attempt before sending it. A failed or
+interrupted attempt consumes its reservation. Resume explicitly after a failure; an operator can increase
 the budgets. Actual provider token counts and returned cost values are recorded when available;
 usage on invalid generated JSON is retained; unreported usage stays unknown. Custom metered providers
 reset `last_usage` at the start of each invocation to prevent attribution to a previous call. Input bytes are distinct from model tokens.
+
+`--max-total-tokens` adds a conservative preflight reservation of serialized request bytes plus the
+provider output-token cap, assuming byte-based text tokenization. Returned token usage replaces a
+reservation; unknown/interrupted attempts retain it. Providers must declare a finite output cap.
+This is a planning bound for compatible text tokenizers, not an endpoint-independent billing guarantee.
+Assembly evidence can cite `claim_id` to distinguish identical quotes at different source positions;
+the compiler verifies its source/quote and copies its trusted offsets and locator.
 
 `--validation-retries` permits two repair requests by default in the CLI (the library defaults to zero).
 Rejected structured outputs and sanitized validation diagnostics are retained locally. Repairs include
@@ -113,7 +120,8 @@ possible state. Reviewers examine the full rule context.
 A review records identity, reason, time, decision, and the fingerprint of the reviewed item plus the
 sources its evidence cites. Editing an unrelated rule no longer invalidates an accepted decision,
 while any change to the reviewed rule, its evidence, or a cited source re-opens that item. A
-hash-linked history detects accidental modification. Identity is operator-supplied; organization SSO
+Node reviews also bind referenced rules, scenarios and their source permissions. A dataset review
+binds the recipe and organization policy version. A hash-linked history detects accidental modification. Identity is operator-supplied; organization SSO
 and cryptographic reviewer authentication are future integration work.
 
 Builds of compiler outputs require current acceptance for every item. Hand-authored specifications

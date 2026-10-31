@@ -1,0 +1,44 @@
+{
+  "protocol": "cold-and-warm-offline-v1",
+  "engine_fingerprint": "f1a5e8adf1467726f4017052388378c04a0d003a42bc69850396258c870f54a8",
+  "python": "3.12.12",
+  "platform": "macOS-26.6-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "dependencies": {
+    "decision-forge": "0.1.0",
+    "pydantic": "2.14.2",
+    "filelock": "3.32.7"
+  },
+  "measurements": [
+    {
+      "families": 100,
+      "scenarios": 400,
+      "accepted": 2800,
+      "cold_seconds": 0.5367176249856129,
+      "warm_seconds": 0.250002917018719,
+      "cold_examples_per_second": 5216.895942396257,
+      "warm_cache_hits": 400,
+      "dataset_digest": "ea68086e93833fad51174074d7eefd0676f1fe3af56eb249963abdecdf16b4a8",
+      "run_bytes": 4498502,
+      "specification_bytes": 130759,
+      "provider_calls": 0,
+      "provider_cost_usd": 0
+    },
+    {
+      "families": 1000,
+      "scenarios": 4000,
+      "accepted": 28000,
+      "cold_seconds": 5.820192957995459,
+      "warm_seconds": 4.101858458016068,
+      "cold_examples_per_second": 4810.837063663868,
+      "warm_cache_hits": 4000,
+      "dataset_digest": "77beafcc3387091054884c753df4778b928c2e1e6a00589760fc39534e0f9f1b",
+      "run_bytes": 44718890,
+      "specification_bytes": 1183759,
+      "provider_calls": 0,
+      "provider_cost_usd": 0
+    }
+  ],
+  "quality_scope": "Declarative-policy verification; no downstream model training."
+}

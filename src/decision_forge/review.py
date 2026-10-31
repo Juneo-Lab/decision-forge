@@ -10,19 +10,20 @@ from typing import Any, Literal
 from filelock import FileLock
 
 from decision_forge.io import canonical, digest, load_project, load_sources, read_json, write_json
-from decision_forge.models import Rule
+from decision_forge.models import Project, Rule
 from decision_forge.policy import matches
 
 
-def _rule_items(project: Any, hashes: dict[str, str]) -> dict[str, dict[str, Any]]:
+def _rule_items(project: Project, hashes: dict[str, str]) -> dict[str, dict[str, Any]]:
     """Review items for single rules, each bound to the sources its evidence cites."""
     items = {}
+    registry = {s.id: {"record": s.model_dump(mode="json"), "hash": hashes[s.id]} for s in project.sources}
     for rule in project.organization.rules:
         sources = {evidence.source_id for evidence in rule.evidence}
         items[f"rule:{rule.id}"] = {
             "kind": "rule",
             "content": rule.model_dump(mode="json"),
-            "sources": {source: hashes[source] for source in sorted(sources) if source in hashes},
+            "sources": {source: registry[source] for source in sorted(sources)},
         }
     return items
 
@@ -57,6 +58,19 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
     rule_items = _rule_items(project, hashes)
     rule_fingerprints = {item_id.removeprefix("rule:"): item_fingerprint(item) for item_id, item in rule_items.items()}
     items: list[dict[str, Any]] = [{"id": item_id, **item} for item_id, item in sorted(rule_items.items())]
+    items.append(
+        {
+            "id": "dataset:recipe",
+            "kind": "dataset",
+            "sources": {},
+            "content": {
+                "recipe": project.recipe.model_dump(mode="json"),
+                "organization_id": project.organization.id,
+                "policy_version": project.organization.policy_version,
+            },
+        }
+    )
+    registry = {s.id: {"record": s.model_dump(mode="json"), "hash": hashes[s.id]} for s in project.sources}
     rules = {r.id: r for r in project.organization.rules}
     for node in project.nodes:
         node_rules = [rules[i] for i in node.rule_ids]
@@ -64,14 +78,21 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
             {
                 "id": f"node:{node.id}",
                 "kind": "node",
-                "content": node.model_dump(mode="json"),
+                "content": {
+                    "node": node.model_dump(mode="json"),
+                    "rules": {r.id: rule_fingerprints[r.id] for r in node_rules},
+                    "scenarios": [s.model_dump(mode="json") for s in project.scenarios if s.node_id == node.id],
+                },
                 "sources": {
-                    source: hashes[source]
-                    for source in sorted({e.source_id for r in node_rules for e in r.evidence})
-                    if source in hashes
+                    source: registry[source]
+                    for source in sorted(
+                        {e.source_id for r in node_rules for e in r.evidence}
+                        | {i for s in project.scenarios if s.node_id == node.id for i in s.source_ids}
+                    )
                 },
             }
         )
+        node_fingerprint = item_fingerprint(items[-1])
         for left, right in combinations(node_rules, 2):
             opposite = left.effect != right.effect
             shadow = _shadowing(left, right)
@@ -100,6 +121,7 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
                         "kind": kind,
                         "content": {
                             "rules": ids,
+                            "node_fingerprint": node_fingerprint,
                             "rule_fingerprints": [rule_fingerprints[left.id], rule_fingerprints[right.id]],
                             "identical_condition": identical,
                             "rule_shadowing": shadow,

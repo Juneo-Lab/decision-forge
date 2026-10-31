@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "id": "support-revision",
+  "family_id": "workflow-demo",
+  "split": "development",
+  "initial_state": {
+    "urgent": false,
+    "sensitivity": "standard",
+    "recipient": "partner",
+    "partner_authorized": true,
+    "full_approval": false,
+    "amount": 1000,
+    "approved": false,
+    "checks_pass": false,
+    "evidence_complete": true
+  },
+  "start": "assign",
+  "steps": [
+    {
+      "id": "assign",
+      "node_id": "routing",
+      "tool": "crm.assign",
+      "next_steps": {
+        "human": "share",
+        "agent": "share"
+      },
+      "effects": {
+        "human": {
+          "assignee": "human"
+        },
+        "agent": {
+          "assignee": "agent"
+        }
+      },
+      "escalation_choices": []
+    },
+    {
+      "id": "share",
+      "node_id": "disclosure",
+      "tool": "documents.share",
+      "next_steps": {
+        "full": "act",
+        "summary": "act",
+        "reject": "act"
+      },
+      "effects": {
+        "full": {
+          "disclosure": "full"
+        },
+        "summary": {
+          "disclosure": "summary"
+        },
+        "reject": {
+          "disclosure": "rejected"
+        }
+      },
+      "escalation_choices": []
+    },
+    {
+      "id": "act",
+      "node_id": "refund",
+      "tool": "approvals.act",
+      "next_steps": {
+        "execute": "submit",
+        "request_approval": null,
+        "clarify": null
+      },
+      "effects": {
+        "execute": {
+          "refund_executed": true
+        },
+        "request_approval": {
+          "approval_requested": true
+        },
+        "clarify": {
+          "amount_requested": true
+        }
+      },
+      "escalation_choices": [
+        "request_approval",
+        "clarify"
+      ]
+    },
+    {
+      "id": "submit",
+      "node_id": "acceptance",
+      "tool": "quality.submit",
+      "next_steps": {
+        "accept": null,
+        "revise": null
+      },
+      "effects": {
+        "accept": {
+          "delivery": "accepted"
+        },
+        "revise": {
+          "delivery": "revision_requested"
+        }
+      },
+      "escalation_choices": []
+    }
+  ],
+  "success_states": {
+    "delivery": "revision_requested"
+  },
+  "max_steps": 20
+}

@@ -50,7 +50,7 @@ def test_rejected_rule_blocks_build_and_revision_invalidates_reviews(example_pat
     write_json(spec, project.model_dump(mode="json"))
     current = review_status(spec)
     # Only the revision that actually changed loses its decision; unrelated reviews survive.
-    assert current["pending"] == 1
+    assert current["pending"] == 2  # Changed rule and its dependent node.
     assert not current["ready"]
     with pytest.raises(ValueError, match="changed since review"):
         record_review(spec, item, "accepted", "test-reviewer", "Old decision", status["fingerprint"])

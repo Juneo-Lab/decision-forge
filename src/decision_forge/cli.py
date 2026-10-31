@@ -186,6 +186,7 @@ def compile_corpus_command(
     max_output_tokens: int = 32000,
     timeout_seconds: float = 300,
     max_input_bytes: int = 4_000_000,
+    max_total_tokens: int | None = None,
     chunk_characters: int = 8000,
     overlap_characters: int = 400,
 ) -> None:
@@ -209,6 +210,7 @@ def compile_corpus_command(
             validation_retries=validation_retries,
             max_calls=max_calls,
             max_input_bytes=max_input_bytes,
+            max_total_tokens=max_total_tokens,
             chunk_characters=chunk_characters,
             overlap_characters=overlap_characters,
         )
@@ -228,7 +230,10 @@ def review_status_command(spec: Path, output: Path | None = None) -> None:
         display(
             {
                 **{k: status[k] for k in ("fingerprint", "ready", "pending", "rejected")},
-                "items": [{"id": i["id"], "kind": i["kind"], "status": i["status"]} for i in status["items"]],
+                "items": [
+                    {"id": i["id"], "kind": i["kind"], "status": i["status"], "fingerprint": i["fingerprint"]}
+                    for i in status["items"]
+                ],
             }
         )
     except (ValueError, OSError) as exc:
@@ -280,6 +285,172 @@ def evaluate_decisions_command(spec: Path, reference: Path, bindings: Path, outp
         if output:
             write_json(output, result)
         display({key: value for key, value in result.items() if key != "events"})
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("workflow-run")
+def workflow_run_command(
+    spec: Path,
+    task: Path,
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    base_url: Annotated[str, typer.Option()],
+    model: Annotated[str, typer.Option()],
+    reasoning_effort: str = "high",
+    max_calls: int = 20,
+    max_total_tokens: int = 500000,
+) -> None:
+    """Run a declared business task against an explicit model endpoint and independently grade its trace."""
+    from decision_forge.corpus import CallJournal
+    from decision_forge.review import require_review
+    from decision_forge.workflows import WorkflowTask, solve_workflow
+
+    try:
+        if output.exists():
+            raise ValueError("Workflow output already exists; choose a new directory")
+        project = load_project(spec)
+        load_sources(project, spec.parent)
+        require_review(spec)
+        task_spec = WorkflowTask.model_validate(read_json(task))
+        output.mkdir(parents=True)
+        provider = OpenAICompatibleProvider(
+            base_url,
+            model,
+            os.environ.get("FORGE_API_KEY", ""),
+            retries=0,
+            temperature=None,
+            reasoning_effort=reasoning_effort,
+            max_output_tokens=4096,
+            timeout_seconds=300,
+        )
+        journal = CallJournal(
+            output / "calls.json", CompilationOptions(max_calls=max_calls, max_total_tokens=max_total_tokens)
+        )
+        result = solve_workflow(project, task_spec, provider, journal)
+        write_json(output / "result.json", result)
+        write_json(
+            output / "configuration.json",
+            {"provider": provider.configuration, "task": task_spec.model_dump(mode="json")},
+        )
+        display({k: v for k, v in result.items() if k not in {"trace", "calls"}})
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("workflow-grade")
+def workflow_grade_command(spec: Path, task: Path, trace: Path, output: Path | None = None) -> None:
+    """Recompute workflow utility and policy compliance from a recorded trace."""
+    from decision_forge.workflows import WorkflowTask, grade_workflow
+
+    try:
+        project = load_project(spec)
+        load_sources(project, spec.parent)
+        result = grade_workflow(project, WorkflowTask.model_validate(read_json(task)), read_json(trace))
+        if output:
+            write_json(output, result)
+        display(result)
+    except (ValueError, OSError, KeyError, TypeError) as exc:
+        fail(exc)
+
+
+@app.command("events-ingest")
+def events_ingest_command(events: Path, database: Annotated[Path, typer.Option()]) -> None:
+    """Append versioned runtime events atomically; repeated identical IDs are idempotent."""
+    from decision_forge.feedback import RuntimeEvent, ingest_events
+
+    try:
+        display(ingest_events(database, [RuntimeEvent.model_validate(row) for row in read_json(events)]))
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("feedback-plan")
+def feedback_plan_command(run: Path, database: Path, output: Annotated[Path, typer.Option()]) -> None:
+    """Create generation requests only from explicitly reviewed development errors."""
+    from decision_forge.feedback import feedback_requests
+
+    try:
+        result = feedback_requests(run, database)
+        write_json(output, result)
+        display({"requests": len(result["requests"]), "excluded": result["excluded"]})
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("update")
+def update_command(
+    spec: Path, previous: Path, output: Annotated[Path, typer.Option()], cache: Path | None = None
+) -> None:
+    """Rebuild affected scenarios while freezing published train/development/test membership."""
+    from decision_forge.feedback import update_dataset
+
+    try:
+        display(update_dataset(spec, previous, output, cache))
+    except (ValueError, OSError, Timeout) as exc:
+        fail(exc)
+
+
+@app.command("lineage")
+def lineage_command(run: Path, output: Annotated[Path, typer.Option()]) -> None:
+    """Export source-span, rule, scenario, and episode lineage for a completed dataset."""
+    from decision_forge.feedback import lineage
+
+    try:
+        result = lineage(run)
+        write_json(output, result)
+        display({"dataset_digest": result["dataset_digest"], "episodes": len(result["episodes"])})
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("orchestrate")
+def orchestrate_command(
+    spec: Path,
+    output: Annotated[Path, typer.Option()],
+    database: Annotated[Path, typer.Option()],
+    thread_id: Annotated[str, typer.Option()],
+) -> None:
+    """Run or resume a durable LangGraph review/build/export job (requires orchestration extra)."""
+    from decision_forge.adapters import orchestrate
+
+    try:
+        display(orchestrate(spec, output, database, thread_id))
+    except (ValueError, OSError, Timeout) as exc:
+        fail(exc)
+
+
+@app.command("designer-process")
+def designer_process_command(run: Path, output: Annotated[Path, typer.Option()]) -> None:
+    """Process ordered dataset seeds through the pinned Data Designer expression engine."""
+    from decision_forge.adapters import designer_process
+
+    try:
+        display(designer_process(run, output))
+    except (ValueError, OSError) as exc:
+        fail(exc)
+
+
+@app.command("transform")
+def transform_command(run: Path, episode_id: str, intervention: Path, output: Annotated[Path, typer.Option()]) -> None:
+    """Check a counterfactual or candidate-order rewrite and save its verified parent/child pair."""
+    from decision_forge.pipeline import load_run, load_run_project
+    from decision_forge.transformations import Intervention, transform_episode
+
+    try:
+        parent = next((e for e in load_run(run) if e.id == episode_id), None)
+        if parent is None:
+            raise ValueError("Unknown episode ID")
+        request = Intervention.model_validate(read_json(intervention))
+        child = transform_episode(load_run_project(run), parent, request)
+        write_json(
+            output,
+            {
+                "parent": parent.model_dump(mode="json"),
+                "child": child.model_dump(mode="json"),
+                "intervention": request.model_dump(mode="json"),
+            },
+        )
+        display({"parent": parent.id, "child": child.id, "relation": request.relation, "verified": True})
     except (ValueError, OSError) as exc:
         fail(exc)
 

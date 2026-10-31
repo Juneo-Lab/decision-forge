@@ -1,0 +1,82 @@
+[
+  {
+    "key": "8e68e02d17bcde65157a1b23ed9d7f39f86e16c581408dfa41174b214e4059b4",
+    "input_bytes": 1277,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 501,
+      "completion_tokens": 12,
+      "cost": 0.002244
+    },
+    "reserved_tokens": 5373,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426112-QjbuO2vmgcT838MbgPka",
+      "model": "anthropic/claude-opus-5.5",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  },
+  {
+    "key": "81d5efba4fb90e36126e5eaf1c1ae5376ce5d56aaa078b39a99079e04875933b",
+    "input_bytes": 1521,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 571,
+      "completion_tokens": 12,
+      "cost": 0.002524
+    },
+    "reserved_tokens": 5617,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426119-1aHpbPs0JZUCFKOPzTJa",
+      "model": "anthropic/claude-opus-5.5",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  },
+  {
+    "key": "32db18ba94abd4c18058353ff9e105a41949b9720e5c2293a273d2ce9f396638",
+    "input_bytes": 1471,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 566,
+      "completion_tokens": 12,
+      "cost": 0.002504
+    },
+    "reserved_tokens": 5567,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426125-PjVlC6I2rY8U9cRP84jn",
+      "model": "anthropic/claude-opus-5.5",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  },
+  {
+    "key": "1eb5f012f7e3c0ff4dfc8efdf362e174952ac0b219dee3b388b2c31155aff323",
+    "input_bytes": 1350,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 535,
+      "completion_tokens": 12,
+      "cost": 0.00238
+    },
+    "reserved_tokens": 5446,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426128-1sztEW7CUTuguq851X4H",
+      "model": "anthropic/claude-opus-5.5",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  }
+]

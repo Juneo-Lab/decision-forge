@@ -1,0 +1,82 @@
+[
+  {
+    "key": "8e68e02d17bcde65157a1b23ed9d7f39f86e16c581408dfa41174b214e4059b4",
+    "input_bytes": 1270,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 213,
+      "completion_tokens": 43,
+      "cost": 0.000856
+    },
+    "reserved_tokens": 5366,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426163-RmUQClEq73gYKLXDaMDs",
+      "model": "openai/gpt-6.1-sol",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  },
+  {
+    "key": "81d5efba4fb90e36126e5eaf1c1ae5376ce5d56aaa078b39a99079e04875933b",
+    "input_bytes": 1514,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 260,
+      "completion_tokens": 41,
+      "cost": 0.00093
+    },
+    "reserved_tokens": 5610,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426167-Xs643SJIuAoVk0eOOJlA",
+      "model": "openai/gpt-6.1-sol",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  },
+  {
+    "key": "32db18ba94abd4c18058353ff9e105a41949b9720e5c2293a273d2ce9f396638",
+    "input_bytes": 1464,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 264,
+      "completion_tokens": 44,
+      "cost": 0.000968
+    },
+    "reserved_tokens": 5560,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426171-zscxnehrdB1Va00nPOsf",
+      "model": "openai/gpt-6.1-sol",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  },
+  {
+    "key": "1eb5f012f7e3c0ff4dfc8efdf362e174952ac0b219dee3b388b2c31155aff323",
+    "input_bytes": 1343,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 229,
+      "completion_tokens": 41,
+      "cost": 0.000868
+    },
+    "reserved_tokens": 5439,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426175-90j9SrOoNysCTmxeeh6F",
+      "model": "openai/gpt-6.1-sol",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  }
+]

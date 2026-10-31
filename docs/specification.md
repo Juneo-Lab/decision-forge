@@ -56,11 +56,13 @@ decision surfaces of one event can share that ID. Families are ranked by a hash 
 and family ID, independent of the sampling seed, and then sliced into quotas computed from the split
 fractions. Families are never divided across splits, and a configured split that has a nonzero
 fraction receives at least one family once the project has enough families. Changing the split
-fractions reallocates families, so freeze those fractions for a benchmark version.
+fractions or adding families can reallocate an unpinned project. Build snapshots persist
+`recipe.family_splits`; use `update` to preserve the cumulative published registry, including removed
+families, across dataset versions. Cache keys include each scenario's resolved split.
 
-The `stratum` field labels routine, boundary, or change scenarios. In v0.1, authors explicitly provide
-scenarios and dimensions. Learned distributions, stratum-budget allocation, and conditional constraints
-are scheduled for M2.
+The `stratum` field labels routine, boundary, change, or feedback scenarios. Exact accepted-example
+quotas use `recipe.distribution`; `candidate_pool_per_scenario` controls the finite search pool.
+See [platform workflows](platform-workflows.md) for feasibility reports and checked transformations.
 
 ## Model-visible inputs
 

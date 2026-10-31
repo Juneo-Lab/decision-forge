@@ -1,0 +1,62 @@
+[
+  {
+    "key": "e9314bcf61437993abbe7857be6298792298e5941501bcd8c5eb73d93485910b",
+    "input_bytes": 1278,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 502,
+      "completion_tokens": 12,
+      "cost": 0.002248
+    },
+    "reserved_tokens": 5374,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426099-AJ9Voej53hqpF2ARe1si",
+      "model": "anthropic/claude-opus-5.5",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  },
+  {
+    "key": "71e54c1c5987385f5832b596fd2a78810c15403b840ad950434a72ae64ada648",
+    "input_bytes": 1522,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 572,
+      "completion_tokens": 12,
+      "cost": 0.002528
+    },
+    "reserved_tokens": 5618,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426106-jaF9fiQRwm8nKoYbATne",
+      "model": "anthropic/claude-opus-5.5",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  },
+  {
+    "key": "fa1d39bee40834725c8dee515957a4641808a520cadbc6daa143ac2522f1edc6",
+    "input_bytes": 1472,
+    "status": "returned",
+    "usage": {
+      "prompt_tokens": 567,
+      "completion_tokens": 14,
+      "cost": 0.002548
+    },
+    "reserved_tokens": 5568,
+    "token_basis": "request_utf8_bytes_plus_output_cap",
+    "input_basis": "provider_request_body",
+    "response_mode": "json_schema",
+    "response_metadata": {
+      "id": "gen-1793426108-RcnJ95Ex60bUcgZPZDKF",
+      "model": "anthropic/claude-opus-5.5",
+      "finish_reason": "stop"
+    },
+    "response_encoding": "json"
+  }
+]

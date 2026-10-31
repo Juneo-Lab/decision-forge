@@ -37,6 +37,7 @@ class Source(Contract):
 
 class Evidence(Contract):
     source_id: Identifier
+    claim_id: str | None = None
     quote: str = Field(min_length=1)
     start: int | None = Field(default=None, ge=0)
     end: int | None = Field(default=None, ge=1)
@@ -168,7 +169,7 @@ class Scenario(Contract):
     family_id: Identifier
     state: dict[str, JsonValue]
     source_ids: list[Identifier] = Field(min_length=1)
-    stratum: Literal["routine", "boundary", "change"] = "routine"
+    stratum: Literal["routine", "boundary", "change", "feedback"] = "routine"
 
 
 class SplitConfig(Contract):
@@ -183,10 +184,30 @@ class SplitConfig(Contract):
         return self
 
 
+class DistributionTarget(Contract):
+    """An exact accepted-example quota, including its answer set and evaluation split."""
+
+    node_id: Identifier
+    stratum: Literal["routine", "boundary", "change", "feedback"]
+    split: Literal["train", "development", "test"]
+    valid_choices: list[CandidateIdentifier] = Field(min_length=1)
+    count: int = Field(ge=0, le=100000)
+
+    @model_validator(mode="after")
+    def choices_unique(self) -> Self:
+        ensure_unique(self.valid_choices, "distribution choices")
+        self.valid_choices = sorted(self.valid_choices)
+        return self
+
+
 class Recipe(Contract):
     seed: int = 42
     variants_per_scenario: int = Field(default=16, ge=1, le=10000)
     splits: SplitConfig = Field(default_factory=SplitConfig)
+    family_splits: dict[str, Literal["train", "development", "test"]] = Field(default_factory=dict)
+    candidate_pool_per_scenario: int | None = Field(default=None, ge=1, le=10000)
+    distribution: list[DistributionTarget] = Field(default_factory=list)
+    require_full_distribution: bool = True
 
 
 class Organization(Contract):
@@ -226,6 +247,18 @@ class Project(Contract):
         for scenario in self.scenarios:
             if scenario.node_id not in nodes or not set(scenario.source_ids) <= sources:
                 raise ValueError(f"Unknown reference in scenario {scenario.id}")
+        families = {s.family_id for s in self.scenarios}
+        if not set(self.recipe.family_splits) <= families:
+            raise ValueError("Split assignments reference unknown families")
+        cells: set[tuple[str, str, str, tuple[str, ...]]] = set()
+        for target in self.recipe.distribution:
+            target_node = next((n for n in self.nodes if n.id == target.node_id), None)
+            if target_node is None or not set(target.valid_choices) <= {c.id for c in target_node.candidates}:
+                raise ValueError("Distribution target references an unknown node or candidate")
+            cell = (target.node_id, target.stratum, target.split, tuple(target.valid_choices))
+            if cell in cells:
+                raise ValueError("Duplicate distribution target")
+            cells.add(cell)
         return self
 
 
@@ -257,6 +290,7 @@ class Episode(Contract):
     source_hashes: dict[str, str]
     rule_ids: list[str]
     intervention: dict[str, JsonValue]
+    policy_fingerprint: str | None = None
     verifier: str = "policy-engine-v1"
     label_basis: str = "declarative_policy"
 

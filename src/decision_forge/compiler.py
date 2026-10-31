@@ -26,7 +26,7 @@ Rules use predicates over state.<field> and candidate.<field>; candidate.id is r
 Condition.all_of and Condition.any_of are FLAT arrays of Predicate objects, never nested conditions.
 A predicate is {"path":"state.amount","op":"lte","value":1000}. For (A AND B) OR (C AND D),
 create two separate rules. Both all_of and any_of, when nonempty, must be satisfied.
-For claim-based input, copy evidence quotes verbatim from the supplied claims. Omit evidence offsets;
+For claim-based input, copy the supplied claim id into evidence.claim_id and quote verbatim. Omit evidence offsets;
 the compiler binds them. Keep source version/hash/access metadata unchanged. Do not invent nested DSLs.
 Each rule is evaluated against EVERY candidate. A rule about a particular action MUST include a
 predicate on candidate.id (or a distinguishing candidate attribute). For example:
@@ -80,18 +80,20 @@ def compile_documents(sources: list[Path], output: Path, provider: StructuredPro
     for rule in project.organization.rules:
         for evidence in rule.evidence:
             text = provided[evidence.source_id]["text"]
-            try:
-                start, end = quote_span(text, evidence.quote)
-            except ValueError as exc:
-                raise ValueError(f"Compiler produced unsupported evidence for rule {rule.id}: {exc}") from None
             if evidence.start is not None and evidence.end is not None:
+                if not 0 <= evidence.start < evidence.end <= len(text):
+                    raise ValueError(f"Compiler produced out-of-bounds evidence for rule {rule.id}")
                 span = text[evidence.start : evidence.end]
                 if collapse_whitespace(span)[0] != collapse_whitespace(evidence.quote)[0]:
                     raise ValueError(f"Compiler produced invalid evidence span for rule {rule.id}")
             else:
-                evidence.start, evidence.end = start, end
+                try:
+                    evidence.start, evidence.end = quote_span(text, evidence.quote)
+                except ValueError as exc:
+                    raise ValueError(f"Compiler produced unsupported evidence for rule {rule.id}: {exc}") from None
             # The legacy text compiler has no page/section locator adapter.
             evidence.locator = None
+            evidence.claim_id = None
     output.mkdir(parents=True, exist_ok=True)
     for doc in documents:
         atomic_text(output / doc["path"], doc["text"])

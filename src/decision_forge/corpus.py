@@ -25,7 +25,7 @@ from decision_forge.io import (
     write_json,
 )
 from decision_forge.models import Contract, DecisionKind, Project, Source
-from decision_forge.providers import StructuredProvider
+from decision_forge.providers import OpenAICompatibleProvider, StructuredProvider
 from decision_forge.review import review_status
 from decision_forge.sources import Document, ingest_manifest, locate
 
@@ -65,6 +65,7 @@ class CompilationOptions(Contract):
     validation_retries: int = Field(default=0, ge=0, le=10)
     max_calls: int = Field(default=100, ge=1)
     max_input_bytes: int = Field(default=4_000_000, ge=1)
+    max_total_tokens: int | None = Field(default=None, ge=1)
     max_assembly_bytes: int = Field(default=1_000_000, ge=1, le=MAX_SOURCE_BYTES)
 
     @model_validator(mode="after")
@@ -115,37 +116,73 @@ class CallJournal:
     def invoke(
         self, provider: StructuredProvider, key: str, system: str, user: str, schema: dict[str, Any]
     ) -> dict[str, Any]:
+        event: dict[str, Any] | None = None
         measure = getattr(provider, "input_bytes", None)
-        size = (
+
+        def reserve(size: int) -> None:
+            nonlocal event
+            if type(size) is not int or size < 0:
+                raise ValueError("Provider input byte measurement must be a nonnegative integer")
+            used = sum(e["input_bytes"] for e in self.events)
+            if len(self.events) >= self.options.max_calls or used + size > self.options.max_input_bytes:
+                raise ValueError("Compilation call/input budget exhausted; increase the explicit budget to resume")
+            token_reservation = None
+            if self.options.max_total_tokens is not None:
+                output_limit = getattr(provider, "max_output_tokens", None)
+                if type(output_limit) is not int or output_limit < 1:
+                    raise ValueError("Token budgets require a provider with a finite output token limit")
+                # Conservative reservation for byte-based tokenizers, including wire/schema overhead.
+                token_reservation = size + output_limit
+                used_tokens = sum(
+                    sum(e["usage"][k] for k in ("prompt_tokens", "completion_tokens"))
+                    if e.get("usage")
+                    else e.get("reserved_tokens", e["input_bytes"] + output_limit)
+                    for e in self.events
+                )
+                if used_tokens + token_reservation > self.options.max_total_tokens:
+                    raise ValueError("Compilation token budget exhausted; increase the explicit budget to resume")
+            event = {"key": key, "input_bytes": size, "status": "reserved", "usage": None}
+            if token_reservation is not None:
+                event["reserved_tokens"] = token_reservation
+                event["token_basis"] = "request_utf8_bytes_plus_output_cap"
+            event["input_basis"] = (
+                "provider_request_body"
+                if isinstance(provider, OpenAICompatibleProvider) or measure
+                else "logical_prompt_and_schema"
+            )
+            self.events.append(event)
+            write_json(self.path, self.events)
+
+        def finish(status: str) -> None:
+            assert event is not None
+            event.update(
+                status=status,
+                usage=getattr(provider, "last_usage", None),
+                response_mode=getattr(provider, "last_response_mode", None),
+                response_metadata=getattr(provider, "last_response_metadata", None),
+                response_encoding=getattr(provider, "last_response_encoding", None),
+            )
+            write_json(self.path, self.events)
+
+        if isinstance(provider, OpenAICompatibleProvider):
+            if provider.before_attempt or provider.after_attempt:
+                raise ValueError("Provider already has an active attempt observer")
+            provider.before_attempt, provider.after_attempt = reserve, finish
+            try:
+                return provider.generate(system, user, schema)
+            finally:
+                provider.before_attempt = provider.after_attempt = None
+        reserve(
             measure(system, user, schema)
             if measure
             else len(canonical({"system": system, "user": user, "schema": schema}).encode())
         )
-        if type(size) is not int or size < 0:
-            raise ValueError("Provider input byte measurement must be a nonnegative integer")
-        used = sum(e["input_bytes"] for e in self.events)
-        if len(self.events) >= self.options.max_calls or used + size > self.options.max_input_bytes:
-            raise ValueError("Compilation call/input budget exhausted; increase the explicit budget to resume")
-        event: dict[str, Any] = {"key": key, "input_bytes": size, "status": "reserved", "usage": None}
-        event["input_basis"] = "provider_request_body" if measure else "logical_prompt_and_schema"
-        self.events.append(event)
-        write_json(self.path, self.events)
         try:
             result = provider.generate(system, user, schema)
         except Exception:
-            event["status"] = "failed"
-            event["usage"] = getattr(provider, "last_usage", None)
-            event["response_mode"] = getattr(provider, "last_response_mode", None)
-            event["response_metadata"] = getattr(provider, "last_response_metadata", None)
-            write_json(self.path, self.events)
+            finish("failed")
             raise
-        event["status"] = "returned"
-        event["response_mode"] = getattr(provider, "last_response_mode", None)
-        event["response_encoding"] = getattr(provider, "last_response_encoding", None)
-        event["response_metadata"] = getattr(provider, "last_response_metadata", None)
-        # Providers without metering explicitly report unknown usage.
-        event["usage"] = getattr(provider, "last_usage", None)
-        write_json(self.path, self.events)
+        finish("returned")
         return result
 
 
@@ -255,6 +292,10 @@ def compile_corpus(
             raise ValueError("Corpus or compiler configuration changed; select a new output directory")
         if state_path.exists() and (output / "project.json").exists():
             previous = read_json(state_path)
+            if previous.get("status") == "draft":
+                for name, expected_hash in previous["artifact_hashes"].items():
+                    if digest(read_json(output / name)) != expected_hash:
+                        raise ValueError("Completed compilation artifact integrity check failed")
             if previous.get("project_digest") != digest(read_json(output / "project.json")):
                 # Business reviewers correct extracted rules in place. Accept the edit only when the
                 # result is still bound to extracted claims, then refresh the review queue.
@@ -388,12 +429,15 @@ def assemble_project(response: dict[str, Any], sources: list[Source], rows: list
     for rule in project.organization.rules:
         for evidence in rule.evidence:
             candidates = [r for r in rows if r["source_id"] == evidence.source_id and r["quote"] == evidence.quote]
+            if evidence.claim_id is not None:
+                candidates = [r for r in candidates if r.get("id") == evidence.claim_id]
             if evidence.start is not None:
                 candidates = [r for r in candidates if r["start"] == evidence.start and r["end"] == evidence.end]
             positions = {(c["start"], c["end"], c["locator"]) for c in candidates}
             if len(positions) != 1:
                 raise ValueError("Assembly evidence must identify one extracted claim span")
             evidence.start, evidence.end, evidence.locator = positions.pop()
+            evidence.claim_id = candidates[0].get("id")
     serialized = project.model_dump(mode="json")
     if len((json.dumps(serialized, indent=2, ensure_ascii=False, allow_nan=False) + "\n").encode()) > MAX_SOURCE_BYTES:
         raise ValueError("Assembled project exceeds the supported specification size")

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
-from decision_forge.io import atomic_text, canonical, write_json
+from decision_forge.io import atomic_text, canonical, digest, read_json, write_json
 from decision_forge.models import Episode
 from decision_forge.pipeline import load_run
 
@@ -30,6 +30,7 @@ def export_run(run: Path, output: Path, format: Literal["canonical", "typed", "s
     output.mkdir(parents=True, exist_ok=True)
     rows: dict[str, list[dict[str, Any]]] = {s: [] for s in ["train", "development", "test"]}
     skipped = 0
+    skipped_by_split = {s: 0 for s in rows}
     for episode in episodes:
         row: dict[str, Any]
         inputs = model_input(episode)
@@ -42,6 +43,7 @@ def export_run(run: Path, output: Path, format: Literal["canonical", "typed", "s
             }
         elif len(episode.valid_choices) != 1:
             skipped += 1
+            skipped_by_split[episode.split] += 1
             continue
         elif format == "typed":
             row = {
@@ -76,5 +78,14 @@ def export_run(run: Path, output: Path, format: Literal["canonical", "typed", "s
         atomic_text(output / f"{split}.jsonl", "".join(canonical(row) + "\n" for row in records))
     summary = {split: len(records) for split, records in rows.items()}
     summary["skipped_multiple_valid_choices"] = skipped
-    write_json(output / "export.json", {"format": format, "counts": summary})
+    write_json(
+        output / "export.json",
+        {
+            "format": format,
+            "counts": summary,
+            "skipped_by_split": skipped_by_split,
+            "dataset_digest": read_json(run / "manifest.json")["dataset_digest"],
+            "file_hashes": {f"{split}.jsonl": digest((output / f"{split}.jsonl").read_text()) for split in rows},
+        },
+    )
     return summary

@@ -6,9 +6,10 @@ Decision Forge connects business policies, workflow decision points, controlled 
 and training exports. It gives organizations a reproducible path from their operating knowledge
 to the judgments that people and agents make throughout a workflow.
 
-**Status: v0.1 foundation.** The offline pipeline works end to end. Document compilation uses an
-explicitly configured model endpoint. Full workflow simulation and large-scale generation backends
-are tracked in the [roadmap](ROADMAP.md).
+**Status: active alpha.** The offline compiler, exact distribution quotas, multi-step mock business
+workflows, independent trace grading, reviewed feedback, and split-preserving dataset updates are
+implemented. Optional Data Designer and LangGraph adapters have executable SDK contract tests.
+Remaining acceptance work is tracked explicitly in the [roadmap](ROADMAP.md).
 
 ```mermaid
 flowchart LR
@@ -19,7 +20,7 @@ flowchart LR
     E --> F[Training datasets]
     E --> G[Executable decision tasks]
     G --> H[Execution feedback]
-    H -. Roadmap .-> C
+    H --> C
 ```
 
 ## Four decision surfaces
@@ -85,14 +86,16 @@ resumable chunk extraction, source spans, call budgets, and a content-bound revi
 
 Labels in this release are verified against declared rules. Exact source matching establishes
 provenance; independent business validation establishes whether the rule interpretation is correct.
-The Harbor exporter packages individual decision tasks. Multi-step enterprise environments are
-scheduled for M3.
+The Harbor exporter packages individual decision tasks. A separate multi-step mock workflow runner
+covers assignment, disclosure, approval, and quality decisions with independent trace grading.
+See [platform workflows](docs/platform-workflows.md) for commands and tested integration boundaries.
 
 ## Architecture and integrations
 
 The core stays small and works offline. Provider, generator, verifier, and harness boundaries support
-incremental integration. Data Designer and LangGraph adapters, richer verification, and trace-driven
-data updates have separate milestones and acceptance criteria.
+incremental integration. Data Designer 0.9.7 handles ordered seed expression processing; LangGraph
+1.2.19 persists review/build/export jobs. Runtime events and reviewed development feedback support
+targeted updates. Their broader milestone acceptance criteria remain visible in the roadmap.
 
 - [Architecture](docs/architecture.md)
 - [Project specification](docs/specification.md)

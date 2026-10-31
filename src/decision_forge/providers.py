@@ -7,6 +7,7 @@ import json
 import math
 import re
 import time
+from collections.abc import Callable
 from typing import Any, Literal, Protocol
 from urllib.parse import urlparse
 
@@ -105,11 +106,13 @@ class OpenAICompatibleProvider:
         self.last_usage: dict[str, int | float] | None = None
         # Capability negotiation learned at runtime; explicit response_mode values never degrade.
         self.structured_mode_unavailable = False
+        self.before_attempt: Callable[[int], None] | None = None
+        self.after_attempt: Callable[[str], None] | None = None
 
     @property
     def configuration(self) -> dict[str, Any]:
         return {
-            "transport_version": "structured-auto-v3",
+            "transport_version": "structured-auto-v4-metered-attempts",
             "parser_version": "json-or-single-fence-v1",
             "base_url": self.base_url,
             "model": self.model,
@@ -159,13 +162,8 @@ class OpenAICompatibleProvider:
         return len(httpx.Request("POST", f"{self.base_url}/chat/completions", json=payload).content)
 
     def input_bytes(self, system: str, user: str, schema: dict[str, Any]) -> int:
-        """Upper bound on transport bytes, including a possible response-mode downgrade."""
-        size = self._transport_bytes(self.request_payload(system, user, schema))
-        if self.response_mode == "auto" and not self.structured_mode_unavailable:
-            # auto may fall back to json_object, whose system prompt carries the whole schema.
-            fallback = self._payload(system, user, schema, strict_schema(schema), "json_object")
-            size = max(size, self._transport_bytes(fallback))
-        return size
+        """Exact bytes for the next attempt; fallback attempts reserve independently."""
+        return self._transport_bytes(self.request_payload(system, user, schema))
 
     def _error_message(self, response: httpx.Response) -> str:
         """Return the provider's own diagnostic without echoing prompts or credentials."""
@@ -200,59 +198,75 @@ class OpenAICompatibleProvider:
         try:
             attempt = 0
             while True:
+                self.last_usage = None
+                self.last_response_metadata = None
+                self.last_response_encoding = None
+                self.last_response_mode = payload["response_format"]["type"]
+                if self.before_attempt:
+                    self.before_attempt(self._transport_bytes(payload))
+                attempt_status = "failed"
                 try:
-                    response = client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
-                except (httpx.TimeoutException, httpx.NetworkError) as exc:
-                    if attempt >= self.retries:
-                        raise ValueError("Model endpoint request failed; no source content was logged") from exc
-                    time.sleep(2**attempt)
-                    attempt += 1
-                    continue
-                if self._rejects_structured_mode(response):
-                    # The endpoint cannot enforce JSON Schema. Degrade once, stay degraded, and retry
-                    # without spending a transport retry, because no model generation happened.
-                    self.structured_mode_unavailable = True
-                    payload = self.request_payload(system, user, schema)
-                    self.last_response_mode = payload["response_format"]["type"]
-                    continue
-                if (response.status_code == 429 or response.status_code >= 500) and attempt < self.retries:
-                    time.sleep(2**attempt)
-                    attempt += 1
-                    continue
-                if response.is_error:
-                    detail = self._error_message(response)
-                    raise ValueError(
-                        f"Model endpoint returned HTTP {response.status_code}" + (f": {detail}" if detail else "")
-                    )
-                try:
-                    data = response.json()
-                    usage = data.get("usage") if isinstance(data, dict) else None
-                    if isinstance(usage, dict) and all(
-                        type(usage.get(key)) is int and usage[key] >= 0
-                        for key in ("prompt_tokens", "completion_tokens")
-                    ):
-                        self.last_usage = {key: usage[key] for key in ("prompt_tokens", "completion_tokens")}
-                        cost = usage.get("cost")
-                        if (
-                            isinstance(cost, (int, float))
-                            and not isinstance(cost, bool)
-                            and math.isfinite(cost)
-                            and cost >= 0
+                    try:
+                        response = client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
+                    except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                        if attempt >= self.retries:
+                            raise ValueError("Model endpoint request failed; no source content was logged") from exc
+                        time.sleep(2**attempt)
+                        attempt += 1
+                        continue
+                    if self._rejects_structured_mode(response):
+                        # The endpoint cannot enforce JSON Schema. Degrade once, stay degraded, and retry
+                        # without spending a transport retry, because no model generation happened.
+                        self.structured_mode_unavailable = True
+                        payload = self.request_payload(system, user, schema)
+                        continue
+                    if (response.status_code == 429 or response.status_code >= 500) and attempt < self.retries:
+                        time.sleep(2**attempt)
+                        attempt += 1
+                        continue
+                    if response.is_error:
+                        # Provider diagnostics can echo prompts or credentials. Expose only known
+                        # parameter names, never arbitrary server-controlled message text.
+                        message = self._error_message(response)
+                        parameter = next(
+                            (p for p in ("response_format", "reasoning_effort", "max_tokens") if p in message), None
+                        )
+                        detail = f"; check {parameter}" if parameter else ""
+                        raise ValueError(f"Model endpoint returned HTTP {response.status_code}{detail}")
+                    try:
+                        data = response.json()
+                        usage = data.get("usage") if isinstance(data, dict) else None
+                        if isinstance(usage, dict) and all(
+                            type(usage.get(key)) is int and usage[key] >= 0
+                            for key in ("prompt_tokens", "completion_tokens")
                         ):
-                            self.last_usage["cost"] = cost
-                    choice = data["choices"][0]
-                    self.last_response_metadata = {
-                        "id": data.get("id"),
-                        "model": data.get("model"),
-                        "finish_reason": choice.get("finish_reason"),
-                    }
-                    message = choice["message"]["content"]
-                    if not isinstance(message, str):
-                        raise ValueError("Model returned no generated text")
-                    result, self.last_response_encoding = parse_generated_object(message)
-                    return result
-                except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
-                    raise ValueError("Model returned an invalid structured response") from exc
+                            self.last_usage = {key: usage[key] for key in ("prompt_tokens", "completion_tokens")}
+                            cost = usage.get("cost")
+                            if (
+                                isinstance(cost, (int, float))
+                                and not isinstance(cost, bool)
+                                and math.isfinite(cost)
+                                and cost >= 0
+                            ):
+                                self.last_usage["cost"] = cost
+                        choice = data["choices"][0]
+                        self.last_response_metadata = {
+                            "id": data.get("id"),
+                            "model": data.get("model"),
+                            "finish_reason": choice.get("finish_reason"),
+                        }
+                        message = choice["message"]["content"]
+                        if not isinstance(message, str):
+                            raise ValueError("Model returned no generated text")
+                        result, self.last_response_encoding = parse_generated_object(message)
+                        attempt_status = "returned"
+                        return result
+                    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+                        raise ValueError("Model returned an invalid structured response") from exc
+                finally:
+                    if self.after_attempt:
+                        self.after_attempt(attempt_status)
+
         finally:
             if owned:
                 client.close()

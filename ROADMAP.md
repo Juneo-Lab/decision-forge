@@ -30,7 +30,8 @@ or conflicting rules in an explicit review queue.
 Implementation evidence: source adapters and review/evaluation interfaces are implemented. The
 [flagship model experiment](experiments/2026-10-m1/README.md) preserves successful compilation,
 reference disagreements, and rejected review items. Larger multi-document interaction studies and
-aggregate token-budget policy remain open in issue #12. M1 is still open.
+cross-document retrieval and interaction acceptance remain open in issue #12. Aggregate token
+reservations now cover request bytes plus output caps and preserve actual usage. M1 is still open.
 
 ## M2 · v0.3 · Distribution-aware synthesis
 
@@ -42,6 +43,11 @@ Acceptance: requested and realized distributions are reported; family relations 
 checks; interrupted jobs resume; generation cost is recorded per accepted example; the offline core
 continues to work without integration dependencies.
 
+Implemented increment: exact accepted-example quotas, feasibility/divergence reports, executable
+counterfactual relations, candidate-order rewrites, pinned Data Designer ordered-seed processing,
+and durable LangGraph review/build/export jobs. Model-generated synthesis, semantic paraphrase
+validation, broader deduplication and recipe-planning agent tools remain open.
+
 ## M3 · v0.4 · Executable organization tasks
 
 Build a multi-step customer workflow environment with mock CRM, sharing, and approval tools.
@@ -50,6 +56,11 @@ Integrate Harbor and independent verification, then add a Verifiers adapter wher
 Acceptance: multiple harness/model combinations run the same tasks; environments reset reproducibly;
 grading artifacts stay outside solver-visible inputs; policy compliance, task utility, cost, and
 escalation are recorded separately; task validators pass positive, negative, and mutation fixtures.
+
+Implemented increment: resettable local mock tools, independent trace grading and three fictional
+task fixtures. Two flagship models have run the same local workflows with archived usage and
+results. Harbor remains a single-step export; container execution and multi-harness acceptance
+remain open.
 
 ## M4 · v0.5 · Feedback and targeted updates
 
@@ -60,6 +71,10 @@ integration for generative trajectories separately from typed decision-head trai
 Acceptance: a source policy change identifies all affected artifacts; unchanged artifacts are reused;
 held-out test families remain isolated; a data update has a reproducible quality and cost report.
 
+Implemented increment: transactional versioned runtime events, explicit review labels, development-only
+feedback requests, source/rule/episode lineage and cached updates with a cumulative family split
+registry. Span-level invalidation, model lineage and downstream curriculum evaluation remain open.
+
 ## M5 · v1.0 · Stable open-source platform
 
 Stabilize extension APIs and schema migrations, expand operational documentation, test larger datasets,
@@ -68,6 +83,10 @@ publish repeatable performance measurements, and establish signed release and pa
 Acceptance: compatibility tests cover supported versions and adapters; packaging and deployment
 instructions reproduce on clean systems; model/data quality and throughput reports state hardware,
 versions, costs, and protocols; maintainers publish a support and deprecation policy.
+
+Implemented increment: reproducible cold/warm benchmarks at 2,800 and 28,000 episodes, optional SDK
+contract tests and clean-install checks. Downstream model-quality studies, public package provenance
+and stable extension guarantees remain release acceptance work.
 
 ## Contribution lanes
 

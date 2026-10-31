@@ -82,7 +82,7 @@ def quote_span(text: str, quote: str) -> tuple[int, int]:
     raise ValueError("Quote is not present in the source text")
 
 
-def atomic_text(path: Path, content: str, mode: int = 0o644) -> None:
+def atomic_text(path: Path, content: str, mode: int = 0o600) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, name = tempfile.mkstemp(prefix=".forge-", dir=path.parent)
     try:
@@ -90,7 +90,7 @@ def atomic_text(path: Path, content: str, mode: int = 0o644) -> None:
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
-        # mkstemp creates 0600 files; artifacts must be readable by other users and tools.
+        # Source-derived artifacts are private by default. Portable task files opt in to sharing.
         os.chmod(name, mode)
         os.replace(name, path)
     finally:
@@ -147,6 +147,8 @@ def load_sources(project: Project, root: Path) -> tuple[dict[str, str], dict[str
                 except ValueError as exc:
                     raise ValueError(f"Evidence quote rejected for rule {rule.id}: {exc}") from None
                 continue
+            if not 0 <= evidence.start < evidence.end <= len(source_text):
+                raise ValueError(f"Evidence span is outside source bounds for rule {rule.id}")
             span = source_text[evidence.start : evidence.end]
             if len(span) < len(evidence.quote) or collapse_whitespace(span)[0] != quoted:
                 raise ValueError(f"Evidence span does not match for rule {rule.id}")

@@ -79,42 +79,42 @@
       "milestone": "m1",
       "title": "Implement resumable corpus compilation and workflow reconstruction",
       "state": "open",
-      "body": "Scale source analysis beyond a single model request.\n\nAcceptance criteria:\n- [ ] Add chunk retrieval and cross-document rule resolution.\n- [x] Resume completed extraction stages after interruption.\n- [ ] Enforce token/call budgets and record usage.\n- [x] Evaluate decision-node recall and reference correctness.\n\nCurrent implementation: overlapping source chunks, shared validated caches, bounded global claim assembly, checkpointed validation repairs, call/request-byte budgets, per-request output-token limits, and returned usage/cost. Larger multi-document interaction studies and aggregate token-budget policy remain open."
+      "body": "Scale source analysis beyond a single model request.\n\nAcceptance criteria:\n- [ ] Add chunk retrieval and cross-document rule resolution.\n- [x] Resume completed extraction stages after interruption.\n- [x] Enforce token/call budgets and record usage.\n- [x] Evaluate decision-node recall and reference correctness.\n\nCurrent implementation: overlapping source chunks, shared validated caches, bounded global claim assembly, checkpointed validation repairs, call/request-byte budgets, per-request output-token limits, and returned usage/cost. Larger multi-document interaction studies and retrieval-based rule resolution remain open.\n\nCurrent implementation evidence: Aggregate token reservations now include request bytes and output caps. This conservative bound assumes byte-based text tokenization; actual returned usage and unknown attempts are retained. Cross-document retrieval/interaction acceptance remains open."
     },
     {
       "id": "data-designer",
       "milestone": "m2",
       "title": "Integrate a version-pinned NeMo Data Designer generation adapter",
       "state": "open",
-      "body": "Compile Forge recipes to a dependency-aware generation backend.\n\nAcceptance criteria:\n- [ ] Optional installation leaves the offline core dependency-light.\n- [ ] Map scenario fields, constraints, validators, and artifact metadata.\n- [ ] Contract tests pin the supported backend version.\n- [ ] Resume tests and per-record generation cost reports pass."
+      "body": "Compile Forge recipes to a dependency-aware generation backend.\n\nAcceptance criteria:\n- [x] Optional installation leaves the offline core dependency-light.\n- [ ] Map scenario fields, constraints, validators, and artifact metadata.\n- [x] Contract tests pin the supported backend version.\n- [x] Resume tests and per-record generation cost reports pass.\n\nCurrent implementation evidence: Data Designer 0.9.7 executes ordered seed expression processing with real SDK resume tests and zero model-call cost. Model-written scenario synthesis and backend conditional generation remain open; this adapter does not imply their completion."
     },
     {
       "id": "distribution-planner",
       "milestone": "m2",
       "title": "Add stratum budgets and constrained decision-family transformations",
       "state": "open",
-      "body": "Make organization-specific training distributions explicit.\n\nAcceptance criteria:\n- [ ] Configure routine, boundary, change, and development-feedback budgets.\n- [ ] Check feasibility and expected answer relationships after transformations.\n- [ ] Add semantics-preserving rewrites and duplicate detection.\n- [ ] Report requested, generated, filtered, and accepted distributions."
+      "body": "Make organization-specific training distributions explicit.\n\nAcceptance criteria:\n- [x] Configure routine, boundary, change, and development-feedback budgets.\n- [x] Check feasibility and expected answer relationships after transformations.\n- [ ] Add semantics-preserving rewrites and duplicate detection.\n- [x] Report requested, generated, filtered, and accepted distributions."
     },
     {
       "id": "persistent-orchestration",
       "milestone": "m2",
       "title": "Add a persistent recipe-planning agent and tool registry",
       "state": "open",
-      "body": "Expose discoverable typed tools for analysis, planning, previews, and execution.\n\nAcceptance criteria:\n- [ ] Add a LangGraph adapter with durable stage state.\n- [ ] Store artifacts outside conversational working memory.\n- [ ] Recover from provider failure without duplicate publication.\n- [ ] Route interpretation conflicts to the review queue."
+      "body": "Expose discoverable typed tools for analysis, planning, previews, and execution.\n\nAcceptance criteria:\n- [x] Add a LangGraph adapter with durable stage state.\n- [x] Store artifacts outside conversational working memory.\n- [ ] Recover from provider failure without duplicate publication.\n- [x] Route interpretation conflicts to the review queue.\n\nCurrent implementation evidence: LangGraph 1.2.19 and SQLite checkpoint 3.1.3 persist review/build/export stages. Recipe-planning agent tools and provider-failure campaign acceptance remain open."
     },
     {
       "id": "business-environment",
       "milestone": "m3",
       "title": "Build the multi-step customer workflow environment",
       "state": "open",
-      "body": "Exercise all four decision surfaces in one business task.\n\nAcceptance criteria:\n- [ ] Provide mock CRM, information-sharing, approval, and acceptance tools.\n- [ ] Record decision-time state and subsequent transitions.\n- [ ] Reset the initial snapshot reproducibly.\n- [ ] Cover successful, blocked, escalated, and revised workflows."
+      "body": "Exercise all four decision surfaces in one business task.\n\nAcceptance criteria:\n- [x] Provide mock CRM, information-sharing, approval, and acceptance tools.\n- [x] Record decision-time state and subsequent transitions.\n- [x] Reset the initial snapshot reproducibly.\n- [x] Cover successful, blocked, escalated, and revised workflows.\n\nCurrent implementation evidence: Implemented in workflows.py with three fictional task fixtures. Local live Opus 5.5/GPT-6.1 Sol runs are archived in experiments/2026-10-workflows. Container acceptance is tracked separately."
     },
     {
       "id": "independent-graders",
       "milestone": "m3",
       "title": "Isolate workflow graders and validate them with mutation fixtures",
       "state": "open",
-      "body": "Make executable labels independently checkable.\n\nAcceptance criteria:\n- [ ] Run graders separately from solver-visible artifacts.\n- [ ] Validate positive, negative, and boundary cases.\n- [ ] Detect intentionally mutated permission and threshold checks.\n- [ ] Separate grader failures from agent failures."
+      "body": "Make executable labels independently checkable.\n\nAcceptance criteria:\n- [x] Run graders separately from solver-visible artifacts.\n- [x] Validate positive, negative, and boundary cases.\n- [x] Detect intentionally mutated permission and threshold checks.\n- [x] Separate grader failures from agent failures.\n\nCurrent implementation evidence: Independent trace replay recalculates permission, transition and utility. Mutation fixtures alter permission and state claims; solver failures and trace validity are reported separately."
     },
     {
       "id": "harness-integrations",
@@ -128,21 +128,21 @@
       "milestone": "m4",
       "title": "Define runtime event ingestion and decision-outcome association",
       "state": "open",
-      "body": "Connect deployed decision calls to observable workflow results.\n\nAcceptance criteria:\n- [ ] Version decision, action, tool-result, review, and outcome events.\n- [ ] Associate events using stable workflow and decision IDs.\n- [ ] Preserve observational versus verified label distinctions.\n- [ ] Evaluate Agent Lightning capture without coupling typed heads to token RL."
+      "body": "Connect deployed decision calls to observable workflow results.\n\nAcceptance criteria:\n- [x] Version decision, action, tool-result, review, and outcome events.\n- [x] Associate events using stable workflow and decision IDs.\n- [x] Preserve observational versus verified label distinctions.\n- [ ] Evaluate Agent Lightning capture without coupling typed heads to token RL."
     },
     {
       "id": "lineage-updates",
       "milestone": "m4",
       "title": "Extend impact analysis to span-level lineage and targeted regeneration",
       "state": "open",
-      "body": "Update decision data when organizational policies change.\n\nAcceptance criteria:\n- [ ] Track source spans through rules, tasks, datasets, and models.\n- [ ] Rebuild affected families and reuse unchanged artifacts.\n- [ ] Test policy-version responsiveness and rollback provenance.\n- [ ] Measure update cost and verification outcomes."
+      "body": "Update decision data when organizational policies change.\n\nAcceptance criteria:\n- [ ] Track source spans through rules, tasks, datasets, and models.\n- [x] Rebuild affected families and reuse unchanged artifacts.\n- [ ] Test policy-version responsiveness and rollback provenance.\n- [x] Measure update cost and verification outcomes.\n\nCurrent implementation evidence: Cumulative family registry protects removed/restored held-out families; document-level source invalidation remains in use. Fine-grained span reuse and model-weight lineage remain open."
     },
     {
       "id": "feedback-curriculum",
       "milestone": "m4",
       "title": "Use reviewed development feedback to update generation priorities",
       "state": "open",
-      "body": "Close the data improvement loop while preserving evaluation independence.\n\nAcceptance criteria:\n- [ ] Convert development errors into traceable generation requests.\n- [ ] Keep test families outside adaptive generation.\n- [ ] Compare recipes under fixed training budgets.\n- [ ] Publish coverage, quality, and cost deltas per dataset version."
+      "body": "Close the data improvement loop while preserving evaluation independence.\n\nAcceptance criteria:\n- [x] Convert development errors into traceable generation requests.\n- [x] Keep test families outside adaptive generation.\n- [ ] Compare recipes under fixed training budgets.\n- [ ] Publish coverage, quality, and cost deltas per dataset version."
     },
     {
       "id": "stable-extension-api",
@@ -156,7 +156,7 @@
       "milestone": "m5",
       "title": "Publish reproducible scale, quality, and cost benchmarks",
       "state": "open",
-      "body": "Measure practical performance under documented conditions.\n\nAcceptance criteria:\n- [ ] Report hardware, versions, source sizes, and sampling recipes.\n- [ ] Measure throughput, recovery, storage, and accepted-example cost.\n- [ ] Report independent label review and downstream model quality.\n- [ ] Reproduce results on clean systems."
+      "body": "Measure practical performance under documented conditions.\n\nAcceptance criteria:\n- [x] Report hardware, versions, source sizes, and sampling recipes.\n- [x] Measure throughput, recovery, storage, and accepted-example cost.\n- [ ] Report independent label review and downstream model quality.\n- [ ] Reproduce results on clean systems.\n\nCurrent implementation evidence: Measured cold/warm 2,800- and 28,000-episode offline builds, with script and hardware metadata. This measures data-pipeline execution; downstream training quality remains unmeasured."
     },
     {
       "id": "release-automation",
