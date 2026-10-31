@@ -5,12 +5,19 @@ build-backend = "hatchling.build"
 [project]
 name = "decision-forge"
 version = "0.3.0"
-description = "Compile organizational workflows into verifiable decision training data."
+description = "Compile organizational policy into verifiable decision training data."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{ name = "Decision Forge contributors" }]
-keywords = ["synthetic-data", "agents", "decision-models", "fine-tuning", "policy"]
+keywords = [
+  "decision-data",
+  "policy-as-code",
+  "synthetic-data",
+  "data-provenance",
+  "fine-tuning",
+  "agents",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3",

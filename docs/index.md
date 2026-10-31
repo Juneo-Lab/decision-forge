@@ -1,6 +1,6 @@
 # Decision Forge
 
-Decision Forge compiles organizational workflows into evidence-linked decision training data.
+Decision Forge compiles organizational policy into verifiable decision training data.
 The four decision surfaces are work allocation, information sharing, action selection, and outcome
 evaluation.
 

@@ -13,6 +13,11 @@ The roadmap tracks the remaining training-quality and platform-release acceptanc
 - Reject stale expansion scenario, family, source, and split assignments before dataset publication.
 - Reconcile roadmap status with implemented decision generation and training interfaces.
 
+- Add documentation build and opt-in Pages deployment, a logo, governance, support, and label guidance.
+- Maintain a Simplified Chinese README with language-switch links and matching examples.
+- Add a reproducible offline benchmark report with host and dependency versions.
+- Unify the project tagline across the README, package metadata, citation, and docs site.
+
 - Add decision-only candidate-probability exports with family grouping and source provenance.
 - Preserve explicit soft targets in validated external rows and encode native single-token candidates.
 - Keep target probabilities aligned through candidate shuffling; reject truncation and label collisions.

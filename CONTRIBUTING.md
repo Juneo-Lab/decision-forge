@@ -40,3 +40,43 @@ Use development data for iteration and freeze test families before augmentation.
 
 Contributions are licensed under Apache-2.0. By submitting a contribution, you confirm that you have
 the right to contribute it under this license. Maintainers review changes before release.
+
+## Labels
+
+Issues and pull requests carry one `type/` label and at least one `area/` label, so the backlog stays
+readable without a project board.
+
+| Label | Meaning |
+| --- | --- |
+| `type/bug` | Wrong behaviour, including a wrong label or a false rejection |
+| `type/feature` | New capability with an acceptance criterion |
+| `type/docs` | Documentation, examples, or diagrams |
+| `type/benchmark` | Measurement protocol, host reporting, or a reproducible result |
+| `area/compiler` | Ingestion, extraction, evidence binding, review gates |
+| `area/policy` | Rule semantics, priority, conflict analysis |
+| `area/generation` | Scenarios, quotas, synthesis, deduplication |
+| `area/training` | Export contracts, candidate-readout encoding, evaluation loop |
+| `area/harness` | Workflow tasks, Harbor export, grading |
+| `area/docs` | Site, README, and reference material |
+| `good first issue` | Scoped, has a clear acceptance criterion, no design decision required |
+| `help wanted` | Maintainers will review but will not drive it |
+| `blocked` | Waiting on an external dependency or a maintainer decision |
+
+Labels are applied by maintainers during triage. A pull request that changes behaviour should reference
+the issue whose acceptance criterion it satisfies, so closing the issue closes the claim.
+
+## Definition of done
+
+A behaviour change is complete when it has: a behavioural test that fails without the change, a note in
+`CHANGELOG.md` if user-visible, updated documentation for any changed command or contract, and a
+passing `ruff`, `mypy`, `pytest --cov-fail-under=80`, and `mkdocs build --strict`.
+
+Documentation-only changes require relevant link, asset, and strict site-build checks.
+
+## Documentation deployment
+
+The Docs workflow builds and uploads the site for documentation pull requests and main-branch updates.
+To publish it, a repository administrator selects **GitHub Actions** under **Settings → Pages** and
+sets the Actions repository variable `DEPLOY_DOCS` to `true`. Deployment then runs on main, or through
+a manual Docs workflow run on main. Until enabled, the workflow builds the site and skips deployment.
+The intended site URL is `https://juneo-lab.github.io/decision-forge/`.

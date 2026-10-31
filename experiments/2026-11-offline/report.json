@@ -1,0 +1,58 @@
+{
+  "protocol": "cold-and-warm-offline-v1",
+  "engine_fingerprint": "51176c1282fc53fc2f9777f394a771988473bc8b901274ed6772fadb87ea4fff",
+  "python": "3.12.12",
+  "platform": "macOS-26.6-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "dependencies": {
+    "decision-forge": "0.3.0",
+    "pydantic": "2.14.2",
+    "filelock": "4.2.4"
+  },
+  "measurements": [
+    {
+      "families": 25,
+      "scenarios": 100,
+      "accepted": 700,
+      "cold_seconds": 0.22093545901589096,
+      "warm_seconds": 0.1395635410444811,
+      "cold_examples_per_second": 3168.3461003407874,
+      "warm_cache_hits": 100,
+      "dataset_digest": "5a6ee026577dc074240fba84bff365b26e3f36051de985c1faa6694284ba63bc",
+      "run_bytes": 1179899,
+      "specification_bytes": 43909,
+      "provider_calls": 0,
+      "provider_cost_usd": 0
+    },
+    {
+      "families": 100,
+      "scenarios": 400,
+      "accepted": 2800,
+      "cold_seconds": 0.835224875016138,
+      "warm_seconds": 0.5696280419360846,
+      "cold_examples_per_second": 3352.390576185724,
+      "warm_cache_hits": 400,
+      "dataset_digest": "ea68086e93833fad51174074d7eefd0676f1fe3af56eb249963abdecdf16b4a8",
+      "run_bytes": 4597535,
+      "specification_bytes": 130759,
+      "provider_calls": 0,
+      "provider_cost_usd": 0
+    },
+    {
+      "families": 400,
+      "scenarios": 1600,
+      "accepted": 11200,
+      "cold_seconds": 3.3397342920070514,
+      "warm_seconds": 2.3797779589658603,
+      "cold_examples_per_second": 3353.560199925136,
+      "warm_cache_hits": 1600,
+      "dataset_digest": "0feb69087cfc63cb36936909f789c00b45e527312b00b5d8b97f6a5396d87d40",
+      "run_bytes": 18298380,
+      "specification_bytes": 481759,
+      "provider_calls": 0,
+      "provider_cost_usd": 0
+    }
+  ],
+  "quality_scope": "Declarative-policy verification; no downstream model training."
+}

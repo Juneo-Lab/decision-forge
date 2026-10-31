@@ -1,5 +1,13 @@
 # Decision Forge
 
+[![CI](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml)
+[![Docs](https://github.com/Juneo-Lab/decision-forge/actions/workflows/docs.yml/badge.svg)](docs/index.md)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Status](https://img.shields.io/badge/status-v0.3.0%20alpha-FF5A1F)](ROADMAP.md)
+
+**English** · [简体中文](README.zh-CN.md)
+
 **Compile organizational policy into verifiable decision training data.**
 
 ![Decision Forge pipeline: compile and review organizational knowledge, shape scenarios across four decision surfaces and distributions, verify labels through policy replay, and export training data.](docs/assets/decision-forge-overview-v2.png)
@@ -151,6 +159,10 @@ MkDocs, wheel and sdist builds. CI runs 9 checks: quality, six test jobs (Ubuntu
 3.11/3.12/3.13), pinned Data Designer and LangGraph adapter contracts, and Harbor task execution in
 Docker under oracle and no-op controls.
 
+**Offline benchmark:** cold and warm builds are measured on 25, 100, and 400 synthetic families.
+The [benchmark report](docs/benchmarks.md) records measured throughput, host and dependency versions,
+and matching dataset digests; the original JSON is archived with the results.
+
 **Live model runs (archived in `experiments/`, fictional inputs):**
 
 | Experiment | Models | Result | Recorded cost |
@@ -202,6 +214,7 @@ The [roadmap](ROADMAP.md) tracks each remaining acceptance item against a milest
 | [Decision training](docs/decision-training.md) | Export contract and candidate-readout encoding |
 | [Platform workflows](docs/platform-workflows.md) | Multi-step tasks, grading, feedback, updates |
 | [Data protocol](docs/data-protocol.md) | Evaluation protocol and reporting rules |
+| [Benchmarks](docs/benchmarks.md) | Offline throughput protocol and reference results |
 | [References](docs/references.md) | Prior art and integration candidates |
 
 ## Development
@@ -215,6 +228,12 @@ uv run mkdocs build --strict
 uv build
 ```
 
-Code, documentation, examples, issues, and discussion templates are written in English. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for the review bar and [SECURITY.md](SECURITY.md) for reporting
-vulnerabilities. Licensed under [Apache-2.0](LICENSE).
+Code and technical documentation are written in English; this README also has a maintained
+[Simplified Chinese translation](README.zh-CN.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for the review bar and
+label taxonomy, [GOVERNANCE.md](GOVERNANCE.md) for how decisions are made, [SUPPORT.md](SUPPORT.md) for
+where to ask, and [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
+
+If you use Decision Forge in published work, cite it via [CITATION.cff](CITATION.cff). Signal changes
+through [`CHANGELOG.md`](CHANGELOG.md); export formats are versioned, so cite the version you used.
+
+Licensed under [Apache-2.0](LICENSE).

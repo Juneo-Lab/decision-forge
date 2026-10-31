@@ -1,13 +1,48 @@
 site_name: Decision Forge
-site_description: Compile organizational workflows into verifiable decision training data.
+site_description: Compile organizational policy into verifiable decision training data.
+site_url: https://juneo-lab.github.io/decision-forge/
+repo_url: https://github.com/Juneo-Lab/decision-forge
+repo_name: Juneo-Lab/decision-forge
+edit_uri: edit/main/docs/
+copyright: Apache-2.0 licensed. Built by the Decision Forge contributors.
 theme:
   name: material
+  logo: images/logo.svg
+  favicon: images/logo.svg
   palette:
-    primary: indigo
-    accent: teal
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
   features:
     - navigation.sections
+    - navigation.top
+    - navigation.footer
     - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - search.highlight
+    - search.suggest
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Juneo-Lab/decision-forge
+      name: Source code
+plugins:
+  - search
 nav:
   - Overview: index.md
   - Project status: status.md
@@ -19,6 +54,7 @@ nav:
   - Implementation plan: implementation-plan.md
   - Platform workflows: platform-workflows.md
   - Data protocol: data-protocol.md
+  - Benchmarks: benchmarks.md
   - References: references.md
 markdown_extensions:
   - tables
