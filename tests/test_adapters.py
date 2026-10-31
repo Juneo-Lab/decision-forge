@@ -30,8 +30,14 @@ def test_real_langgraph_pauses_for_review_then_resumes_without_duplicate_export(
         orchestrate(spec, tmp_path / "job", database, "test-job")
 
 
-def test_real_designer_preserves_ordered_seed_contract_and_recovers(example_path, tmp_path):
+def test_real_designer_preserves_ordered_seed_contract_and_recovers(example_path, tmp_path, monkeypatch):
     pytest.importorskip("data_designer.interface")
+    from data_designer.config import default_model_settings
+
+    # A clean machine starts without SDK defaults; its first engine initialization
+    # creates them. Resume identity must stay independent of that ambient state.
+    monkeypatch.setattr(default_model_settings, "MODEL_CONFIGS_FILE_PATH", tmp_path / "sdk-models.yaml")
+    monkeypatch.setattr(default_model_settings, "MODEL_PROVIDERS_FILE_PATH", tmp_path / "sdk-providers.yaml")
     shutil.copytree(example_path.parent, tmp_path / "input")
     spec = tmp_path / "input/project.yaml"
     project = load_project(spec)

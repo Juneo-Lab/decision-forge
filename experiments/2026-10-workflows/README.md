@@ -58,3 +58,11 @@ uv run python scripts/benchmark_pipeline.py --families 100 1000 \
 
 These are local measurements with one repetition per cold/warm condition. They provide a reproducible
 baseline; they do not establish a cross-hardware performance claim.
+
+## Harbor container controls
+
+[The Docker CI job](https://github.com/Juneo-Lab/decision-forge/actions/runs/41175746817/job/124462826677)
+ran Harbor 0.25.0 on eight stratified single-step tasks. Oracle rewards were 1 for all eight tasks;
+no-op rewards were 0 for the same eight tasks. Both controls completed without execution errors.
+These controls validate packaging, permissions, task reset and verifier execution. They do not
+measure a model's decision quality. The CI job retains the task IDs and individual trial artifacts.

@@ -7,6 +7,8 @@
 - Add resettable four-surface business workflows and independent trace grading.
 - Add idempotent runtime events, reviewed development feedback, lineage, and targeted updates.
 - Add pinned Data Designer expression processing and durable LangGraph orchestration.
+- Keep Data Designer resume identity independent of first-run SDK model defaults.
+- Run eight Harbor Docker tasks under both oracle and no-op controls in CI.
 - Preserve a cumulative family split registry across removal and restoration.
 - Bind review approvals to dependent rules, scenarios, source metadata and dataset recipes.
 - Fix candidate-dimension mutations, split-cache leakage, and out-of-bounds evidence spans.

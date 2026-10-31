@@ -40,7 +40,7 @@ def designer_process(run: Path, output: Path) -> dict[str, Any]:
     identity = digest(
         {
             "dataset": manifest["dataset_digest"],
-            "adapter": "ordered-seed-expressions-v1",
+            "adapter": "ordered-seed-expressions-v2",
             "backend": SUPPORTED["data-designer"],
         }
     )
@@ -76,7 +76,18 @@ def designer_process(run: Path, output: Path) -> dict[str, Any]:
     from decision_forge.io import atomic_text
 
     atomic_text(seed_path, "".join(canonical(row) + "\n" for row in seeds))
-    builder = dd.DataDesignerConfigBuilder()
+    # Explicit configuration prevents the SDK's first-run default setup (or a
+    # user's later edits to it) from changing the resumable job fingerprint.
+    builder = dd.DataDesignerConfigBuilder(
+        model_configs=[
+            dd.ModelConfig(
+                alias="offline-disabled",
+                model="offline-disabled",
+                provider="offline-disabled",
+                skip_health_check=True,
+            )
+        ]
+    )
     builder.with_seed_dataset(
         dd.LocalFileSeedSource(path=str(seed_path)), sampling_strategy=dd.SamplingStrategy.ORDERED
     )

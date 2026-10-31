@@ -95,9 +95,10 @@ compliance, best-choice rate, escalation, completion, and trace validity separat
 unknown-cost attempts and latency are reported separately by the runner. Solver failures are retained.
 
 The portable Harbor exporter remains a **single-step** adapter. It uses deterministic round-robin
-sampling across kind/stratum cells and records the exact episode IDs and dataset digest. Multi-step
-container packaging and two distinct harness executions remain acceptance work; local workflow
-model evaluation alone does not establish that result.
+sampling across kind/stratum cells and records the exact episode IDs and dataset digest. CI pins
+Harbor 0.25.0 and executes eight tasks in Docker with both the oracle (reward 1) and no-op
+(reward 0) controls. It verifies every trial and retains the task manifest and execution artifacts.
+Multi-step container packaging and two distinct harness/model executions remain acceptance work.
 
 ## Runtime observations and reviewed feedback
 

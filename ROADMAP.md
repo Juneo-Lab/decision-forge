@@ -59,8 +59,8 @@ escalation are recorded separately; task validators pass positive, negative, and
 
 Implemented increment: resettable local mock tools, independent trace grading and three fictional
 task fixtures. Two flagship models have run the same local workflows with archived usage and
-results. Harbor remains a single-step export; container execution and multi-harness acceptance
-remain open.
+results. Harbor 0.25.0 single-step tasks pass Docker oracle and no-op controls in CI.
+Multi-step container execution and multi-harness acceptance remain open.
 
 ## M4 · v0.5 · Feedback and targeted updates
 

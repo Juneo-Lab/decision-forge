@@ -121,7 +121,7 @@
       "milestone": "m3",
       "title": "Run workflow tasks across Harbor harnesses and model configurations",
       "state": "open",
-      "body": "Provide repeatable system-level evaluation.\n\nAcceptance criteria:\n- [ ] Pin and test the Harbor runtime contract.\n- [ ] Run at least two harness/model configurations on identical tasks.\n- [ ] Record utility, compliance, cost, latency, and escalation separately.\n- [ ] Document a Verifiers adapter decision based on integration needs."
+      "body": "Provide repeatable system-level evaluation.\n\nAcceptance criteria:\n- [x] Pin and test the Harbor runtime contract.\n- [ ] Run at least two harness/model configurations on identical tasks.\n- [ ] Record utility, compliance, cost, latency, and escalation separately.\n- [ ] Document a Verifiers adapter decision based on integration needs.\n\nCurrent implementation evidence: Harbor 0.25.0 executes eight stratified single-step tasks in Docker under oracle and no-op controls, with complete-trial and reward assertions. Multi-step multi-harness/model acceptance remains open."
     },
     {
       "id": "runtime-events",
