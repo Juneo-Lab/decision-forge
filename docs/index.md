@@ -12,12 +12,13 @@ From a source checkout with Python 3.11+ and uv installed:
 uv sync --group dev
 uv run decision-forge validate examples/customer_support/project.yaml
 uv run decision-forge build examples/customer_support/project.yaml --output runs/demo
-uv run decision-forge export runs/demo --output runs/demo-typed --format typed
+uv run decision-forge export runs/demo --output runs/demo-decision --format decision
 ```
 
-The fictional example builds 336 episodes. All variants of a customer case share one split. Hash-based
-splitting preserves family membership; small datasets may differ from requested split proportions.
-The report records realized counts. No model credentials are required for this workflow.
+The fictional example builds 336 episodes. All variants of a customer case share one split. Families
+are ranked by a stable hash and then sliced into quotas computed from the recipe, so realized split
+sizes track the configured proportions; the report records requested and realized counts. No model
+credentials are required for this workflow.
 
 ## Command reference
 
@@ -25,7 +26,7 @@ The report records realized counts. No model credentials are required for this w
 | --- | --- |
 | `validate SPEC` | Validate schema, references, source paths, and evidence quotations |
 | `build SPEC --output DIR` | Generate episodes and publish a verified run manifest |
-| `export RUN --output DIR --format typed` | Export typed, SFT, or canonical training views |
+| `export RUN --output DIR --format decision` | Export decision, typed, SFT, or canonical training views |
 | `compile FILE... --output DIR --base-url URL --model MODEL` | Compile documents using an explicit model endpoint |
 | `impact SPEC PREVIOUS_RUN` | Report changed, added, removed, and reusable scenario work |
 | `replay RUN PREDICTIONS` | Score recorded candidate choices against declared policies |

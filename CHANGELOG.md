@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
+
+Version 0.3.0 packages organization compilation and distribution-aware decision synthesis.
+Engine fingerprints have changed; use new output directories for builds created with this version.
+The roadmap tracks the remaining training-quality and platform-release acceptance work.
 
 - Consolidate dependency upgrades for checkout, setup-uv, mypy, filelock, pytest-cov, and pytest.
 - Preserve subprocess coverage when migrating to pytest-cov 7.
