@@ -1,6 +1,7 @@
 # Repository guidance
 
-- Use English for all source code, documentation, examples, tests, and GitHub content.
+- Use English for all source code, documentation, examples, tests, and GitHub content. The canonical
+  README is `README.md`; `README.zh-CN.md` is a maintained translation and must stay in sync with it.
 - Keep the core pipeline runnable offline. External model calls require an explicit command and endpoint.
 - Preserve source provenance, family-level data splits, and separation of model inputs from labels.
 - Add behavioral tests for policy semantics, export contracts, integrity, and recovery when changed.

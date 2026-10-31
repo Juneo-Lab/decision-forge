@@ -10,7 +10,14 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{ name = "Decision Forge contributors" }]
-keywords = ["synthetic-data", "agents", "decision-models", "fine-tuning", "policy"]
+keywords = [
+  "decision-data",
+  "policy-as-code",
+  "synthetic-data",
+  "data-provenance",
+  "fine-tuning",
+  "agents",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3",

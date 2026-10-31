@@ -1,5 +1,13 @@
 # Decision Forge
 
+[![CI](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-live-4f46e5)](https://juneo-lab.github.io/decision-forge/)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Status](https://img.shields.io/badge/status-v0.3%20delivery-brightgreen)](ROADMAP.md)
+
+**English** · [简体中文](README.zh-CN.md)
+
 **Compile organizational policy into verifiable decision training data.**
 
 Organizations already know how their work should be decided — the policies, thresholds, escalation
@@ -114,8 +122,7 @@ uv run decision-forge export runs/demo --output runs/train --format decision
 uv run python scripts/finetune_evaluation.py prepare runs/demo --output runs/plan --budget-examples 2000
 ```
 
-The `decision` format emits `objective: candidate_readout` rows with unit weights and full provenance,
-and
+The `decision` format emits `objective: candidate_readout` rows with unit weights and full provenance.
 [`decision_forge.training.encode_decision`](docs/decision-training.md) turns them into a native
 non-thinking prefix: single-token candidate labels, target probabilities moved together with the
 candidate order, no answer token appended, and truncation rejected rather than silently applied. A
@@ -159,6 +166,10 @@ label is replayed from the declared policy.
 MkDocs, wheel and sdist builds. CI runs 9 checks: quality, six test jobs (Ubuntu and macOS × Python
 3.11/3.12/3.13), pinned Data Designer and LangGraph adapter contracts, and Harbor task execution in
 Docker under oracle and no-op controls.
+
+**Throughput:** ~3.7k accepted episodes per second, near-linear to 11,200 episodes, with the dataset
+digest asserted identical across cold and warm runs. Host, versions, and protocol are recorded in
+[benchmarks](docs/benchmarks.md).
 
 **Live model runs (archived in `experiments/`, fictional inputs):**
 
@@ -220,6 +231,12 @@ uv run mkdocs build --strict
 uv build
 ```
 
-Code, documentation, examples, issues, and discussion templates are written in English. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for the review bar and [SECURITY.md](SECURITY.md) for reporting
-vulnerabilities. Licensed under [Apache-2.0](LICENSE).
+Repository artifacts are written in English; this README is also maintained in
+[Simplified Chinese](README.zh-CN.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for the review bar and
+label taxonomy, [GOVERNANCE.md](GOVERNANCE.md) for how decisions are made, [SUPPORT.md](SUPPORT.md) for
+where to ask, and [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
+
+If you use Decision Forge in published work, cite it via [CITATION.cff](CITATION.cff). Signal changes
+through [`CHANGELOG.md`](CHANGELOG.md); export formats are versioned, so cite the version you used.
+
+Licensed under [Apache-2.0](LICENSE).

@@ -1,0 +1,19 @@
+# Default owners for everything in the repository.
+* @EonHao
+
+# Policy semantics, evidence binding, and review gates change rarely and need a careful read.
+/src/decision_forge/policy.py            @EonHao
+/src/decision_forge/models.py            @EonHao
+/src/decision_forge/review.py            @EonHao
+/src/decision_forge/corpus.py            @EonHao
+
+# Data contracts consumed by trainers and external harnesses.
+/src/decision_forge/training.py          @EonHao
+/src/decision_forge/exporters.py         @EonHao
+/src/decision_forge/harness.py           @EonHao
+
+# Anything that changes the published surface.
+/docs/                                   @EonHao
+/README.md                               @EonHao
+/ROADMAP.md                              @EonHao
+/.github/roadmap.json                    @EonHao

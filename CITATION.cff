@@ -4,7 +4,7 @@ title: "Decision Forge: Organizational Decision Data Infrastructure"
 type: software
 authors:
   - name: Decision Forge contributors
-version: 0.1.0
+version: 0.3.0
 date-released: 2026-10-31
 license: Apache-2.0
-abstract: Compile organizational policies and workflows into evidence-linked, verifiable decision training data.
+abstract: Compile organizational policy into verifiable decision training data.

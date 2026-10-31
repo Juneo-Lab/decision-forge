@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Decision Forge">
+  <rect width="64" height="64" rx="14" fill="#4338ca"/>
+  <g stroke="#c7d2fe" stroke-width="3.2" stroke-linecap="round">
+    <path d="M14 20h13"/>
+    <path d="M14 32h13"/>
+    <path d="M14 44h13"/>
+  </g>
+  <g stroke="#a5b4fc" stroke-width="2.4" stroke-linecap="round" fill="none">
+    <path d="M27 20c7 0 8 12 13 12"/>
+    <path d="M27 44c7 0 8-12 13-12"/>
+    <path d="M27 32h13"/>
+  </g>
+  <circle cx="46" cy="32" r="6.5" fill="#14b8a6"/>
+  <circle cx="46" cy="32" r="2.4" fill="#0f766e"/>
+</svg>
