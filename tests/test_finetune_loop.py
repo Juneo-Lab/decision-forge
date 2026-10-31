@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from decision_forge.io import read_json, write_json
+from decision_forge.io import digest, read_json, write_json
 from decision_forge.pipeline import build, load_run
 
 loop = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/finetune_evaluation.py"))
@@ -34,17 +34,29 @@ class ScriptedChoices:
 def test_prepare_freezes_the_dataset_and_writes_a_pinned_plan(example_path, tmp_path):
     build(example_path, tmp_path / "run")
     config = prepare(tmp_path / "run", tmp_path / "finetune", budget_examples=2000)
-    assert config["status"] == "planned"
+    assert config["status"] == "prepared"
     assert config["examples"]["test"] > 0
     assert (tmp_path / "finetune/training/train.jsonl").exists()
-    assert (tmp_path / "finetune/train.sh").stat().st_mode & 0o111
+    assert not (tmp_path / "finetune/train.sh").exists()
+    assert config["training_launched"] is False
+    assert config["trainer"]["loss"] == "candidate_restricted_cross_entropy"
     assert read_json(tmp_path / "finetune/plan.json")["trainer"]["method"] == "lora"
 
 
 def test_prepare_applies_the_example_budget(example_path, tmp_path):
     build(example_path, tmp_path / "run")
     config = prepare(tmp_path / "run", tmp_path / "finetune", budget_examples=50)
-    assert config["examples"]["train"] <= 50
+    assert config["examples"]["train"] == 50
+    training = tmp_path / "finetune/training"
+    rows = [json.loads(line) for line in (training / "train.jsonl").read_text().splitlines()]
+    assert len(rows) == 50
+    assert [r["id"] for r in rows] == config["selected_ids"]["train"]
+    assert all(row["objective"] == "candidate_readout" for row in rows)
+    for split in ("train", "development", "test"):
+        assert config["file_hashes"][f"{split}.jsonl"] == digest((training / f"{split}.jsonl").read_text())
+    for split in ("development", "test"):
+        expected = [e.id for e in load_run(tmp_path / "run") if e.split == split and len(e.valid_choices) == 1]
+        assert config["selected_ids"][split] == expected
 
 
 def test_prepare_refuses_a_dataset_without_a_held_out_split(project, example_path, tmp_path):
@@ -118,6 +130,9 @@ def test_compare_reports_a_measured_delta(tmp_path):
         "coverage": 1.0,
         "permitted_rate": 1.0,
         "dataset_digest": "d",
+        "cases": 8,
+        "events": [{"episode_id": str(i)} for i in range(8)],
+        "prompt": "fixed",
         "by_kind": cases,
     }
     cand = {
@@ -127,6 +142,9 @@ def test_compare_reports_a_measured_delta(tmp_path):
         "coverage": 1.0,
         "permitted_rate": 1.0,
         "dataset_digest": "d",
+        "cases": 8,
+        "events": [{"episode_id": str(i)} for i in range(8)],
+        "prompt": "fixed",
         "by_kind": tuned,
     }
     write_json(tmp_path / "a.json", base)
@@ -135,3 +153,28 @@ def test_compare_reports_a_measured_delta(tmp_path):
     assert report["overall_delta"] == pytest.approx(0.5)
     assert {row["kind"] for row in report["by_kind"]} == {"allocate_work", "select_actions"}
     assert all(row["delta"] == pytest.approx(0.5) for row in report["by_kind"])
+
+
+@pytest.mark.parametrize("budget,override", [(0, {}), (-1, {}), (5, {"loss": "sft"}), (5, {"epochs": 0})])
+def test_prepare_rejects_invalid_contract_before_writing(tmp_path, budget, override):
+    with pytest.raises(ValueError):
+        prepare(tmp_path / "nonexistent", tmp_path / "output", budget, override)
+    assert not (tmp_path / "output").exists()
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"events": [{"episode_id": "different"}]},
+        {"prompt": "changed"},
+        {"cases": 2},
+        {"events": []},
+    ],
+)
+def test_compare_requires_matching_case_records_and_prompts(tmp_path, change):
+    base = {"dataset_digest": "d", "cases": 1, "events": [{"episode_id": "a"}], "prompt": "fixed"}
+    write_json(tmp_path / "base.json", base)
+    write_json(tmp_path / "candidate.json", {**base, **change})
+    with pytest.raises(ValueError, match="case|prompt|counts"):
+        compare(tmp_path / "base.json", tmp_path / "candidate.json", tmp_path / "result.json")
+    assert not (tmp_path / "result.json").exists()

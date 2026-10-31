@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add decision-only candidate-probability exports with family grouping and source provenance.
+- Preserve explicit soft targets in validated external rows and encode native single-token candidates.
+- Keep target probabilities aligned through candidate shuffling; reject truncation and label collisions.
+- Apply training budgets to actual exported rows and record selected IDs and file digests.
+- Replace the generic SFT launch stub with an explicit candidate-readout training handoff.
+- Require explicit endpoint and model selection for generated-choice evaluation.
+
 - Add a recipe-planning agent with a typed tool registry, an auditable ledger, and resumable plans.
 - Separate synthesizable shortfalls from held-out and exhausted-state shortfalls before spending calls.
 - Add verified model-written scenario synthesis: models propose state only, labels are replayed.

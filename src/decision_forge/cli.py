@@ -102,10 +102,10 @@ def build_command(
 
 @app.command("export")
 def export_command(run: Path, output: Annotated[Path, typer.Option("--output", "-o")], format: str = "typed") -> None:
-    """Export split-aware typed, SFT, or set-valued canonical training data."""
+    """Export split-aware decision-probability, typed, SFT, or canonical training data."""
     try:
-        if format not in {"typed", "sft", "canonical"}:
-            raise ValueError("Format must be typed, sft, or canonical")
+        if format not in {"typed", "sft", "canonical", "decision"}:
+            raise ValueError("Format must be typed, sft, canonical, or decision")
         display(export_run(run, output, format))  # type: ignore[arg-type]
     except (ValueError, OSError) as exc:
         fail(exc)

@@ -40,12 +40,14 @@ Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 uv sync --group dev
 uv run decision-forge validate examples/customer_support/project.yaml
 uv run decision-forge build examples/customer_support/project.yaml --output runs/demo
-uv run decision-forge export runs/demo --output runs/demo-typed --format typed
+uv run decision-forge export runs/demo --output runs/demo-decision --format decision
 ```
 
 The example contains only fictional business policies. It runs locally without API keys or model
 downloads. Outputs include verified episodes, rejected cases, coverage reports, a source snapshot,
 and an integrity-checked build manifest. Repeating the build reuses cached scenario families.
+The [decision training contract](docs/decision-training.md) connects these outputs to candidate-readout
+training: explicit options, aligned target probabilities, family grouping, and unit row weights.
 
 ```bash
 uv run decision-forge impact examples/customer_support/project.yaml runs/demo
@@ -80,7 +82,8 @@ resumable chunk extraction, source spans, call budgets, and a content-bound revi
 - Family-level split assignment before augmentation and version-linked evidence.
 - Content-addressed scenario caching, atomic artifacts, and input-change detection.
 - Coverage reports and source-to-scenario impact analysis.
-- Canonical, typed-choice, and chat SFT exports; ambiguous choices remain explicit.
+- Candidate-probability decision exports with native candidate-label encoding and preserved provenance.
+- Canonical, typed-choice, and chat SFT views; ambiguous choices remain explicit.
 - Offline prediction replay and portable single-step Harbor task exports.
 - An optional document compiler for JSON Schema-capable model endpoints.
 

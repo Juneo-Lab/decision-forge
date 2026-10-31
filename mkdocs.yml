@@ -14,6 +14,7 @@ nav:
   - Specification: specification.md
   - Organization compiler: organization-compiler.md
   - Generation planning: generation.md
+  - Decision training: decision-training.md
   - Implementation plan: implementation-plan.md
   - Platform workflows: platform-workflows.md
   - Data protocol: data-protocol.md

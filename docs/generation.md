@@ -127,7 +127,7 @@ merged pool is deduplicated, then quotas are applied. `report.json` gains `synth
 
 ```bash
 uv run python scripts/finetune_evaluation.py prepare runs/final --output runs/finetune --budget-examples 2000
-# run runs/finetune/train.sh on a GPU host, then serve the checkpoint
+# use a candidate-readout trainer with the exported rows, then serve the checkpoint
 uv run python scripts/finetune_evaluation.py evaluate runs/final --output runs/base.json \
   --arm base_model --base-url https://api.deepseek.com/v1 --model deepseek-chat
 uv run python scripts/finetune_evaluation.py evaluate runs/final --output runs/tuned.json \
@@ -135,10 +135,14 @@ uv run python scripts/finetune_evaluation.py evaluate runs/final --output runs/t
 uv run python scripts/finetune_evaluation.py compare runs/base.json runs/tuned.json --output runs/compare.json
 ```
 
-`prepare` writes a pinned plan (`trl`, LoRA, one epoch, fixed seed, example budget), the exported
-splits, and the exact training command. It refuses to run when the dataset has no held-out split,
-because a comparison without one measures nothing. `compare` refuses arms scored on different dataset
-digests. Both arms answer the same fixed prompt, so the only difference is the checkpoint.
+`prepare` exports candidate-probability decision rows and writes a pinned handoff plan. Its example
+budget limits the actual training file; selected IDs and file digests make that selection auditable.
+It preserves held-out family assignments and refuses a dataset without eligible training or test rows.
+Training requires a compatible candidate-readout trainer; see the [decision training contract](decision-training.md).
+
+The endpoint commands measure generated-choice accuracy separately from candidate NLL. Both arms
+must use the same held-out cases and fixed prompt. Dataset identity alone does not establish that a
+training run occurred or improved decision quality.
 
 ## What this does not claim
 

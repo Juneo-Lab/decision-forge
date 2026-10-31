@@ -34,6 +34,7 @@ jobs:
       - run: uv run pytest --cov=decision_forge --cov-report=term-missing --cov-fail-under=80
       - run: uv run decision-forge build examples/customer_support/project.yaml --output runs/ci
       - run: uv run decision-forge export runs/ci --output runs/ci-export --format typed
+      - run: uv run decision-forge export runs/ci --output runs/ci-decisions --format decision
 
   adapters:
     runs-on: ubuntu-latest
