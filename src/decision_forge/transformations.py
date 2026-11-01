@@ -10,6 +10,7 @@ from typing import Any, Literal
 from pydantic import Field, JsonValue
 
 from decision_forge.generation import policy_fingerprint, set_path
+from decision_forge.inputs import episode_presentation, presentation_text
 from decision_forge.io import canonical, digest
 from decision_forge.models import Contract, Episode, Project, Stratum
 from decision_forge.policy import best_choices, evaluate
@@ -104,14 +105,6 @@ def _numbers(text: str) -> list[str]:
     return sorted(_NUMBER.findall(text))
 
 
-def presentation_text(episode: Episode) -> str:
-    return (
-        episode.question
-        + "\n"
-        + "\n".join(f"{candidate.id}: {candidate.description}" for candidate in episode.candidates)
-    )
-
-
 def verify_presentation(
     original: Episode, rewrite: PresentationRewrite, verifier: Callable[[str, str, dict[str, Any]], dict[str, Any]]
 ) -> dict[str, Any]:
@@ -126,13 +119,11 @@ def verify_presentation(
         raise ValueError("Rewrite must describe exactly the declared candidates")
     if any(not text.strip() for text in rewrite.candidate_descriptions.values()):
         raise ValueError("Rewrite must not blank a candidate description")
-    original_numbers = _numbers(presentation_text(original))
-    rewritten = (
-        rewrite.question + "\n" + "\n".join(f"{key}: {value}" for key, value in rewrite.candidate_descriptions.items())
-    )
+    original_numbers = _numbers(episode_presentation(original))
+    rewritten = presentation_text(rewrite.question, rewrite.candidate_descriptions.items())
     if _numbers(rewritten) != original_numbers:
         raise ValueError("Rewrite changed a numeric value; thresholds must be preserved")
-    original_length = len(presentation_text(original))
+    original_length = len(episode_presentation(original))
     if not 0.4 <= len(rewritten) / max(original_length, 1) <= 3.0:
         raise ValueError("Rewrite length is not a paraphrase of the original presentation")
     verdict = RewriteVerdict.model_validate(

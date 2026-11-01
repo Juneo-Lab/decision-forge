@@ -22,7 +22,7 @@ from collections.abc import Iterable
 from itertools import combinations
 from typing import Any
 
-from decision_forge.inputs import model_input
+from decision_forge.inputs import episode_presentation, model_input
 from decision_forge.io import canonical
 from decision_forge.models import Episode
 
@@ -55,15 +55,6 @@ def structure_key(episode: Episode) -> str:
                 {"id": candidate.id, "attributes": candidate.attributes} for candidate in episode.candidates
             ],
         }
-    )
-
-
-def presentation_text(episode: Episode) -> str:
-    """The wording a model reads: the question and the candidate descriptions."""
-    return (
-        episode.question
-        + "\n"
-        + "\n".join(f"{candidate.id}: {candidate.description}" for candidate in episode.candidates)
     )
 
 
@@ -136,20 +127,15 @@ def find_duplicates(
     if permutations < 8:
         raise ValueError("At least eight permutations are required for a stable estimate")
     groups = _DisjointSet(len(episodes))
-    signals = [minhash_signature(shingle_hashes(presentation_text(e)), permutations) for e in episodes]
-    exact_pairs: set[tuple[int, int]] = set()
-    for members in _clusters_by_structure(episodes):
-        digests: dict[str, list[int]] = {}
+    digests = [input_digest(e) for e in episodes]
+    signals = [minhash_signature(shingle_hashes(episode_presentation(e)), permutations) for e in episodes]
+    structural = _clusters_by_structure(episodes)
+    for members in structural:
+        first_with_input: dict[str, int] = {}
         for index in members:
-            digests.setdefault(input_digest(episodes[index]), []).append(index)
-        for same_input in digests.values():
-            for left, right in zip(same_input, same_input[1:], strict=False):
-                exact_pairs.add((left, right))
-                groups.union(left, right)
+            groups.union(first_with_input.setdefault(digests[index], index), index)
         for left, right in combinations(sorted(members), 2):
-            if (left, right) in exact_pairs:
-                continue
-            if jaccard_estimate(signals[left], signals[right]) >= threshold:
+            if groups.find(left) != groups.find(right) and jaccard_estimate(signals[left], signals[right]) >= threshold:
                 groups.union(left, right)
 
     clusters: dict[int, list[int]] = {}
@@ -164,7 +150,7 @@ def find_duplicates(
             continue
         cluster = [episodes[index] for index in indexes]
         keeper = _choose_keeper(cluster)
-        exact = len({input_digest(e) for e in cluster}) == 1
+        exact = len({digests[index] for index in indexes}) == 1
         # Identical inputs must not disagree about the metadata a quota is keyed on. Keeping one copy
         # is correct for training, but the disagreement has to reach a reviewer, otherwise a cell can
         # silently empty out.
@@ -218,7 +204,7 @@ def find_duplicates(
         "shingle_size": SHINGLE_SIZE,
         "permutations": permutations,
         "examples": len(episodes),
-        "structural_groups": len(_clusters_by_structure(episodes)),
+        "structural_groups": len(structural),
         "kept": len(kept),
         "removed": len(dropped),
         "groups": sorted(duplicate_groups, key=lambda group: group["kept"]),
@@ -235,19 +221,6 @@ def deduplicate(episodes: list[Episode], **kwargs: Any) -> tuple[list[Episode], 
     report = find_duplicates(episodes, **kwargs)
     kept_ids = set(report["kept_ids"])
     return sorted((e for e in episodes if e.id in kept_ids), key=lambda e: e.id), report
-
-
-def reject_duplicate_inputs(episodes: list[Episode], existing: Iterable[Episode]) -> list[Episode]:
-    """Filter proposed examples that repeat an input already present in the pool."""
-    known = {input_digest(e) for e in existing}
-    unique: list[Episode] = []
-    for episode in episodes:
-        digest_value = input_digest(episode)
-        if digest_value in known:
-            continue
-        known.add(digest_value)
-        unique.append(episode)
-    return unique
 
 
 def duplicate_verdict(
@@ -267,8 +240,8 @@ def duplicate_verdict(
         if input_digest(other) == target_digest:
             return "exact"
         if target_signal is None:
-            target_signal = minhash_signature(shingle_hashes(presentation_text(episode)), permutations)
-        signal = minhash_signature(shingle_hashes(presentation_text(other)), permutations)
+            target_signal = minhash_signature(shingle_hashes(episode_presentation(episode)), permutations)
+        signal = minhash_signature(shingle_hashes(episode_presentation(other)), permutations)
         if jaccard_estimate(target_signal, signal) >= threshold:
             return "near"
     return None
