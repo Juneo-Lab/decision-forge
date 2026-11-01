@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import math
 import random
+from dataclasses import dataclass
 from typing import Any
 
 from decision_forge.io import digest
@@ -58,21 +59,25 @@ def policy_fingerprint(project: Project, node_id: str, source_hashes: dict[str, 
     )
 
 
-def generate_family(project: Project, scenario: Scenario, source_hashes: dict[str, str], split: Split) -> list[Episode]:
+@dataclass(frozen=True)
+class Variant:
+    """One decision-time situation a scenario family contributes, before labeling."""
+
+    state: dict[str, Any]
+    candidates: list[Candidate]
+    intervention: dict[str, Any]
+
+
+def family_variants(project: Project, scenario: Scenario) -> list[Variant]:
+    """The situations a build samples for a scenario: its declared dimensions applied to the seed state."""
     node: Node = next(n for n in project.nodes if n.id == scenario.node_id)
-    rules = [r for r in project.organization.rules if r.id in node.rule_ids]
     widths = [len(dim.values) for dim in node.dimensions]
     population = math.prod(widths)
     if population > 10**12:
         raise ValueError("Scenario space exceeds the supported sampling range")
-    count = requested_variants(project, scenario)
     rng = random.Random(digest([project.recipe.seed, scenario.id]))
-    indices = sorted(rng.sample(range(population), count))
-    episodes: dict[str, Episode] = {}
-    referenced_sources = set(scenario.source_ids)
-    referenced_sources.update(e.source_id for r in rules for e in r.evidence)
-    grounding = policy_fingerprint(project, node.id, {key: source_hashes[key] for key in sorted(referenced_sources)})
-    for index in indices:
+    variants = []
+    for index in sorted(rng.sample(range(population), requested_variants(project, scenario))):
         state = copy.deepcopy(scenario.state)
         candidates = [c.model_copy(deep=True) for c in node.candidates]
         intervention: dict[str, Any] = {}
@@ -89,6 +94,19 @@ def generate_family(project: Project, scenario: Scenario, source_hashes: dict[st
                 if attr_path == "id":
                     raise ValueError("Candidate IDs cannot be mutated")
                 set_path(candidate.attributes, attr_path, value)
+        variants.append(Variant(state, candidates, intervention))
+    return variants
+
+
+def generate_family(project: Project, scenario: Scenario, source_hashes: dict[str, str], split: Split) -> list[Episode]:
+    node: Node = next(n for n in project.nodes if n.id == scenario.node_id)
+    rules = [r for r in project.organization.rules if r.id in node.rule_ids]
+    episodes: dict[str, Episode] = {}
+    referenced_sources = set(scenario.source_ids)
+    referenced_sources.update(e.source_id for r in rules for e in r.evidence)
+    grounding = policy_fingerprint(project, node.id, {key: source_hashes[key] for key in sorted(referenced_sources)})
+    for variant in family_variants(project, scenario):
+        state, candidates = variant.state, variant.candidates
         verdicts = evaluate(state, candidates, rules)
         identity = digest(
             [
@@ -120,7 +138,7 @@ def generate_family(project: Project, scenario: Scenario, source_hashes: dict[st
             source_ids=sorted(referenced_sources),
             source_hashes={key: source_hashes[key] for key in sorted(referenced_sources)},
             rule_ids=node.rule_ids,
-            intervention=intervention,
+            intervention=variant.intervention,
             policy_fingerprint=grounding,
         )
     return list(episodes.values())

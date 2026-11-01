@@ -9,9 +9,12 @@ from typing import Any, Literal
 
 from filelock import FileLock
 
+from decision_forge.generation import Variant, family_variants
 from decision_forge.io import canonical, digest, load_project, load_sources, read_json, write_json
 from decision_forge.models import Project, Rule
-from decision_forge.policy import matches
+from decision_forge.policy import conditions_disjoint, matches
+
+MAX_WITNESSES = 5
 
 
 def _rule_items(project: Project, hashes: dict[str, str]) -> dict[str, dict[str, Any]]:
@@ -49,6 +52,17 @@ def _shadowing(left: Rule, right: Rule) -> bool:
     # Every context satisfying the lower rule must also satisfy the higher rule.
     lower_predicates = {canonical(predicate.model_dump()) for predicate in lower.when.all_of}
     return all(canonical(predicate.model_dump()) in lower_predicates for predicate in higher.when.all_of)
+
+
+def _witnesses(left: Rule, right: Rule, situations: list[tuple[str, Variant]]) -> list[dict[str, Any]]:
+    """Generated situations in which both rules govern the same candidate."""
+    found = []
+    for scenario_id, variant in situations:
+        for candidate in variant.candidates:
+            context = {"state": variant.state, "candidate": {**candidate.attributes, "id": candidate.id}}
+            if matches(left.when, context) and matches(right.when, context):
+                found.append({"scenario": scenario_id, "candidate": candidate.id, "intervention": variant.intervention})
+    return found
 
 
 def review_snapshot(spec: Path) -> dict[str, Any]:
@@ -93,44 +107,46 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
             }
         )
         node_fingerprint = item_fingerprint(items[-1])
+        situations = [
+            (scenario.id, variant)
+            for scenario in project.scenarios
+            if scenario.node_id == node.id
+            for variant in family_variants(project, scenario)
+        ]
         for left, right in combinations(node_rules, 2):
             opposite = left.effect != right.effect
             shadow = _shadowing(left, right)
             if not opposite and not shadow:
                 continue
             identical = canonical(left.when.model_dump()) == canonical(right.when.model_dump())
+            witnesses = _witnesses(left, right, situations) if opposite else []
+            # Synthesis can reach states the deterministic pool never samples, so a pair that is not
+            # provably disjoint is reviewed even before any generated state exercises it.
+            overlap = (
+                "observed" if witnesses else ("possible" if not conditions_disjoint(left.when, right.when) else None)
+            )
+            if opposite and not identical and overlap is None:
+                continue
+            ids = sorted([left.id, right.id])
             priority_decides = opposite and left.priority != right.priority
-            overlaps: list[dict[str, str]] = []
-            if opposite:
-                for scenario in project.scenarios:
-                    if scenario.node_id != node.id:
-                        continue
-                    for candidate in node.candidates:
-                        context = {
-                            "state": scenario.state,
-                            "candidate": {**candidate.attributes, "id": candidate.id},
-                        }
-                        if matches(left.when, context) and matches(right.when, context):
-                            overlaps.append({"scenario": scenario.id, "candidate": candidate.id})
-            if not opposite or identical or overlaps:
-                ids = sorted([left.id, right.id])
-                kind = "shadowed" if shadow and not opposite else ("override" if priority_decides else "conflict")
-                items.append(
-                    {
-                        "id": f"conflict:{node.id}:{ids[0]}:{ids[1]}",
-                        "kind": kind,
-                        "content": {
-                            "rules": ids,
-                            "node_fingerprint": node_fingerprint,
-                            "rule_fingerprints": [rule_fingerprints[left.id], rule_fingerprints[right.id]],
-                            "identical_condition": identical,
-                            "rule_shadowing": shadow,
-                            "priority_decides": priority_decides,
-                            "seed_witnesses": overlaps,
-                        },
-                        "sources": {},
-                    }
-                )
+            items.append(
+                {
+                    "id": f"conflict:{node.id}:{ids[0]}:{ids[1]}",
+                    "kind": "shadowed" if shadow and not opposite else ("override" if priority_decides else "conflict"),
+                    "content": {
+                        "rules": ids,
+                        "node_fingerprint": node_fingerprint,
+                        "rule_fingerprints": [rule_fingerprints[left.id], rule_fingerprints[right.id]],
+                        "identical_condition": identical,
+                        "rule_shadowing": shadow,
+                        "priority_decides": priority_decides,
+                        "overlap": overlap if opposite else None,
+                        "witness_count": len(witnesses),
+                        "witnesses": witnesses[:MAX_WITNESSES],
+                    },
+                    "sources": {},
+                }
+            )
     for item in items:
         item["fingerprint"] = item_fingerprint(item)
     return {"schema_version": "1.0", "fingerprint": fingerprint, "source_hashes": hashes, "items": items}

@@ -75,6 +75,65 @@ def matches(condition: Condition, context: dict[str, Any]) -> bool:
     )
 
 
+ORDERING = {"gt", "gte", "lt", "lte"}
+
+
+def conditions_disjoint(left: Condition, right: Condition) -> bool:
+    """Whether no context can satisfy both conditions, judged conservatively.
+
+    ``True`` is a proof under the interpreter's semantics: some predicate one condition requires
+    rules out a predicate the other requires, or every ``any_of`` branch of one side is ruled out by
+    the requirements it would have to meet together. ``False`` means the conditions may overlap.
+    """
+    for one, other in ((left, right), (right, left)):
+        required = [*one.all_of, *other.all_of]
+        if any(_excludes(predicate, requirement) for predicate in one.all_of for requirement in other.all_of):
+            return True
+        if one.any_of and all(any(_excludes(branch, r) for r in required) for branch in one.any_of):
+            return True
+    return False
+
+
+def _excludes(first: Predicate, second: Predicate) -> bool:
+    """Whether two predicates on the same path can never hold for the same value."""
+    if first.path != second.path:
+        return False
+    for one, other in ((first, second), (second, first)):
+        if one.op == "exists":
+            # Every operator except 'exists' requires the value to be present.
+            return (other.op == "exists" and one.value != other.value) or (one.value is False and other.op != "exists")
+        if one.op == "eq":
+            return not _holds(other, one.value)
+        if one.op == "in":
+            return not any(_holds(other, item) for item in one.value)  # type: ignore[union-attr]
+    if first.op in ORDERING and second.op in ORDERING:
+        return _intervals_disjoint(first, second)
+    # An ordering needs a number, 'contains' needs a list.
+    operators = {first.op, second.op}
+    return bool(operators & ORDERING) and "contains" in operators
+
+
+def _holds(predicate: Predicate, value: Any) -> bool:
+    context: dict[str, Any] = {}
+    *parents, leaf = predicate.path.split(".")
+    node = context
+    for part in parents:
+        node = node.setdefault(part, {})
+    node[leaf] = value
+    return matches_predicate(predicate, context)
+
+
+def _intervals_disjoint(first: Predicate, second: Predicate) -> bool:
+    lower = [p for p in (first, second) if p.op in {"gt", "gte"}]
+    upper = [p for p in (first, second) if p.op in {"lt", "lte"}]
+    if len(lower) != 1 or len(upper) != 1:
+        return False
+    low, high = lower[0].value, upper[0].value
+    if not isinstance(low, (int, float)) or not isinstance(high, (int, float)):
+        return False
+    return low > high or (low == high and (lower[0].op == "gt" or upper[0].op == "lt"))
+
+
 def evaluate(state: dict[str, Any], candidates: list[Candidate], rules: list[Rule]) -> list[CandidateVerdict]:
     verdicts = []
     for candidate in candidates:
