@@ -9,6 +9,19 @@
 - Close SQLite connections after runtime event ingestion, open the read-only event store through a
   properly escaped file URI, and report missing or empty event stores as CLI errors instead of tracebacks.
 - Report non-object decision bindings in `evaluate-decisions` as a CLI error instead of a traceback.
+- Add a tag-triggered release workflow that verifies version consistency, runs the test suite, builds and
+  smoke-tests the wheel, attests build provenance, creates a GitHub release from the changelog, and
+  optionally publishes to PyPI through trusted publishing.
+- Ship a `py.typed` marker so downstream type checkers use the package's inline annotations.
+- Add project URLs, supported Python versions, and typing classifiers to the package metadata, and
+  repository links to the citation file.
+- Run CI on pull requests, merge queues, and `main` only, cancel superseded pull request runs, bound every
+  job with a timeout, and expose a single `CI result` status for branch protection.
+- Add opt-in dependency review on pull requests (`DEPENDENCY_REVIEW` repository variable), CodeQL analysis
+  for Python and workflows, and OpenSSF Scorecard.
+- Group Dependabot updates so related upgrades land in one lock-file change, and track pre-commit hooks.
+- Validate workflow and Dependabot files in pre-commit.
+
 - Add automatic source format detection and DOCX, XLSX, PPTX, HTML and CSV/TSV parsers with locations.
 - Add image and per-page PDF OCR through local RapidOCR/PP-OCR small models, Tesseract, and explicitly
   selected OpenAI-compatible vision endpoints. Keep model weights local during ingestion.
