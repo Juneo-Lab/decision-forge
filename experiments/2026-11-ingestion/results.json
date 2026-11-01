@@ -1,0 +1,285 @@
+{
+  "scope": "Fictional seven-format ingestion smoke test; not an OCR accuracy benchmark",
+  "date": "2026-11-01",
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "python": "3.12.12"
+  },
+  "sources": [
+    {
+      "id": "source-0",
+      "adapter": "docx",
+      "raw_hash": "e67a1d3caaaa9e63423f3a37b44a897e8de38c88fb3f8d5a6032abeed6142798",
+      "text": "Fictional Northstar policy\nOnly managers approve refunds above 100 dollars.\n",
+      "spans": [
+        {
+          "start": 0,
+          "end": 27,
+          "locator": "body;paragraph:1",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        },
+        {
+          "start": 27,
+          "end": 76,
+          "locator": "body;paragraph:2",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        }
+      ],
+      "extraction": {
+        "parser_version": "1.2.0",
+        "scope": "native text and tables; embedded images, charts and drawing text are not OCRed"
+      }
+    },
+    {
+      "id": "source-1",
+      "adapter": "xlsx",
+      "raw_hash": "2bbae21b69eb5a51ca52111597fb93b5fa8533b561dde1f4de66029ac4f91fc3",
+      "text": "A1: Role\nB1: Permitted action\nA2: Manager\nB2: Approve refunds above 100 dollars\n",
+      "spans": [
+        {
+          "start": 0,
+          "end": 9,
+          "locator": "sheet:Roles;cell:A1",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        },
+        {
+          "start": 9,
+          "end": 30,
+          "locator": "sheet:Roles;cell:B1",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        },
+        {
+          "start": 30,
+          "end": 42,
+          "locator": "sheet:Roles;cell:A2",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        },
+        {
+          "start": 42,
+          "end": 80,
+          "locator": "sheet:Roles;cell:B2",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        }
+      ],
+      "extraction": {
+        "parser_version": "3.1.5",
+        "scope": "native text and tables; embedded images, charts and drawing text are not OCRed"
+      }
+    },
+    {
+      "id": "source-2",
+      "adapter": "pptx",
+      "raw_hash": "0696e7ac1baf73fcdfa026042c57ba6d1a9e51b78fe3bd62079e8bd344e21630",
+      "text": "Only managers approve refunds above 100 dollars.\n",
+      "spans": [
+        {
+          "start": 0,
+          "end": 49,
+          "locator": "slide:1;shape:1;paragraph:1",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        }
+      ],
+      "extraction": {
+        "parser_version": "1.0.2",
+        "scope": "native text and tables; embedded images, charts and drawing text are not OCRed"
+      }
+    },
+    {
+      "id": "source-3",
+      "adapter": "html",
+      "raw_hash": "cff0c2d4a7b4962ae06f158b488a4ac85aac4ba2fe37bc873a1532af748d2d79",
+      "text": "Refund policy\nOnly managers approve refunds above 100 dollars.\n",
+      "spans": [
+        {
+          "start": 0,
+          "end": 14,
+          "locator": "html:text-node:1;tag:h1",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        },
+        {
+          "start": 14,
+          "end": 63,
+          "locator": "html:text-node:2;tag:p",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        }
+      ],
+      "extraction": {
+        "parser_version": "4.15.0",
+        "scope": "static parsed text; scripts, styles and hidden attributes excluded; CSS not evaluated"
+      }
+    },
+    {
+      "id": "source-4",
+      "adapter": "csv",
+      "raw_hash": "2aa9fac8ee7592ba06c0a2efc0520e397d995e29bcde106d09a8a43968124cb7",
+      "text": "Role\nPermitted action\nManager\nApprove refunds above 100 dollars\n",
+      "spans": [
+        {
+          "start": 0,
+          "end": 5,
+          "locator": "row:1;column:1",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        },
+        {
+          "start": 5,
+          "end": 22,
+          "locator": "row:1;column:2",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        },
+        {
+          "start": 22,
+          "end": 30,
+          "locator": "row:2;column:1",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        },
+        {
+          "start": 30,
+          "end": 64,
+          "locator": "row:2;column:2",
+          "method": "native",
+          "confidence": null,
+          "box": null
+        }
+      ],
+      "extraction": {}
+    },
+    {
+      "id": "source-5",
+      "adapter": "image",
+      "raw_hash": "090d541bfa935ee177b714b91c83f7cd428632d24c35fe6a78e19fc7e3ee27a5",
+      "text": "Only managers approve refunds above 100 dollars.\n",
+      "spans": [
+        {
+          "start": 0,
+          "end": 49,
+          "locator": "frame:1;ocr:rapidocr;line:1",
+          "method": "ocr",
+          "confidence": 0.98936,
+          "box": [
+            21.0,
+            33.0,
+            765.0,
+            89.0
+          ]
+        }
+      ],
+      "extraction": {
+        "ocr": {
+          "protocol": "ocr-pages-v1",
+          "config": {
+            "backend": "rapidocr",
+            "mode": "auto",
+            "dpi": 144,
+            "max_pages": 100,
+            "max_pixels": 16000000,
+            "min_confidence": 0,
+            "timeout_seconds": 120,
+            "det_model": null,
+            "rec_model": null,
+            "rec_keys": null,
+            "tessdata_dir": null,
+            "language": "eng",
+            "base_url": null,
+            "model": null,
+            "revision": "unspecified",
+            "max_output_tokens": 8192,
+            "prompt": "Read all visible text in reading order. Return only the transcription."
+          },
+          "models": {
+            "det_model": "090f04abcd9d9a7498bc4ebf677e4cb9bdce1fe4197ddb7e529f1ef44e1ff94f",
+            "rec_model": "6f327246b50388f3c176ae304bd95767ea6dc0c9ae92153ef8cbe210b3c14884"
+          },
+          "packages": {
+            "Pillow": "12.3.0",
+            "rapidocr": "3.10.0",
+            "onnxruntime": "1.31.1"
+          }
+        },
+        "review_required": true
+      }
+    },
+    {
+      "id": "source-6",
+      "adapter": "pdf",
+      "raw_hash": "ca6c6352b70df1f6eefc00a8a65239dc0395f8e6eaf5d9c9a98b1f8aca836218",
+      "text": "Only managers approve refunds above 100 dollars.\n",
+      "spans": [
+        {
+          "start": 0,
+          "end": 49,
+          "locator": "page:1;ocr:rapidocr;line:1",
+          "method": "ocr",
+          "confidence": 0.99234,
+          "box": [
+            40.92741775512695,
+            60.46875,
+            1529.838623046875,
+            181.40625
+          ]
+        }
+      ],
+      "extraction": {
+        "parser_version": "6.21.4",
+        "ocr": {
+          "protocol": "ocr-pages-v1",
+          "config": {
+            "backend": "rapidocr",
+            "mode": "auto",
+            "dpi": 144,
+            "max_pages": 100,
+            "max_pixels": 16000000,
+            "min_confidence": 0,
+            "timeout_seconds": 120,
+            "det_model": null,
+            "rec_model": null,
+            "rec_keys": null,
+            "tessdata_dir": null,
+            "language": "eng",
+            "base_url": null,
+            "model": null,
+            "revision": "unspecified",
+            "max_output_tokens": 8192,
+            "prompt": "Read all visible text in reading order. Return only the transcription."
+          },
+          "models": {
+            "det_model": "090f04abcd9d9a7498bc4ebf677e4cb9bdce1fe4197ddb7e529f1ef44e1ff94f",
+            "rec_model": "6f327246b50388f3c176ae304bd95767ea6dc0c9ae92153ef8cbe210b3c14884"
+          },
+          "packages": {
+            "Pillow": "12.3.0",
+            "rapidocr": "3.10.0",
+            "onnxruntime": "1.31.1"
+          }
+        },
+        "review_required": true,
+        "renderer_version": "5.14.0"
+      }
+    }
+  ],
+  "ocr_exact_transcriptions": 2
+}

@@ -176,12 +176,18 @@ def harbor_export_command(
 
 
 @app.command("ingest")
-def ingest_command(manifest: Path, output: Annotated[Path, typer.Option("--output", "-o")]) -> None:
+def ingest_command(
+    manifest: Path,
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    allow_external_ocr: Annotated[
+        bool, typer.Option(help="Allow image transmission to the OCR endpoint in the manifest.")
+    ] = False,
+) -> None:
     """Normalize source documents with versions, access metadata, and source spans."""
     try:
         if output.exists():
             raise ValueError("Ingestion output already exists")
-        documents = ingest_manifest(manifest)
+        documents = ingest_manifest(manifest, allow_external_ocr=allow_external_ocr)
         write_json(output, [d.model_dump(mode="json") for d in documents])
         display({"sources": len(documents), "output": str(output)})
     except (ValueError, OSError) as exc:
@@ -205,6 +211,9 @@ def compile_corpus_command(
     max_total_tokens: int | None = None,
     chunk_characters: int = 8000,
     overlap_characters: int = 400,
+    allow_external_ocr: Annotated[
+        bool, typer.Option(help="Allow image transmission to the OCR endpoint in the manifest.")
+    ] = False,
 ) -> None:
     """Send an explicit source corpus to a model, checkpoint extraction, and assemble a review draft."""
     try:
@@ -231,7 +240,7 @@ def compile_corpus_command(
             overlap_characters=overlap_characters,
         )
         identity = digest({"endpoint": provider.base_url, "model": model, "temperature": 0})
-        display(compile_corpus(manifest, output, provider, identity, options))
+        display(compile_corpus(manifest, output, provider, identity, options, allow_external_ocr=allow_external_ocr))
     except (ValueError, OSError, Timeout) as exc:
         fail(exc)
 

@@ -267,6 +267,8 @@ def compile_corpus(
     provider_id: str,
     options: CompilationOptions | None = None,
     cache: Path | None = None,
+    *,
+    allow_external_ocr: bool = False,
 ) -> dict[str, Any]:
     if not provider_id.strip():
         raise ValueError("A stable endpoint/model/configuration identity is required for caching")
@@ -274,7 +276,7 @@ def compile_corpus(
         raise ValueError("Budgeted compilation requires provider retries=0; resume explicitly after failures")
     provider_id = digest({"declared": provider_id, "configuration": getattr(provider, "configuration", {})})
     options = options or CompilationOptions()
-    documents = ingest_manifest(manifest)
+    documents = ingest_manifest(manifest, allow_external_ocr=allow_external_ocr)
     fingerprint = digest(
         {
             "documents": [d.model_dump(mode="json") for d in documents],

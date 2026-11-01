@@ -5,7 +5,9 @@ a typed project, review decisions, and training episodes. Each transition has it
 
 ## Source corpus
 
-Install PDF support with `uv sync --extra documents`. Describe sources in a manifest:
+Install office/PDF/HTML support with `uv sync --extra documents`. Add `--extra ocr-rapid` for
+local image/scanned-PDF OCR. See [Document formats and OCR](document-ingestion.md) for the complete
+format matrix and backend configuration. Describe sources in a manifest:
 
 ```yaml
 schema_version: '1.0'
@@ -21,8 +23,9 @@ sources:
 ```
 
 Source paths resolve inside the manifest directory. Text adapters retain line/Markdown-heading
-locations. The PDF adapter uses pypdf and preserves page references. Image-only pages require an OCR
-text source; the adapter reports this condition explicitly. The workflow adapter reads JSON/YAML
+locations. The PDF adapter uses pypdf and preserves page references; configured OCR handles image-only
+pages or all rendered pages in `mode: always`. Image-only pages without OCR fail explicitly.
+The workflow adapter reads JSON/YAML
 objects and records JSON pointers for normalized leaf values. Raw file hashes and normalized content
 hashes capture different stages of the transformation. Unicode character offsets refer to normalized
 text, with an inclusive start and exclusive end.

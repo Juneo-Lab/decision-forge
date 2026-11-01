@@ -12,7 +12,7 @@ outcomes for the data pipeline.
 | Area | Implemented | Remaining acceptance |
 | --- | --- | --- |
 | M0: foundation | Offline builds, typed contracts, policy interpreter, provenance, split isolation, cache integrity, CLI and packaging | Completed foundation; regression validation continues |
-| M1: organization compiler | Text/PDF/workflow ingestion, source spans, bounded resumable extraction, review queue, recorded model experiments | Cross-document retrieval and interaction studies; broader independently reviewed organizational corpora |
+| M1: organization compiler | Text/PDF/workflow, office/tabular/HTML and image ingestion, local OCR, source spans, bounded resumable extraction, review queue, recorded model experiments | Cross-document retrieval and interaction studies; broader independently reviewed organizational corpora |
 | M2: decision synthesis | Distribution quotas, recipe-planning tools, model-proposed states verified by policy replay, rewrites, policy-aware deduplication, resumable orchestration | Data Designer conditional-generation integration; multi-provider recovery campaign; training-quality evidence |
 | Decision training interface | Candidate options and probabilities, source/family metadata, native non-thinking candidate-label encoding, real exported budgets | Execute fixed-budget training comparisons and report candidate NLL and decision accuracy |
 | M3: execution support | Resettable fictional workflows, independent trace grading, local model runs, Harbor Docker oracle/no-op controls | Multi-step container and multi-harness acceptance |

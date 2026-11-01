@@ -48,6 +48,7 @@ nav:
   - Project status: status.md
   - Architecture: architecture.md
   - Specification: specification.md
+  - Document formats and OCR: document-ingestion.md
   - Organization compiler: organization-compiler.md
   - Generation planning: generation.md
   - Decision training: decision-training.md
