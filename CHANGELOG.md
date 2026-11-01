@@ -17,6 +17,12 @@
   new families a stable per-family split, and remember removed families. `build --locked-splits` fails
   instead of creating or changing the lock. Plans from `plan-recipe` made with older versions must be
   regenerated.
+- Send allow/deny rule pairs to review when they overlap only at generated dimension values (#36). Conflict
+  witnesses were searched in seed states alone, so an override that appeared only in a generated
+  situation was labeled without review. The gate now searches every situation the build samples and
+  also queues pairs whose conditions cannot be proven disjoint, since synthesis can reach new states.
+  Conflict items report `overlap`, `witness_count`, and up to five `witnesses` with their dimension
+  values; existing conflict reviews must be recorded again.
 - Attest only the wheel and sdist in the release workflow; `uv build` also writes `dist/.gitignore`.
 
 ## 0.3.1

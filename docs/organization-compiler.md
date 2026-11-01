@@ -114,11 +114,21 @@ uv run decision-forge build runs/compiled/project.json --output runs/reviewed-da
 ```
 
 Review every rule, decision node, and flagged conflict. Nodes expose candidates, rules, and generation
-dimensions for inspection. Allow/deny pairs enter the queue in three cases: identical conditions,
-joint witnesses from a seed scenario/candidate, or a priority override where the higher-priority rule
-resolves the same conflict. Rules that a higher-priority rule of the same effect always outranks enter
-the queue as shadowed, dead rules. This analysis detects concrete witnesses; it does not exhaust every
-possible state. Reviewers examine the full rule context.
+dimensions for inspection. An allow/deny pair on the same node enters the queue unless its conditions
+are provably disjoint:
+
+- **Observed overlap.** The build's own generated situations (every sampled combination of dimension
+  values applied to each seed scenario) contain a candidate that both rules govern. The item lists up
+  to five witnesses, each with its scenario, candidate, and dimension values, plus the total count.
+- **Possible overlap.** No generated situation exercises the pair, but the conditions cannot be
+  proven disjoint, so a synthesized or future state could. Disjointness is judged conservatively from
+  the interpreter's semantics, for example `eq` against a different `eq`, non-overlapping numeric
+  bounds, or `exists: false` against any predicate that needs a value.
+- **Identical conditions.**
+
+The item kind is `override` when the rules differ in priority, so the higher-priority rule decides,
+and `conflict` otherwise, where deny wins. Rules that a higher-priority rule of the same effect always
+outranks enter the queue as shadowed, dead rules. Reviewers examine the full rule context.
 
 A review records identity, reason, time, decision, and the fingerprint of the reviewed item plus the
 sources its evidence cites. Editing an unrelated rule no longer invalidates an accepted decision,
