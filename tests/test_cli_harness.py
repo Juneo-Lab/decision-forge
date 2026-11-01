@@ -1,6 +1,7 @@
 import json
 import tomllib
 
+import pytest
 from typer.testing import CliRunner
 
 from decision_forge.cli import app
@@ -66,3 +67,29 @@ def test_evaluate_decisions_rejects_non_object_bindings(example_path, tmp_path):
     assert result.exit_code == 1
     assert "JSON object keyed by node ID" in result.output
     assert result.exception is None or isinstance(result.exception, SystemExit)
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["validate", "{missing}/project.yaml"],
+        ["build", "{missing}/project.yaml", "--output", "{tmp}/run"],
+        ["export", "{missing}", "--output", "{tmp}/export"],
+        ["impact", "{missing}/project.yaml", "{missing}"],
+        ["replay", "{missing}", "{missing}/predictions.json"],
+        ["harbor-export", "{missing}", "--output", "{tmp}/tasks"],
+        ["ingest", "{missing}/corpus.yaml", "--output", "{tmp}/documents.json"],
+        ["review-status", "{missing}/project.json"],
+        ["events-ingest", "{missing}/events.json", "--database", "{tmp}/events.sqlite"],
+        ["feedback-plan", "{missing}", "{missing}/events.sqlite", "--output", "{tmp}/plan.json"],
+        ["update", "{missing}/project.yaml", "{missing}", "--output", "{tmp}/update"],
+        ["dedup", "{missing}"],
+    ],
+    ids=lambda arguments: arguments[0],
+)
+def test_commands_report_missing_inputs_as_errors_not_tracebacks(tmp_path, arguments):
+    values = [argument.format(missing=tmp_path / "missing", tmp=tmp_path) for argument in arguments]
+    result = CliRunner().invoke(app, values)
+    assert result.exit_code == 1, result.output
+    assert "Error:" in result.output
+    assert isinstance(result.exception, SystemExit)
