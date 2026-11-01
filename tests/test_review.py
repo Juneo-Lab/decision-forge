@@ -2,7 +2,9 @@ import shutil
 
 import pytest
 
-from decision_forge.io import load_project, read_json, write_json
+from decision_forge.generation import generate_family
+from decision_forge.io import load_project, load_sources, read_json, write_json
+from decision_forge.models import Dimension, Predicate
 from decision_forge.pipeline import build
 from decision_forge.review import record_review, review_status
 
@@ -150,3 +152,203 @@ def test_priority_override_conflict_enters_queue(example_path, tmp_path):
     assert items, [item["kind"] for item in review_status(spec)["items"]]
     assert items[0]["content"]["priority_decides"] is True
     assert items[0]["content"]["identical_condition"] is True
+
+
+def dimension_project(tmp_path, dimension_path="state.amount", priority=5):
+    """A fictional approval policy whose deny rule does not match the seed."""
+    quotes = ["Managers may approve requests.", "Requests above 1000 units must be denied."]
+    (tmp_path / "policy.txt").write_text("\n".join(quotes), encoding="utf-8")
+    project = {
+        "organization": {
+            "id": "fictional-approvals",
+            "name": "Fictional Approvals",
+            "policy_version": "1",
+            "rules": [
+                {
+                    "id": "mgr",
+                    "description": quotes[0],
+                    "when": {
+                        "all_of": [
+                            {"path": "candidate.id", "op": "eq", "value": "approve"},
+                            {"path": "state.role", "op": "eq", "value": "manager"},
+                        ]
+                    },
+                    "effect": "allow",
+                    "priority": priority,
+                    "evidence": [{"source_id": "policy", "quote": quotes[0]}],
+                },
+                {
+                    "id": "cap",
+                    "description": quotes[1],
+                    "when": {
+                        "all_of": [
+                            {
+                                "path": dimension_path.replace("candidates.approve.", "candidate."),
+                                "op": "gt",
+                                "value": 1000,
+                            }
+                        ]
+                    },
+                    "effect": "deny",
+                    "evidence": [{"source_id": "policy", "quote": quotes[1]}],
+                },
+            ],
+        },
+        "sources": [{"id": "policy", "path": "policy.txt"}],
+        "nodes": [
+            {
+                "id": "approval",
+                "kind": "select_actions",
+                "question": "May this request be approved?",
+                "candidates": [
+                    {"id": "approve", "description": "Approve", "attributes": {"limits": {"amount": 200}}},
+                    {"id": "defer", "description": "Defer"},
+                ],
+                "rule_ids": ["mgr", "cap"],
+                "dimensions": [{"path": dimension_path, "values": [200, 5000]}],
+            }
+        ],
+        "scenarios": [
+            {
+                "id": "seed",
+                "node_id": "approval",
+                "family_id": "approvals",
+                "state": {"role": "manager", "amount": 200},
+                "source_ids": ["policy"],
+            }
+        ],
+        "recipe": {"seed": 7, "variants_per_scenario": 2},
+    }
+    spec = tmp_path / "project.json"
+    write_json(spec, project)
+    return spec
+
+
+@pytest.mark.parametrize("dimension_path", ["state.amount", "candidates.approve.limits.amount"])
+@pytest.mark.parametrize("priority,kind", [(5, "override"), (0, "conflict")])
+def test_dimension_only_overlap_requires_review(tmp_path, dimension_path, priority, kind):
+    spec = dimension_project(tmp_path, dimension_path, priority)
+    project = load_project(spec)
+    _, hashes = load_sources(project, spec.parent)
+    episodes = generate_family(project, project.scenarios[0], hashes)
+    overlap = next(
+        episode
+        for episode in episodes
+        if any(set(verdict.matched_rules) == {"mgr", "cap"} for verdict in episode.verdicts)
+    )
+    verdict = next(verdict for verdict in overlap.verdicts if verdict.candidate_id == "approve")
+    assert verdict.allowed == (priority > 0)  # Review must not alter priority or deny-wins semantics.
+    status = review_status(spec)
+    item = next(item for item in status["items"] if item["id"] == "conflict:approval:cap:mgr")
+    assert item["kind"] == kind
+    assert item["content"]["seed_witnesses"] == []
+    assert item["content"]["generated_witnesses"] == [
+        {
+            "scenario": "seed",
+            "candidate": "approve",
+            "episode": overlap.id,
+            "intervention": {dimension_path: 5000},
+        }
+    ]
+    write_json(spec.parent / "compilation.json", {"status": "draft"})
+    for other in status["items"]:
+        if other["id"] != item["id"]:
+            record_review(spec, other["id"], "accepted", "test-reviewer", "Fictional fixture.", other["fingerprint"])
+    with pytest.raises(ValueError, match="requires accepted reviews"):
+        build(spec, tmp_path / "blocked")
+    record_review(spec, item["id"], "accepted", "test-reviewer", "Verified the override.", item["fingerprint"])
+    assert build(spec, tmp_path / "accepted")["status"] == "complete"
+
+
+def test_seed_witness_is_retained_when_it_is_not_generated(tmp_path):
+    spec = dimension_project(tmp_path)
+    project = load_project(spec)
+    project.scenarios[0].state["amount"] = 5000
+    project.nodes[0].dimensions[0].values = [200]
+    write_json(spec, project.model_dump(mode="json"))
+    item = next(item for item in review_status(spec)["items"] if item["kind"] == "override")
+    assert item["content"]["seed_witnesses"] == [
+        {"scenario": "seed", "candidate": "approve"},
+    ]
+    assert item["content"]["generated_witnesses"] == []
+
+
+@pytest.mark.parametrize(
+    "setting,value", [("seed", 8), ("variants_per_scenario", 3), ("candidate_pool_per_scenario", 3)]
+)
+def test_sampling_changes_reopen_conflict_review_even_if_first_witness_is_unchanged(tmp_path, setting, value):
+    spec = dimension_project(tmp_path)
+    project = load_project(spec)
+    project.nodes[0].dimensions[0].values = [5000]
+    write_json(spec, project.model_dump(mode="json"))
+    accept_fixture(spec)
+    before = next(item for item in review_status(spec)["items"] if item["kind"] == "override")
+    setattr(project.recipe, setting, value)
+    write_json(spec, project.model_dump(mode="json"))
+    after = next(item for item in review_status(spec)["items"] if item["kind"] == "override")
+    assert before["content"]["generated_witnesses"] == after["content"]["generated_witnesses"]
+    assert before["fingerprint"] != after["fingerprint"]
+    assert after["status"] == "pending"
+
+
+def test_opposite_rules_must_match_the_same_candidate(tmp_path):
+    spec = dimension_project(tmp_path)
+    project = load_project(spec)
+    for rule, candidate_id in zip(project.organization.rules, ["approve", "defer"], strict=True):
+        rule.when.all_of.append(Predicate(path="candidate.id", op="eq", value=candidate_id))
+    write_json(spec, project.model_dump(mode="json"))
+    assert not any(item["kind"] in {"override", "conflict"} for item in review_status(spec)["items"])
+
+
+@pytest.mark.parametrize("setting,value", [("candidate_pool_per_scenario", 2), ("seed", 1)])
+def test_review_uses_only_the_sampled_pool_and_finds_newly_sampled_overlaps(tmp_path, setting, value):
+    spec = dimension_project(tmp_path)
+    project = load_project(spec)
+    project.recipe.seed = 0
+    project.recipe.variants_per_scenario = 1
+    write_json(spec, project.model_dump(mode="json"))
+    _, hashes = load_sources(project, spec.parent)
+    episodes = generate_family(project, project.scenarios[0], hashes)
+    assert [episode.state["amount"] for episode in episodes] == [200]
+    assert not any(item["kind"] == "override" for item in review_status(spec)["items"])
+    accept_fixture(spec)
+    assert review_status(spec)["ready"]
+    setattr(project.recipe, setting, value)
+    write_json(spec, project.model_dump(mode="json"))
+    status = review_status(spec)
+    item = next(item for item in status["items"] if item["kind"] == "override")
+    assert item["status"] == "pending"
+    assert not status["ready"]
+
+
+def test_review_generates_each_scenario_once_for_all_rule_pairs(tmp_path, monkeypatch):
+    import decision_forge.review as review
+
+    spec = dimension_project(tmp_path)
+    project = load_project(spec)
+    extra = project.organization.rules[1].model_copy(deep=True)
+    extra.id = "second-cap"
+    project.organization.rules.append(extra)
+    project.nodes[0].rule_ids.append(extra.id)
+    # Over a billion possible combinations, but the recipe requests only two episodes.
+    project.nodes[0].dimensions.extend(Dimension(path=f"state.extra{i}", values=[0, 1]) for i in range(30))
+    write_json(spec, project.model_dump(mode="json"))
+    calls = []
+
+    def counted_generation(project, scenario, hashes):
+        episodes = generate_family(project, scenario, hashes)
+        calls.append((scenario.id, len(episodes)))
+        return episodes
+
+    monkeypatch.setattr(review, "generate_family", counted_generation)
+    review_status(spec)
+    assert calls == [("seed", 2)]
+
+
+def test_review_retains_generation_population_limit(tmp_path):
+    spec = dimension_project(tmp_path)
+    project = load_project(spec)
+    project.nodes[0].dimensions.extend(Dimension(path=f"state.extra{i}", values=[0, 1]) for i in range(40))
+    write_json(spec, project.model_dump(mode="json"))
+    with pytest.raises(ValueError, match="exceeds the supported sampling range"):
+        review_status(spec)

@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 from filelock import FileLock
 
+from decision_forge.generation import generate_family
 from decision_forge.io import canonical, digest, load_project, load_sources, read_json, write_json
 from decision_forge.models import Project, Rule
 from decision_forge.policy import matches
@@ -49,6 +50,36 @@ def _shadowing(left: Rule, right: Rule) -> bool:
     # Every context satisfying the lower rule must also satisfy the higher rule.
     lower_predicates = {canonical(predicate.model_dump()) for predicate in lower.when.all_of}
     return all(canonical(predicate.model_dump()) in lower_predicates for predicate in higher.when.all_of)
+
+
+def _generated_witnesses(
+    project: Project, node_id: str, hashes: dict[str, str], pairs: set[tuple[str, str]]
+) -> dict[tuple[str, str], dict[str, Any]]:
+    """Keep one emitted witness per opposite-effect pair, generating each scenario at most once."""
+    pending = set(pairs)
+    witnesses: dict[tuple[str, str], dict[str, Any]] = {}
+    if not pending:
+        return witnesses
+    for scenario in project.scenarios:
+        if scenario.node_id != node_id:
+            continue
+        # Use the generator's bounded, seeded sample, including candidate-attribute dimensions.
+        # Its verdicts retain all matching rules, even those outranked by another rule.
+        for episode in generate_family(project, scenario, hashes):
+            for verdict in episode.verdicts:
+                matched = set(verdict.matched_rules)
+                for pair in list(pending):
+                    if matched.issuperset(pair):
+                        witnesses[pair] = {
+                            "scenario": scenario.id,
+                            "candidate": verdict.candidate_id,
+                            "episode": episode.id,
+                            "intervention": episode.intervention,
+                        }
+                        pending.remove(pair)
+            if not pending:
+                return witnesses
+    return witnesses
 
 
 def review_snapshot(spec: Path) -> dict[str, Any]:
@@ -93,6 +124,16 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
             }
         )
         node_fingerprint = item_fingerprint(items[-1])
+        generated = _generated_witnesses(
+            project,
+            node.id,
+            hashes,
+            {
+                (min(left.id, right.id), max(left.id, right.id))
+                for left, right in combinations(node_rules, 2)
+                if left.effect != right.effect
+            },
+        )
         for left, right in combinations(node_rules, 2):
             opposite = left.effect != right.effect
             shadow = _shadowing(left, right)
@@ -112,8 +153,9 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
                         }
                         if matches(left.when, context) and matches(right.when, context):
                             overlaps.append({"scenario": scenario.id, "candidate": candidate.id})
-            if not opposite or identical or overlaps:
-                ids = sorted([left.id, right.id])
+            ids = sorted([left.id, right.id])
+            witness = generated.get((ids[0], ids[1]))
+            if not opposite or identical or overlaps or witness:
                 kind = "shadowed" if shadow and not opposite else ("override" if priority_decides else "conflict")
                 items.append(
                     {
@@ -127,6 +169,18 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
                             "rule_shadowing": shadow,
                             "priority_decides": priority_decides,
                             "seed_witnesses": overlaps,
+                            **(
+                                {
+                                    "generated_witnesses": [witness] if witness else [],
+                                    "generation": {
+                                        "seed": project.recipe.seed,
+                                        "variants_per_scenario": project.recipe.variants_per_scenario,
+                                        "candidate_pool_per_scenario": project.recipe.candidate_pool_per_scenario,
+                                    },
+                                }
+                                if opposite
+                                else {}
+                            ),
                         },
                         "sources": {},
                     }

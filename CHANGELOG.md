@@ -5,6 +5,9 @@
 ### Fixed
 
 - Attest only the wheel and sdist in the release workflow; `uv build` also writes `dist/.gitignore`.
+- Review opposite-effect rules against the bounded generated scenario pool, including state and
+  candidate-attribute dimensions. Keep seed witnesses and include one generated witness per rule pair;
+  changes to the sampling seed or pool settings re-open affected conflict/override reviews.
 
 ## 0.3.1
 
