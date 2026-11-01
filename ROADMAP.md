@@ -5,7 +5,8 @@ decision data platform. Milestones are ordered by dependencies and acceptance cr
 will be assigned when maintainers confirm capacity.
 
 The machine-readable backlog lives in [.github/roadmap.json](.github/roadmap.json). The publishing
-script creates matching GitHub milestones and issues without duplicating previously published items.
+script creates matching GitHub labels, milestones, and issues without duplicating previously published
+items.
 The **Sync roadmap** workflow runs when this backlog changes on `main`, or on manual dispatch.
 It uses GitHub's temporary repository token with issue-write permission and preserves existing
 milestone and issue states so maintainers can track progress directly on GitHub.

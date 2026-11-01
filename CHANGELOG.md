@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Declare the `type/` and `area/` label taxonomy in `.github/roadmap.json`; the roadmap publisher now
+  creates and updates those labels and applies them to roadmap issues without removing triage labels.
+- Label pull requests by area automatically from the files they change.
+- Add `.editorconfig` and `.gitattributes` (LF line endings, generated experiment artifacts), and a
+  definition-of-done checklist to the pull request template.
 - Add automatic source format detection and DOCX, XLSX, PPTX, HTML and CSV/TSV parsers with locations.
 - Add image and per-page PDF OCR through local RapidOCR/PP-OCR small models, Tesseract, and explicitly
   selected OpenAI-compatible vision endpoints. Keep model weights local during ingestion.

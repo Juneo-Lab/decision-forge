@@ -1,5 +1,82 @@
 {
   "schema_version": "1.0",
+  "labels": [
+    {
+      "name": "type/bug",
+      "color": "d73a4a",
+      "description": "Wrong behaviour, including a wrong label or a false rejection"
+    },
+    {
+      "name": "type/feature",
+      "color": "a2eeef",
+      "description": "New capability with an acceptance criterion"
+    },
+    {
+      "name": "type/docs",
+      "color": "0075ca",
+      "description": "Documentation, examples, or diagrams"
+    },
+    {
+      "name": "type/benchmark",
+      "color": "5319e7",
+      "description": "Measurement protocol, host reporting, or a reproducible result"
+    },
+    {
+      "name": "area/compiler",
+      "color": "fbca04",
+      "description": "Ingestion, extraction, evidence binding, review gates"
+    },
+    {
+      "name": "area/policy",
+      "color": "fbca04",
+      "description": "Rule semantics, priority, conflict analysis"
+    },
+    {
+      "name": "area/generation",
+      "color": "fbca04",
+      "description": "Scenarios, quotas, synthesis, deduplication"
+    },
+    {
+      "name": "area/training",
+      "color": "fbca04",
+      "description": "Export contracts, candidate-readout encoding, evaluation loop"
+    },
+    {
+      "name": "area/harness",
+      "color": "fbca04",
+      "description": "Workflow tasks, Harbor export, grading"
+    },
+    {
+      "name": "area/feedback",
+      "color": "fbca04",
+      "description": "Runtime events, reviewed feedback, lineage, targeted updates"
+    },
+    {
+      "name": "area/infra",
+      "color": "fbca04",
+      "description": "CI, packaging, releases, and repository automation"
+    },
+    {
+      "name": "area/docs",
+      "color": "fbca04",
+      "description": "Site, README, and reference material"
+    },
+    {
+      "name": "good first issue",
+      "color": "7057ff",
+      "description": "Scoped, has a clear acceptance criterion, no design decision required"
+    },
+    {
+      "name": "help wanted",
+      "color": "008672",
+      "description": "Maintainers will review but will not drive it"
+    },
+    {
+      "name": "blocked",
+      "color": "b60205",
+      "description": "Waiting on an external dependency or a maintainer decision"
+    }
+  ],
   "milestones": [
     {
       "id": "m0",
@@ -43,6 +120,11 @@
       "id": "core-foundation",
       "milestone": "m0",
       "title": "Implement typed contracts and the verified offline data pipeline",
+      "labels": [
+        "type/feature",
+        "area/policy",
+        "area/generation"
+      ],
       "state": "closed",
       "body": "Deliver the first complete data path.\n\nAcceptance criteria:\n- [x] Typed organization, rule, node, recipe, and episode contracts.\n- [x] Exact evidence validation and deterministic policy decisions.\n- [x] Family split isolation, cache integrity, source hashes, and change analysis.\n- [x] Offline example and regression tests."
     },
@@ -50,6 +132,12 @@
       "id": "initial-interfaces",
       "milestone": "m0",
       "title": "Ship document compilation, training exports, and portable decision tasks",
+      "labels": [
+        "type/feature",
+        "area/compiler",
+        "area/training",
+        "area/harness"
+      ],
       "state": "closed",
       "body": "Provide usable interfaces around the data core.\n\nAcceptance criteria:\n- [x] Explicit JSON Schema-capable model provider.\n- [x] Canonical, typed-choice, and chat SFT exports.\n- [x] Offline decision replay and Harbor single-step task export.\n- [x] CLI error handling and integration tests."
     },
@@ -57,6 +145,11 @@
       "id": "project-foundation",
       "milestone": "m0",
       "title": "Establish documentation, CI, governance, and release packaging",
+      "labels": [
+        "type/docs",
+        "area/docs",
+        "area/infra"
+      ],
       "state": "closed",
       "body": "Prepare an English-only open-source foundation.\n\nAcceptance criteria:\n- [x] Architecture, data protocol, specification, and contribution documentation.\n- [x] Apache-2.0 license, security policy, and community guidelines.\n- [x] Lint, typing, test, documentation, and package-build automation.\n- [x] Machine-readable milestones and idempotent publication tooling."
     },
@@ -64,6 +157,10 @@
       "id": "source-adapters",
       "milestone": "m1",
       "title": "Add source adapter contracts with document spans and access metadata",
+      "labels": [
+        "type/feature",
+        "area/compiler"
+      ],
       "state": "open",
       "body": "Support larger document collections through a stable ingestion interface.\n\nAcceptance criteria:\n- [x] Define source version, span, permission, and content-hash contracts.\n- [x] Implement PDF and structured workflow adapters with fixtures.\n- [x] Preserve page/section references through compilation.\n- [x] Verify unchanged source reuse and changed-source invalidation.\n\nImplementation evidence: source/PDF/workflow fixtures, content-bound review regression tests, and reproducible flagship model artifacts in experiments/2026-10-m1. References are maintainer-authored and independently code-reviewed; broader expert-annotated corpus acceptance remains tracked in M1.\n\nExtended ingestion: automatic format detection; DOCX/XLSX/PPTX, HTML and CSV/TSV parsers; image and per-page PDF OCR with bundled local PP-OCR small models, Tesseract and explicitly configured vision services. Acceptance evidence includes real local OCR inference, source-location fixtures, bounded parsing, cache-integrity and review-gate regressions. Remote OCR model quality is not inferred from protocol tests."
     },
@@ -71,6 +168,11 @@
       "id": "rule-review",
       "milestone": "m1",
       "title": "Build a policy review queue and independent extraction evaluation",
+      "labels": [
+        "type/feature",
+        "area/compiler",
+        "area/policy"
+      ],
       "state": "open",
       "body": "Give business reviewers a concrete rule-and-evidence review surface.\n\nAcceptance criteria:\n- [x] Track proposed, accepted, rejected, and conflicting interpretations.\n- [x] Compare extracted rules with independently reviewed fixtures.\n- [x] Record reviewer decisions and policy-version lineage.\n- [x] Export review summaries without leaking private source content.\n\nImplementation evidence: source/PDF/workflow fixtures, content-bound review regression tests, and reproducible flagship model artifacts in experiments/2026-10-m1. References are maintainer-authored and independently code-reviewed; broader expert-annotated corpus acceptance remains tracked in M1."
     },
@@ -78,6 +180,10 @@
       "id": "large-corpus-compiler",
       "milestone": "m1",
       "title": "Implement resumable corpus compilation and workflow reconstruction",
+      "labels": [
+        "type/feature",
+        "area/compiler"
+      ],
       "state": "open",
       "body": "Scale source analysis beyond a single model request.\n\nAcceptance criteria:\n- [ ] Add chunk retrieval and cross-document rule resolution.\n- [x] Resume completed extraction stages after interruption.\n- [x] Enforce token/call budgets and record usage.\n- [x] Evaluate decision-node recall and reference correctness.\n\nCurrent implementation: overlapping source chunks, shared validated caches, bounded global claim assembly, checkpointed validation repairs, call/request-byte budgets, per-request output-token limits, and returned usage/cost. Larger multi-document interaction studies and retrieval-based rule resolution remain open.\n\nCurrent implementation evidence: Aggregate token reservations now include request bytes and output caps. This conservative bound assumes byte-based text tokenization; actual returned usage and unknown attempts are retained. Cross-document retrieval/interaction acceptance remains open."
     },
@@ -85,6 +191,10 @@
       "id": "data-designer",
       "milestone": "m2",
       "title": "Integrate a version-pinned NeMo Data Designer generation adapter",
+      "labels": [
+        "type/feature",
+        "area/generation"
+      ],
       "state": "open",
       "body": "Compile Forge recipes to a dependency-aware generation backend.\n\nAcceptance criteria:\n- [x] Optional installation leaves the offline core dependency-light.\n- [ ] Map scenario fields, constraints, validators, and artifact metadata.\n- [x] Contract tests pin the supported backend version.\n- [x] Resume tests and per-record generation cost reports pass.\n\nCurrent implementation evidence: Data Designer 0.9.7 executes ordered seed expression processing with real SDK resume tests and zero model-call cost. Model-written scenario synthesis is implemented in expansion.py with policy-replay verification, but it runs through the Forge provider boundary rather than inside Data Designer; backend conditional generation remains open."
     },
@@ -92,6 +202,10 @@
       "id": "distribution-planner",
       "milestone": "m2",
       "title": "Add stratum budgets and constrained decision-family transformations",
+      "labels": [
+        "type/feature",
+        "area/generation"
+      ],
       "state": "open",
       "body": "Make organization-specific training distributions explicit.\n\nAcceptance criteria:\n- [x] Configure routine, boundary, change, and development-feedback budgets.\n- [x] Check feasibility and expected answer relationships after transformations.\n- [x] Add semantics-preserving rewrites and duplicate detection.\n\nImplementation evidence: dedup.py reports exact, near, split-leak and metadata conflicts over structural groups; transformations.py publishes presentation rewrites only after numeric-invariant checks and an independent equivalence decision.\n- [x] Report requested, generated, filtered, and accepted distributions.\n\nDecision training integration: candidate-readout exports preserve explicit target probabilities, family identity and source provenance. Policy-aware duplicate grouping preserves distinct organizational rules; expansion loading checks current scenario/family/split lineage. Training budget selection is applied to actual exported rows."
     },
@@ -99,6 +213,10 @@
       "id": "persistent-orchestration",
       "milestone": "m2",
       "title": "Add a persistent recipe-planning agent and tool registry",
+      "labels": [
+        "type/feature",
+        "area/generation"
+      ],
       "state": "open",
       "body": "Expose discoverable typed tools for analysis, planning, previews, and execution.\n\nAcceptance criteria:\n- [x] Add a LangGraph adapter with durable stage state.\n- [x] Store artifacts outside conversational working memory.\n- [x] Recover from provider failure without duplicate publication.\n- [x] Route interpretation conflicts to the review queue.\n\nCurrent implementation evidence: LangGraph 1.2.19 and SQLite checkpoint 3.1.3 persist review/build/export stages. planner.py exposes a typed tool registry with an auditable, resumable ledger; expansion.py reserves calls before each request, checkpoints verified rows, and resumes without duplicate publication. A multi-provider failure campaign remains open."
     },
@@ -106,6 +224,10 @@
       "id": "business-environment",
       "milestone": "m3",
       "title": "Build the multi-step customer workflow environment",
+      "labels": [
+        "type/feature",
+        "area/harness"
+      ],
       "state": "open",
       "body": "Exercise all four decision surfaces in one business task.\n\nAcceptance criteria:\n- [x] Provide mock CRM, information-sharing, approval, and acceptance tools.\n- [x] Record decision-time state and subsequent transitions.\n- [x] Reset the initial snapshot reproducibly.\n- [x] Cover successful, blocked, escalated, and revised workflows.\n\nCurrent implementation evidence: Implemented in workflows.py with three fictional task fixtures. Local live Opus 5.5/GPT-6.1 Sol runs are archived in experiments/2026-10-workflows. Container acceptance is tracked separately."
     },
@@ -113,6 +235,10 @@
       "id": "independent-graders",
       "milestone": "m3",
       "title": "Isolate workflow graders and validate them with mutation fixtures",
+      "labels": [
+        "type/feature",
+        "area/harness"
+      ],
       "state": "open",
       "body": "Make executable labels independently checkable.\n\nAcceptance criteria:\n- [x] Run graders separately from solver-visible artifacts.\n- [x] Validate positive, negative, and boundary cases.\n- [x] Detect intentionally mutated permission and threshold checks.\n- [x] Separate grader failures from agent failures.\n\nCurrent implementation evidence: Independent trace replay recalculates permission, transition and utility. Mutation fixtures alter permission and state claims; solver failures and trace validity are reported separately."
     },
@@ -120,6 +246,10 @@
       "id": "harness-integrations",
       "milestone": "m3",
       "title": "Run workflow tasks across Harbor harnesses and model configurations",
+      "labels": [
+        "type/feature",
+        "area/harness"
+      ],
       "state": "open",
       "body": "Provide repeatable system-level evaluation.\n\nAcceptance criteria:\n- [x] Pin and test the Harbor runtime contract.\n- [ ] Run at least two harness/model configurations on identical tasks.\n- [ ] Record utility, compliance, cost, latency, and escalation separately.\n- [ ] Document a Verifiers adapter decision based on integration needs.\n\nCurrent implementation evidence: Harbor 0.25.0 executes eight stratified single-step tasks in Docker under oracle and no-op controls, with complete-trial and reward assertions. Multi-step multi-harness/model acceptance remains open."
     },
@@ -127,6 +257,10 @@
       "id": "runtime-events",
       "milestone": "m4",
       "title": "Define runtime event ingestion and decision-outcome association",
+      "labels": [
+        "type/feature",
+        "area/feedback"
+      ],
       "state": "open",
       "body": "Connect deployed decision calls to observable workflow results.\n\nAcceptance criteria:\n- [x] Version decision, action, tool-result, review, and outcome events.\n- [x] Associate events using stable workflow and decision IDs.\n- [x] Preserve observational versus verified label distinctions.\n- [ ] Evaluate Agent Lightning capture without coupling typed heads to token RL."
     },
@@ -134,6 +268,10 @@
       "id": "lineage-updates",
       "milestone": "m4",
       "title": "Extend impact analysis to span-level lineage and targeted regeneration",
+      "labels": [
+        "type/feature",
+        "area/feedback"
+      ],
       "state": "open",
       "body": "Update decision data when organizational policies change.\n\nAcceptance criteria:\n- [ ] Track source spans through rules, tasks, datasets, and models.\n- [x] Rebuild affected families and reuse unchanged artifacts.\n- [ ] Test policy-version responsiveness and rollback provenance.\n- [x] Measure update cost and verification outcomes.\n\nCurrent implementation evidence: Cumulative family registry protects removed/restored held-out families; document-level source invalidation remains in use. Fine-grained span reuse and model-weight lineage remain open."
     },
@@ -141,6 +279,11 @@
       "id": "feedback-curriculum",
       "milestone": "m4",
       "title": "Use reviewed development feedback to update generation priorities",
+      "labels": [
+        "type/feature",
+        "area/feedback",
+        "area/generation"
+      ],
       "state": "open",
       "body": "Close the data improvement loop while preserving evaluation independence.\n\nAcceptance criteria:\n- [x] Convert development errors into traceable generation requests.\n- [x] Keep test families outside adaptive generation.\n- [ ] Compare recipes under fixed training budgets.\n- [ ] Publish coverage, quality, and cost deltas per dataset version.\n\nCurrent implementation: fixed-budget candidate-readout handoff with selected IDs and file digests; endpoint comparisons require identical dataset, case order, and prompt. The training-quality comparison remains unmeasured and its acceptance boxes remain open."
     },
@@ -148,6 +291,10 @@
       "id": "stable-extension-api",
       "milestone": "m5",
       "title": "Stabilize extension contracts, schema migrations, and compatibility policy",
+      "labels": [
+        "type/feature",
+        "area/infra"
+      ],
       "state": "open",
       "body": "Prepare a maintainable public platform API.\n\nAcceptance criteria:\n- [ ] Publish supported source, generator, verifier, exporter, and harness interfaces.\n- [ ] Add schema migration fixtures and compatibility tests.\n- [ ] Define release, support, and deprecation policies.\n- [ ] Document third-party adapter development."
     },
@@ -155,6 +302,10 @@
       "id": "scale-benchmarks",
       "milestone": "m5",
       "title": "Publish reproducible scale, quality, and cost benchmarks",
+      "labels": [
+        "type/benchmark",
+        "area/generation"
+      ],
       "state": "open",
       "body": "Measure practical performance under documented conditions.\n\nAcceptance criteria:\n- [x] Report hardware, versions, source sizes, and sampling recipes.\n- [x] Measure throughput, recovery, storage, and accepted-example cost.\n- [ ] Report independent label review and downstream model quality.\n- [ ] Reproduce results on clean systems.\n\nCurrent implementation evidence: Measured cold/warm 2,800- and 28,000-episode offline builds, with script and hardware metadata. This measures data-pipeline execution; downstream training quality remains unmeasured."
     },
@@ -162,6 +313,10 @@
       "id": "release-automation",
       "milestone": "m5",
       "title": "Establish signed releases, package publishing, and deployment guidance",
+      "labels": [
+        "type/feature",
+        "area/infra"
+      ],
       "state": "open",
       "body": "Make project releases easy to adopt and verify.\n\nAcceptance criteria:\n- [ ] Publish signed or attested release artifacts through controlled workflows.\n- [ ] Configure trusted package publishing and provenance.\n- [ ] Add operational deployment and backup/restore guidance.\n- [ ] Validate installation and upgrades from published artifacts."
     }
