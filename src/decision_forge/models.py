@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import re
+from collections.abc import Collection
 from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
@@ -227,6 +228,19 @@ class Project(Contract):
     scenarios: list[Scenario] = Field(min_length=1)
     recipe: Recipe = Field(default_factory=Recipe)
 
+    def find_node(self, node_id: str) -> Node | None:
+        return next((node for node in self.nodes if node.id == node_id), None)
+
+    def node(self, node_id: str) -> Node:
+        node = self.find_node(node_id)
+        if node is None:
+            raise ValueError(f"Unknown node: {node_id}")
+        return node
+
+    def select_rules(self, rule_ids: Collection[str]) -> list[Rule]:
+        """Rules with the given IDs, in organization order, which identities and fingerprints hash."""
+        return [rule for rule in self.organization.rules if rule.id in rule_ids]
+
     @model_validator(mode="after")
     def references(self) -> Self:
         for values, label in [
@@ -254,7 +268,7 @@ class Project(Contract):
             raise ValueError("Split assignments reference unknown families")
         cells: set[tuple[str, str, str, tuple[str, ...]]] = set()
         for target in self.recipe.distribution:
-            target_node = next((n for n in self.nodes if n.id == target.node_id), None)
+            target_node = self.find_node(target.node_id)
             if target_node is None or not set(target.valid_choices) <= {c.id for c in target_node.candidates}:
                 raise ValueError("Distribution target references an unknown node or candidate")
             cell = (target.node_id, target.stratum, target.split, tuple(target.valid_choices))

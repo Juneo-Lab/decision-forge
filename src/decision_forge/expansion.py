@@ -92,7 +92,7 @@ def allowed_state_paths(project: Project, node: Node) -> dict[str, dict[str, Any
     Restricting paths and domains keeps synthesis inside the decision problem the rules describe;
     an invented key would be invisible to the policy and could inflate apparent coverage.
     """
-    node_rules = [rule for rule in project.organization.rules if rule.id in node.rule_ids]
+    node_rules = project.select_rules(node.rule_ids)
     paths: dict[str, dict[str, Any]] = {}
     for dimension in node.dimensions:
         if dimension.path.startswith("state."):
@@ -136,9 +136,7 @@ def build_prompt(
                 {"id": candidate.id, "description": candidate.description, "attributes": candidate.attributes}
                 for candidate in node.candidates
             ],
-            "policy_descriptions": [
-                rule.description for rule in project.organization.rules if rule.id in node.rule_ids
-            ],
+            "policy_descriptions": [rule.description for rule in project.select_rules(node.rule_ids)],
             "state_paths": {name: domain for name, domain in sorted(domains.items())},
             "policy_conditions": [
                 {
@@ -209,7 +207,7 @@ def materialize(
         applied[name] = binding.value
     if not applied:
         raise ValueError("Proposal produced no state change")
-    rules = [rule for rule in project.organization.rules if rule.id in base.rule_ids]
+    rules = project.select_rules(base.rule_ids)
     verdicts: list[CandidateVerdict] = evaluate(state, base.candidates, rules)
     choices = best_choices(verdicts)
     if not choices:
@@ -317,7 +315,7 @@ def expand(
 
     for request in requests:
         request_key = digest(request.model_dump(mode="json"))
-        node = next((n for n in project.nodes if n.id == request.node_id), None)
+        node = project.find_node(request.node_id)
         if node is None:
             raise ValueError(f"Unknown node in expansion request: {request.node_id}")
         if not set(request.valid_choices) <= {candidate.id for candidate in node.candidates}:
@@ -522,7 +520,7 @@ def load_expansion(
     family_splits = split_plan(project)
     scenarios = {scenario.id: scenario for scenario in project.scenarios}
     for episode in rows:
-        node = next((n for n in project.nodes if n.id == episode.node_id), None)
+        node = project.find_node(episode.node_id)
         if node is None or set(episode.rule_ids) != set(node.rule_ids):
             raise ValueError(f"Expanded episode has stale node or rule lineage: {episode.id}")
         scenario = scenarios.get(episode.scenario_id)
@@ -539,7 +537,7 @@ def load_expansion(
             raise ValueError("Held-out splits cannot contain synthesized examples")
         if episode.split != current_split:
             raise ValueError(f"Expanded episode has stale family split: {episode.id}")
-        rules = [rule for rule in project.organization.rules if rule.id in node.rule_ids]
+        rules = project.select_rules(node.rule_ids)
         expected_sources = set(scenario.source_ids) | {e.source_id for rule in rules for e in rule.evidence}
         if set(episode.source_ids) != expected_sources or episode.source_hashes != {
             key: source_hashes[key] for key in expected_sources

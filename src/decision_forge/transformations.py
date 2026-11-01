@@ -34,12 +34,12 @@ def transform_episode(project: Project, parent: Episode, intervention: Intervent
         or parent.policy_version != project.organization.policy_version
     ):
         raise ValueError("Transformation requires the originating organization policy version")
-    node = next((n for n in project.nodes if n.id == parent.node_id), None)
+    node = project.find_node(parent.node_id)
     if node is None or set(parent.rule_ids) != set(node.rule_ids):
         raise ValueError("Transformation node or rule lineage does not match")
     if parent.policy_fingerprint != policy_fingerprint(project, node.id, parent.source_hashes):
         raise ValueError("Parent policy fingerprint does not match the supplied project")
-    rules = [r for r in project.organization.rules if r.id in node.rule_ids]
+    rules = project.select_rules(node.rule_ids)
     original = best_choices(evaluate(parent.state, parent.candidates, rules))
     if set(original) != set(parent.valid_choices) or not original:
         raise ValueError("Parent labels fail independent policy replay")
@@ -165,12 +165,12 @@ def rewrite_presentation(
     verifier: StructuredProvider | None = None,
 ) -> Episode:
     """Paraphrase a decision presentation and publish it only after independent verification."""
-    node = next((n for n in project.nodes if n.id == episode.node_id), None)
+    node = project.find_node(episode.node_id)
     if node is None or set(episode.rule_ids) != set(node.rule_ids):
         raise ValueError("Rewrite node or rule lineage does not match")
     if episode.policy_fingerprint != policy_fingerprint(project, episode.node_id, episode.source_hashes):
         raise ValueError("Parent policy fingerprint does not match the supplied project")
-    rules = [rule for rule in project.organization.rules if rule.id in node.rule_ids]
+    rules = project.select_rules(node.rule_ids)
     original_choices = best_choices(evaluate(episode.state, episode.candidates, rules))
     if original_choices != episode.valid_choices:
         raise ValueError("Parent labels fail independent policy replay")

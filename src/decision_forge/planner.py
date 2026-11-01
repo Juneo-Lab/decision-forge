@@ -119,7 +119,7 @@ def validate_targets(project: Project, targets: list[DistributionTarget]) -> Non
     for scenario in project.scenarios:
         splits_by_node.setdefault(scenario.node_id, set()).add(plan[scenario.family_id])
     for target in targets:
-        node = next((n for n in project.nodes if n.id == target.node_id), None)
+        node = project.find_node(target.node_id)
         if node is None:
             raise ValueError(f"Distribution target references an unknown node: {target.node_id}")
         unknown = set(target.valid_choices) - {candidate.id for candidate in node.candidates}

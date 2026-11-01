@@ -15,7 +15,7 @@ from decision_forge.policy import best_choices, evaluate
 
 def requested_variants(project: Project, scenario: Scenario) -> int:
     """Number of distinct episodes a scenario is configured to contribute."""
-    node: Node = next(n for n in project.nodes if n.id == scenario.node_id)
+    node = project.node(scenario.node_id)
     population = math.prod(len(dim.values) for dim in node.dimensions)
     return min(population, project.recipe.candidate_pool_per_scenario or project.recipe.variants_per_scenario)
 
@@ -43,13 +43,13 @@ def set_path(root: dict[str, Any], path: str, value: Any) -> None:
 
 
 def policy_fingerprint(project: Project, node_id: str, source_hashes: dict[str, str]) -> str:
-    node = next(n for n in project.nodes if n.id == node_id)
+    node = project.node(node_id)
     return digest(
         {
             "organization_id": project.organization.id,
             "policy_version": project.organization.policy_version,
             "node": node.model_dump(mode="json"),
-            "rules": [r.model_dump(mode="json") for r in project.organization.rules if r.id in node.rule_ids],
+            "rules": [rule.model_dump(mode="json") for rule in project.select_rules(node.rule_ids)],
             "sources": {
                 s.id: {"hash": source_hashes[s.id], "version": s.version, "access": s.access}
                 for s in project.sources
@@ -70,7 +70,7 @@ class Variant:
 
 def family_variants(project: Project, scenario: Scenario) -> list[Variant]:
     """The situations a build samples for a scenario: its declared dimensions applied to the seed state."""
-    node: Node = next(n for n in project.nodes if n.id == scenario.node_id)
+    node = project.node(scenario.node_id)
     widths = [len(dim.values) for dim in node.dimensions]
     population = math.prod(widths)
     if population > 10**12:
@@ -99,8 +99,8 @@ def family_variants(project: Project, scenario: Scenario) -> list[Variant]:
 
 
 def generate_family(project: Project, scenario: Scenario, source_hashes: dict[str, str], split: Split) -> list[Episode]:
-    node: Node = next(n for n in project.nodes if n.id == scenario.node_id)
-    rules = [r for r in project.organization.rules if r.id in node.rule_ids]
+    node = project.node(scenario.node_id)
+    rules = project.select_rules(node.rule_ids)
     episodes: dict[str, Episode] = {}
     referenced_sources = set(scenario.source_ids)
     referenced_sources.update(e.source_id for r in rules for e in r.evidence)

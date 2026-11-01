@@ -41,8 +41,8 @@ def scenario_fingerprint(
     engine: str,
     resolved_split: str,
 ) -> str:
-    node = next(n for n in project.nodes if n.id == scenario.node_id)
-    rules = [r for r in project.organization.rules if r.id in node.rule_ids]
+    node = project.node(scenario.node_id)
+    rules = project.select_rules(node.rule_ids)
     source_ids = set(scenario.source_ids) | {e.source_id for r in rules for e in r.evidence}
     return digest(
         {
