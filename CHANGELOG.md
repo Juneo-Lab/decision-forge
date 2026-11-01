@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- Tell the project's story in the README and a new [Why Decision Forge](docs/vision.md) page: the missing
+  trust layer for AI agents, the three kinds of organizational data it requires, and where Decision Forge
+  fits in the data → model → organization stack.
+
 ### Fixed
 
 - Attest only the wheel and sdist in the release workflow; `uv build` also writes `dist/.gitignore`.

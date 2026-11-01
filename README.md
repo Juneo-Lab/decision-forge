@@ -6,6 +6,8 @@
 
 **Compile organizational policy into verifiable decision training data.**
 
+Every organization's judgment, turned into the data that makes AI agents trustworthy.
+
 [![CI](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/Juneo-Lab/decision-forge?include_prereleases&color=FF5A1F)](https://github.com/Juneo-Lab/decision-forge/releases)
@@ -13,6 +15,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Typed](https://img.shields.io/badge/typing-strict%20mypy-2a6db2)](pyproject.toml)
 
+[Why Decision Forge](#why-decision-forge) ·
 [Quickstart](#quickstart) ·
 [How it works](#how-it-works) ·
 [Documentation](docs/index.md) ·
@@ -25,6 +28,59 @@
 </div>
 
 ![Decision Forge pipeline: compile and review organizational knowledge, shape scenarios across four decision surfaces and distributions, verify labels through policy replay, and export training data.](docs/assets/decision-forge-overview-v2.png)
+
+## Why Decision Forge
+
+> *For three hundred years, every organization was built from people. The next ones will be built
+> from people and agents — and the agents will outnumber the people.*
+
+**A second workforce has arrived.** Agents now carry a task for hours without supervision, take on
+work that once went to a colleague, and call one another across tools and companies. For the first
+time, the supply of labor is no longer bounded by the number of people. Yet this abundance of
+intelligence has not become an abundance of capability. Agents wait in pilots because they are
+trusted with too little, or act in production while trusted with too much.
+
+**What is missing is trust.** Over centuries, organizations learned to hand their work to thousands
+of strangers. People foresee what their actions will do, act within their authority, and answer for
+the results. Agents have been connected to every tool and to each other, but given none of this.
+The pipes are built. The trust layer is empty.
+
+**Trust begins with foresight.** To trust an action is to know what it will do before it happens.
+Language models learned to speak from the world's text; world models are learning physics from its
+video. No public dataset records what happens inside an organization when an agent reassigns a
+client, shares a file, or approves a payment. That knowledge lives only within the organization, in
+three forms:
+
+| What foresight requires | Where it lives | What Decision Forge does with it |
+| --- | --- | --- |
+| **Decision context**: the state, roles, and options at the moment of action | Workflows, tickets, CRM records | Reconstructs each decision moment with explicit candidate actions, grouped into families |
+| **Judgment standard**: what this organization allows, forbids, or escalates | Handbooks, SOPs, approval rules, permission tables | Compiles rules with verified source quotations, puts them through business review, and replays them to label every example |
+| **Execution receipts**: what actually happened after the action | Approvals, outcomes, runtime logs | Ingests runtime events and reviewed outcomes as feedback for the next dataset version |
+
+**Every organization has its own sense of right.** What one firm encourages, another forbids. That
+judgment cannot be downloaded from a general model. It has to be learned inside each organization,
+and it has to belong to that organization.
+
+**Decision Forge turns that judgment into data.** It compiles an organization's own documents into
+verified decision training data: every label traces back to a rule, every rule back to its source,
+and the core runs inside the organization's own walls. It is the foundation of the stack we are
+building at Juneo Lab:
+
+| Layer | Role | Status |
+| --- | --- | --- |
+| **AI-native organizations** | People and agents allocate work, share information, act, and accept results together; their execution receipts flow back into the data | Built with partner organizations |
+| **Laplace** | A causal-interventional model that foresees the consequence of an action before it runs, then lets it proceed, stops it, or hands it back to a person | In development |
+| **Decision Forge** | An organization's documents, turned into verified decision training data | Open source, this repository |
+
+**The world we are building.** Humans keep the right to decide. Agents earn the right to act, within
+limits that only narrow as work passes from hand to hand. Every action is foreseen before it happens,
+and every contribution is measured after it is done. Every organization owns the intelligence that
+carries its judgment.
+
+**We are building the trust layer that lets human organizations keep pace with machine
+intelligence.** Read the full story in [Why Decision Forge](docs/vision.md).
+
+## What Decision Forge does
 
 Organizational decisions depend on policies, thresholds, escalation rules, and acceptance criteria
 recorded in handbooks, SOPs, and workflow definitions. Decision Forge turns that knowledge into
@@ -61,7 +117,8 @@ business review accepts them, or an authored specification skips both steps. Eve
 runs offline: scenario families and quotas, label replay through the policy interpreter, deduplication
 with family split isolation, and training exports.
 
-The pipeline organizes workflow decision points into four surfaces:
+The pipeline organizes workflow decision points into the four kinds of decisions an organization
+delegates to people and agents:
 
 | Surface | Question the model learns to answer |
 | --- | --- |
@@ -262,6 +319,7 @@ The [roadmap](ROADMAP.md) tracks each remaining acceptance item against a milest
 
 | Guide | What it covers |
 | --- | --- |
+| [Why Decision Forge](docs/vision.md) | The problem, the data it needs, and where this project fits |
 | [Project status](docs/status.md) | Implemented paths and remaining validation |
 | [Architecture](docs/architecture.md) | Component boundaries and data flow |
 | [Specification](docs/specification.md) | Rule, scenario, and recipe semantics |
