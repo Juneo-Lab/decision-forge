@@ -176,7 +176,7 @@ def orchestrate(spec: Path, output: Path, database: Path, thread_id: str) -> dic
             if metadata.get("dataset_digest") != state["dataset_digest"]:
                 raise ValueError("Existing export does not match the durable job")
             for filename, checksum in metadata["file_hashes"].items():
-                if digest((target / filename).read_text()) != checksum:
+                if digest((target / filename).read_text(encoding="utf-8")) != checksum:
                     raise ValueError("Existing export integrity check failed")
         else:
             # A crashed export can leave partial files; only known output files are recoverable.

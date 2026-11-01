@@ -20,8 +20,19 @@ keywords = [
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
 ]
 dependencies = [
   "pydantic>=2.10,<3",
@@ -30,6 +41,13 @@ dependencies = [
   "typer>=0.15,<1",
   "filelock>=3.17,<5",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Juneo-Lab/decision-forge"
+Documentation = "https://juneo-lab.github.io/decision-forge/"
+Repository = "https://github.com/Juneo-Lab/decision-forge"
+Issues = "https://github.com/Juneo-Lab/decision-forge/issues"
+Changelog = "https://github.com/Juneo-Lab/decision-forge/blob/main/CHANGELOG.md"
 
 [project.scripts]
 decision-forge = "decision_forge.cli:app"

@@ -1,0 +1,94 @@
+# Publishes a release when a maintainer pushes a tag such as v0.4.0.
+# See docs/releasing.md for the full procedure and the one-time PyPI setup.
+name: Release
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --locked --group dev --extra documents --extra ocr --python 3.12
+      - id: check
+        name: Verify tag, package version, citation, and changelog agree
+        run: uv run --no-sync python scripts/check_release.py --tag "$GITHUB_REF_NAME" --notes release/NOTES.md >> "$GITHUB_OUTPUT"
+      - run: uv run --no-sync pytest -q
+      - run: uv build --out-dir dist
+      - run: uvx twine check --strict dist/*
+      - name: Smoke-test the wheel in a clean environment
+        env:
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          uv venv --python 3.12 /tmp/smoke
+          uv pip install --python /tmp/smoke dist/*.whl
+          test "$(/tmp/smoke/bin/decision-forge version)" = "$VERSION"
+          /tmp/smoke/bin/decision-forge validate examples/customer_support/project.yaml
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release
+          path: |
+            dist/
+            release/NOTES.md
+          if-no-files-found: error
+
+  github-release:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release
+      - name: Create the GitHub release with attested artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Decision Forge $GITHUB_REF_NAME" \
+            --notes-file release/NOTES.md \
+            --verify-tag "${flags[@]}"
+
+  pypi:
+    # Opt in after configuring a PyPI trusted publisher for this workflow and the "pypi" environment.
+    if: vars.PUBLISH_PYPI == 'true'
+    needs: [build, github-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/decision-forge/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

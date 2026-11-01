@@ -99,7 +99,9 @@ def export_run(
             "selected_ids": {split: [row["id"] for row in records] for split, records in rows.items()}
             if format in {"canonical", "decision"}
             else None,
-            "file_hashes": {f"{split}.jsonl": digest((output / f"{split}.jsonl").read_text()) for split in rows},
+            "file_hashes": {
+                f"{split}.jsonl": digest((output / f"{split}.jsonl").read_text(encoding="utf-8")) for split in rows
+            },
         },
     )
     return summary
