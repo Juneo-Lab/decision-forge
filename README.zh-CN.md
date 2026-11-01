@@ -33,7 +33,7 @@
 已验证标签、来源记录和稳定场景族分配的决策样本。这些训练数据可以审计、复现，并交给训练器使用。
 
 > [!NOTE]
-> **状态：`v0.3.0` alpha — 组织决策数据管线。**
+> **状态：`v0.3.1` alpha — 组织决策数据管线。**
 > 已审核或手工编写的规格可以在本地构建训练数据，无需模型凭证。文档编译与模型辅助合成使用显式指定的
 > 模型端点。当前实现与后续里程碑见[项目状态](docs/status.md)。
 
@@ -288,7 +288,7 @@ uv build
 @software{decision_forge,
   title   = {Decision Forge: Organizational Decision Data Infrastructure},
   author  = {{Decision Forge contributors}},
-  version = {0.3.0},
+  version = {0.3.1},
   license = {Apache-2.0},
   url     = {https://github.com/Juneo-Lab/decision-forge}
 }

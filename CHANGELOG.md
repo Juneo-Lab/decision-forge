@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.3.1
+
+Version 0.3.1 adds office, HTML, tabular, and OCR ingestion, fixes several integrity and portability
+issues in the data pipeline, and is the first release built and attested by the release workflow.
+Ingestion metadata has changed; recompile corpora into new output directories.
+
 ### Added
 
 - Add automatic source format detection and DOCX, XLSX, PPTX, HTML and CSV/TSV parsers with locations.

@@ -28,5 +28,5 @@ Verify a downloaded artifact with
 
 ## Supported versions
 
-Version 0.3.0 is an alpha release. Security fixes are applied to the current main branch and included in
+Version 0.3.1 is an alpha release. Security fixes are applied to the current main branch and included in
 the next patch release. The v1.0 milestone establishes the long-term support policy.

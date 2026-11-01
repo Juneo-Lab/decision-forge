@@ -4,7 +4,8 @@ title: "Decision Forge: Organizational Decision Data Infrastructure"
 type: software
 authors:
   - name: Decision Forge contributors
-version: 0.3.0
+version: 0.3.1
+date-released: 2026-11-01
 license: Apache-2.0
 abstract: Compile organizational policy into verifiable decision training data.
 repository-code: https://github.com/Juneo-Lab/decision-forge
