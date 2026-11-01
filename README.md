@@ -1,14 +1,28 @@
+<div align="center">
+
+<img src="docs/images/logo.svg" alt="Decision Forge logo" width="88">
+
 # Decision Forge
 
+**Compile organizational policy into verifiable decision training data.**
+
 [![CI](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml)
-[![Docs](https://github.com/Juneo-Lab/decision-forge/actions/workflows/docs.yml/badge.svg)](docs/index.md)
+[![CodeQL](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/Juneo-Lab/decision-forge?include_prereleases&color=FF5A1F)](https://github.com/Juneo-Lab/decision-forge/releases)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-[![Status](https://img.shields.io/badge/status-v0.3.0%20alpha-FF5A1F)](ROADMAP.md)
+[![Typed](https://img.shields.io/badge/typing-strict%20mypy-2a6db2)](pyproject.toml)
+
+[Quickstart](#quickstart) ·
+[How it works](#how-it-works) ·
+[Documentation](docs/index.md) ·
+[Roadmap](ROADMAP.md) ·
+[Contributing](CONTRIBUTING.md) ·
+[Changelog](CHANGELOG.md)
 
 **English** · [简体中文](README.zh-CN.md)
 
-**Compile organizational policy into verifiable decision training data.**
+</div>
 
 ![Decision Forge pipeline: compile and review organizational knowledge, shape scenarios across four decision surfaces and distributions, verify labels through policy replay, and export training data.](docs/assets/decision-forge-overview-v2.png)
 
@@ -21,22 +35,31 @@ The data pipeline evaluates scenarios against the approved rules and exports dec
 verified labels, source provenance, and stable family assignments. The result is training data you
 can audit, reproduce, and hand to a trainer.
 
-**Status: `v0.3.0` alpha — organizational decision data pipeline.**
-Reviewed or authored specifications build into training data locally, without model credentials.
-Document compilation and model-assisted synthesis use an explicitly selected model endpoint.
-See [project status](docs/status.md) for the current implementation and next milestones.
+> [!NOTE]
+> **Status: `v0.3.0` alpha — organizational decision data pipeline.**
+> Reviewed or authored specifications build into training data locally, without model credentials.
+> Document compilation and model-assisted synthesis use an explicitly selected model endpoint.
+> See [project status](docs/status.md) for the current implementation and next milestones.
 
-| Capability | Implementation |
+## Highlights
+
+| Capability | What you get |
 | --- | --- |
-| Offline data path | reviewed rules → scenarios → verified labels → exports |
-| Labels | recomputed from declared rules by a deterministic interpreter |
-| Provenance | verified rule quotations and source hashes; corpus compilation adds spans and locators |
-| Validation | 256 tests, 88.18% statement coverage in the full optional-adapter environment |
-| CI | 9 checks across Linux and macOS, including adapter and Harbor controls |
-| Training | four export formats, including the candidate-readout decision contract |
-| Language | Python 3.11+ |
+| **Offline data path** | Reviewed rules → scenarios → verified labels → exports, with no API keys or model downloads |
+| **Policy-verified labels** | Recomputed from declared rules by a deterministic interpreter |
+| **Source provenance** | Verified rule quotations and source hashes; corpus compilation adds spans and locators |
+| **Leak-resistant splits** | Related variants share a family split; cross-split duplicates are reported and dropped |
+| **Training-ready exports** | Four formats, including the candidate-readout decision contract |
+| **Broad ingestion** | Text, Markdown, JSON/YAML, PDF, DOCX/XLSX/PPTX, HTML, CSV/TSV, and local OCR |
+| **Validated** | 280 tests, 88.41% statement coverage in the full optional-adapter environment |
+| **Continuous checks** | 10 CI jobs across Linux and macOS, including adapter, OCR, and Harbor controls; CodeQL and OpenSSF Scorecard scans |
 
-## The four decision surfaces
+## How it works
+
+`compile-corpus` drafts rules from organization sources through an explicitly selected model endpoint;
+business review accepts them, or an authored specification skips both steps. Everything after review
+runs offline: scenario families and quotas, label replay through the policy interpreter, deduplication
+with family split isolation, and training exports.
 
 The pipeline organizes workflow decision points into four surfaces:
 
@@ -87,7 +110,7 @@ records connect the declared rules to the organization's documents.
 | **Policy-verified labels** | A deterministic interpreter applies priority, deny precedence, and set-valued ties to every candidate. Synthesis proposes states; the interpreter supplies their labels. |
 | **Source-grounded rules** | Evidence quotations are validated against source text, allowing whitespace normalization. `compile-corpus` recomputes spans and source locators from extracted claims. |
 | **Content-bound review** | Compiler output is a draft. Builds require accepted decisions for all current review items: rules, nodes, conflicts, and `dataset:recipe`. Authored specifications remain usable directly. |
-| **Family isolation** | Related variants share a split. Duplicate detection keeps the held-out copy and reports cross-split overlap. Expansion imports validate current scenario/family/split lineage. |
+| **Family isolation** | Related variants share a split. Duplicate detection keeps the held-out copy and reports cross-split overlap. Expansion imports validate current scenario/family/split lineage and re-derive every model-visible field. |
 | **Checkpoint recovery** | Completed extraction chunks and accepted synthesis records are reused. Failed or interrupted calls retain their budget reservations; a response lost before checkpointing may require another call. |
 | **Bounded corpus compilation and synthesis** | `compile-corpus` reserves budgets per HTTP attempt. `expand` reserves logical proposal calls and their input bytes; response-mode fallback may issue multiple HTTP attempts within one proposal call. Both retain budget journals and support explicit budget increases for resumption. |
 | **Visible distribution gaps** | Requested and realized quotas, rejected proposals, and remaining shortfalls are reported. Only verified examples enter the dataset. |
@@ -144,23 +167,36 @@ Markdown, JSON, YAML, PDF, DOCX, XLSX, PPTX, HTML, CSV/TSV, and OCR image inputs
 access metadata. Install `documents` for native office/PDF parsing and `ocr-rapid` for local
 PP-OCR small models. [Document formats and OCR](docs/document-ingestion.md) covers automatic format
 detection, Tesseract, and explicit vision OCR service configuration.
+
+<details>
+<summary><b>What happens during compilation</b></summary>
+
+<br>
+
 Extraction is chunked and resumable; assembly requires rule evidence to resolve to extracted claims.
 Invalid schemas and ambiguous quotations produce validation errors; policy conflicts enter the review
 queue for adjudication. Source snapshots and parsed generated objects are stored in private local
 artifacts, including caches and repair records. Provider credentials stay outside those artifacts.
 
 An optional [recipe planner](docs/generation.md) turns a requested distribution into exact per-cell
-quotas, measures what the deterministic pool can supply, and separates work a model could do from work
-only more source material can do. Verified synthesis (`expand`) then publishes only proposals whose
-label is replayed from the declared policy.
+quotas, measures what the deterministic pool can supply after deduplication, and separates work a
+model could do from work only more source material can do. Verified synthesis (`expand`) then
+publishes only proposals whose label is replayed from the declared policy.
+
+</details>
 
 ## Evidence
 
-**Local validation (macOS ARM64, Python 3.12, all optional extras):** 256 tests, 88.18% statement
-coverage, Ruff, strict mypy, strict
-MkDocs, wheel and sdist builds. CI runs 10 checks: quality, six test jobs (Ubuntu and macOS × Python
-3.11/3.12/3.13), pinned Data Designer and LangGraph adapter contracts, and Harbor task execution in
-Docker under oracle and no-op controls, plus real local OCR inference and seven-format ingestion.
+<details open>
+<summary><b>Validation, benchmarks, and live model runs</b></summary>
+
+<br>
+
+**Local validation (macOS ARM64, Python 3.12, all optional extras):** 280 tests, 88.41% statement coverage, Ruff, strict
+mypy, strict MkDocs, wheel and sdist builds. CI runs 10 jobs: quality, six test jobs (Ubuntu and macOS ×
+Python 3.11/3.12/3.13), pinned Data Designer and LangGraph adapter contracts, and Harbor task execution
+in Docker under oracle and no-op controls, plus real local OCR inference and seven-format ingestion.
+CodeQL and OpenSSF Scorecard scan the repository on pull requests and on a schedule.
 
 **Local OCR:** the [seven-format ingestion smoke test](experiments/2026-11-ingestion/README.md)
 archives native file parsing and exact PNG/scanned-PDF transcriptions using bundled PP-OCR small
@@ -182,9 +218,17 @@ costs across recorded attempts, plus five attempts with unknown cost. Its total 
 The reference cases are maintainer-authored fixtures. Archived results document behavior on these
 small fictional inputs; organizational training-quality evaluation remains a separate milestone.
 
+</details>
+
 ## Supported scope in this release
 
-**Supported**
+<table>
+<tr>
+<th width="50%">Supported</th>
+<th width="50%">Next milestones</th>
+</tr>
+<tr>
+<td valign="top">
 
 - Text, Markdown, JSON/YAML, PDF, DOCX/XLSX/PPTX, HTML and CSV/TSV sources with versions and access metadata.
 - Image and scanned-PDF OCR with local PP-OCR small models, Tesseract, or an explicit vision endpoint.
@@ -196,33 +240,39 @@ small fictional inputs; organizational training-quality evaluation remains a sep
 - Multi-step mock business workflows with independent trace grading and Harbor task export.
 - Runtime event ingestion, reviewed development feedback, and split-preserving dataset updates.
 
-**Next milestones**
+</td>
+<td valign="top">
 
 - Fixed-budget fine-tuning comparisons and measured downstream decision-quality gains.
 - Broader business-reviewed organizational corpora.
 - Large-corpus retrieval and cross-document rule resolution (current limits: 2 MB per source,
   32 MB per corpus, and a 1 MB default claim limit for single-pass assembly).
 - Multi-harness model comparison and a Verifiers adapter.
-- Signed releases, package publishing, and schema migration tooling.
+- Package publishing on PyPI and schema migration tooling.
+
+</td>
+</tr>
+</table>
 
 The synthesis command `expand` operates within the approved rule specification and proposes
 decision-time state. Policy extraction and revision belong to document compilation and review.
-
 The [roadmap](ROADMAP.md) tracks each remaining acceptance item against a milestone.
 
 ## Documentation
 
-| | |
+| Guide | What it covers |
 | --- | --- |
 | [Project status](docs/status.md) | Implemented paths and remaining validation |
 | [Architecture](docs/architecture.md) | Component boundaries and data flow |
 | [Specification](docs/specification.md) | Rule, scenario, and recipe semantics |
+| [Document formats and OCR](docs/document-ingestion.md) | Format detection, parsers, and OCR backends |
 | [Organization compiler](docs/organization-compiler.md) | Ingestion, extraction, review, resumption |
 | [Generation planning](docs/generation.md) | Quotas, verified synthesis, deduplication |
 | [Decision training](docs/decision-training.md) | Export contract and candidate-readout encoding |
 | [Platform workflows](docs/platform-workflows.md) | Multi-step tasks, grading, feedback, updates |
 | [Data protocol](docs/data-protocol.md) | Evaluation protocol and reporting rules |
 | [Benchmarks](docs/benchmarks.md) | Offline throughput protocol and reference results |
+| [Release process](docs/releasing.md) | Tagging, attested artifacts, and verification |
 | [References](docs/references.md) | Prior art and integration candidates |
 
 ## Development
@@ -236,12 +286,38 @@ uv run mkdocs build --strict
 uv build
 ```
 
+Run `uvx pre-commit install` once to apply the same formatting and configuration checks before each
+commit.
+
+## Community
+
+| Document | Purpose |
+| --- | --- |
+| [Contributing](CONTRIBUTING.md) | Review bar, label taxonomy, and definition of done |
+| [Governance](GOVERNANCE.md) | How decisions are made |
+| [Support](SUPPORT.md) | Where to ask questions |
+| [Security](SECURITY.md) | Reporting vulnerabilities and verifying releases |
+| [Code of Conduct](CODE_OF_CONDUCT.md) | Expected behavior in project spaces |
+
 Code and technical documentation are written in English; this README also has a maintained
-[Simplified Chinese translation](README.zh-CN.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for the review bar and
-label taxonomy, [GOVERNANCE.md](GOVERNANCE.md) for how decisions are made, [SUPPORT.md](SUPPORT.md) for
-where to ask, and [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
+[Simplified Chinese translation](README.zh-CN.md).
 
-If you use Decision Forge in published work, cite it via [CITATION.cff](CITATION.cff). Signal changes
-through [`CHANGELOG.md`](CHANGELOG.md); export formats are versioned, so cite the version you used.
+## Citation
 
-Licensed under [Apache-2.0](LICENSE).
+If you use Decision Forge in published work, cite the version you used. GitHub's **Cite this
+repository** button reads [CITATION.cff](CITATION.cff); export formats are versioned, and
+[`CHANGELOG.md`](CHANGELOG.md) records every change.
+
+```bibtex
+@software{decision_forge,
+  title   = {Decision Forge: Organizational Decision Data Infrastructure},
+  author  = {{Decision Forge contributors}},
+  version = {0.3.0},
+  license = {Apache-2.0},
+  url     = {https://github.com/Juneo-Lab/decision-forge}
+}
+```
+
+## License
+
+Decision Forge is licensed under [Apache-2.0](LICENSE). See [NOTICE](NOTICE) for attribution.
