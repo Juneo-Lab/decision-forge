@@ -42,7 +42,10 @@ jobs:
           /tmp/smoke/bin/decision-forge validate examples/customer_support/project.yaml
       - uses: actions/attest-build-provenance@v4
         with:
-          subject-path: dist/*
+          # uv also writes dist/.gitignore; attest only the distributions.
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
       - uses: actions/upload-artifact@v7
         with:
           name: release

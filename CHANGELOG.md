@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Attest only the wheel and sdist in the release workflow; `uv build` also writes `dist/.gitignore`.
+
 ## 0.3.1
 
 Version 0.3.1 adds office, HTML, tabular, and OCR ingestion, fixes several integrity and portability
