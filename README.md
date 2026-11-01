@@ -36,7 +36,7 @@ verified labels, source provenance, and stable family assignments. The result is
 can audit, reproduce, and hand to a trainer.
 
 > [!NOTE]
-> **Status: `v0.3.0` alpha — organizational decision data pipeline.**
+> **Status: `v0.3.1` alpha — organizational decision data pipeline.**
 > Reviewed or authored specifications build into training data locally, without model credentials.
 > Document compilation and model-assisted synthesis use an explicitly selected model endpoint.
 > See [project status](docs/status.md) for the current implementation and next milestones.
@@ -312,7 +312,7 @@ repository** button reads [CITATION.cff](CITATION.cff); export formats are versi
 @software{decision_forge,
   title   = {Decision Forge: Organizational Decision Data Infrastructure},
   author  = {{Decision Forge contributors}},
-  version = {0.3.0},
+  version = {0.3.1},
   license = {Apache-2.0},
   url     = {https://github.com/Juneo-Lab/decision-forge}
 }

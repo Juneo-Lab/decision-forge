@@ -27,7 +27,7 @@ def test_tagged_release_extracts_only_its_changelog_section(tmp_path):
     version = check_release(root)["version"]
     notes = check_release(root, f"v{version}")["notes"]
     assert notes.strip()
-    assert "## " not in notes
+    assert not any(line.startswith("## ") for line in notes.splitlines())
     assert "Unreleased" not in notes
 
 

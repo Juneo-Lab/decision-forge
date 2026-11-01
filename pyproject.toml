@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "decision-forge"
-version = "0.3.0"
+version = "0.3.1"
 description = "Compile organizational policy into verifiable decision training data."
 readme = "README.md"
 requires-python = ">=3.11"
