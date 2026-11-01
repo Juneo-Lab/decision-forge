@@ -1,13 +1,15 @@
 # Why Decision Forge
 
-Decision Forge exists because of one question: **how much work can an organization safely hand to AI
-agents?** This page explains why that question comes down to data, why the data has to come from
-inside each organization, and where Decision Forge fits in the answer.
+> *For three hundred years, every organization was built from people. The next ones will be built
+> from people and agents — and the agents will outnumber the people.*
+
+Decision Forge exists to answer one question: **how much of its work can an organization safely
+entrust to AI agents?** This page explains why the answer comes down to data, why that data can only
+come from inside each organization, and where Decision Forge stands in the answer.
 
 ## 1. Organizations are gaining a second workforce
 
-For three hundred years, every organization was made of people. That is changing on four fronts at
-once:
+The change is arriving on four fronts at once:
 
 - **Capability.** Agents complete tasks on their own that take a human expert hours, not minutes.
 - **Delegation.** People hand agents work they used to give a colleague or an outside contractor.
@@ -106,15 +108,19 @@ training study is the next evaluation milestone, and the [roadmap](https://githu
 tracks it alongside larger corpora, cross-document rule resolution, and multi-harness evaluation.
 Laplace is under development and is not part of this repository.
 
-## 7. Where this goes
+## 7. The world we are building
 
-People keep the right to decide; agents earn a controlled right to act. An organization can then hand
+Humans keep the right to decide. Agents earn the right to act. An organization can then entrust its
 work to far more agents than it has people, because:
 
-- **every action** has a foreseeable consequence before it runs;
-- **every delegation** narrows authority as it passes from person to agent to agent, never widens it;
-- **every contribution** can be measured and credited.
+- **every action** is foreseen before it happens;
+- **every delegation** narrows authority as work passes from person to agent to agent, and never
+  widens it;
+- **every contribution** is measured and credited once the work is done.
 
-Payment networks authorize every transaction before it clears. The infrastructure we are building
-does the same for every agent action: a real-time judgment, made by the organization's own standard,
-before the action happens. Decision Forge is where that standard becomes data.
+Payment networks authorize every transaction before it clears. We are building the same layer for
+every agent action: a judgment made in real time, by the organization's own standard, before the
+action happens. Decision Forge is where that standard becomes data.
+
+**We are building the trust layer that lets human organizations keep pace with machine
+intelligence.**

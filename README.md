@@ -6,7 +6,7 @@
 
 **Compile organizational policy into verifiable decision training data.**
 
-The open data engine for trusted delegation to AI agents.
+Every organization's judgment, turned into the data that makes AI agents trustworthy.
 
 [![CI](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml)
@@ -31,46 +31,54 @@ The open data engine for trusted delegation to AI agents.
 
 ## Why Decision Forge
 
-**Organizations are gaining a second workforce.** For three hundred years, organizations were made of
-people. Today, AI agents work on their own for hours, take over tasks people used to hand to a
-colleague, and call one another through protocols such as A2A and MCP. Intelligence is now abundant.
-It has not yet turned into organizational capacity.
+> *For three hundred years, every organization was built from people. The next ones will be built
+> from people and agents — and the agents will outnumber the people.*
 
-**The connection layer is ready. The trust layer is empty.** Organizations learned to delegate to
-thousands of people because each of them can foresee what an action will do, works inside
-authorization and rules, and answers for the result. Agents arrive with none of that. Hand over too
-much and they act out of bounds; hold back and they never leave the pilot. What is missing is not
-more intelligence. It is the ability to **foresee the consequence of an action before it runs**.
+**A second workforce has arrived.** Agents now carry a task for hours without supervision, take on
+work that once went to a colleague, and call one another across tools and companies. For the first
+time, the supply of labor is no longer bounded by the number of people. Yet this abundance of
+intelligence has not become an abundance of capability. Agents wait in pilots because they are
+trusted with too little, or act in production while trusted with too much.
 
-**That ability cannot be learned from public data.** Language models learned language from text, and
-video and world models are learning physics from pixels. What happens inside an organization when an
-agent reassigns a lead, shares a client file, or approves a refund is not on the public web. It lives
-in three places only the organization has:
+**What is missing is trust.** Over centuries, organizations learned to hand their work to thousands
+of strangers. People foresee what their actions will do, act within their authority, and answer for
+the results. Agents have been connected to every tool and to each other, but given none of this.
+The pipes are built. The trust layer is empty.
 
-| What a model needs | Where it lives | What Decision Forge does with it |
+**Trust begins with foresight.** To trust an action is to know what it will do before it happens.
+Language models learned to speak from the world's text; world models are learning physics from its
+video. No public dataset records what happens inside an organization when an agent reassigns a
+client, shares a file, or approves a payment. That knowledge lives only within the organization, in
+three forms:
+
+| What foresight requires | Where it lives | What Decision Forge does with it |
 | --- | --- | --- |
-| **Decision context**: the state, roles, and options at the moment of action | Workflows, tickets, CRM records | Reconstructs decision-time scenarios with explicit candidate actions, grouped into families |
+| **Decision context**: the state, roles, and options at the moment of action | Workflows, tickets, CRM records | Reconstructs each decision moment with explicit candidate actions, grouped into families |
 | **Judgment standard**: what this organization allows, forbids, or escalates | Handbooks, SOPs, approval rules, permission tables | Compiles rules with verified source quotations, puts them through business review, and replays them to label every example |
 | **Execution receipts**: what actually happened after the action | Approvals, outcomes, runtime logs | Ingests runtime events and reviewed outcomes as feedback for the next dataset version |
 
-Every organization's standard is its own: the same action can be right in one company and out of
-bounds in the next. There is no universal "correct decision" to download.
+**Every organization has its own sense of right.** What one firm encourages, another forbids. That
+judgment cannot be downloaded from a general model. It has to be learned inside each organization,
+and it has to belong to that organization.
 
-**Decision Forge is the open data engine for that standard.** It compiles an organization's own
-documents into decision training data with verified labels, source provenance, and family-isolated
-splits, and it runs locally, so the data and the judgment standard stay inside the organization. It
-is the data layer of the stack we are building at Juneo Lab:
+**Decision Forge turns that judgment into data.** It compiles an organization's own documents into
+verified decision training data: every label traces back to a rule, every rule back to its source,
+and the core runs inside the organization's own walls. It is the foundation of the stack we are
+building at Juneo Lab:
 
 | Layer | Role | Status |
 | --- | --- | --- |
 | **AI-native organizations** | People and agents allocate work, share information, act, and accept results together; their execution receipts flow back into the data | Built with partner organizations |
-| **Laplace** | A causal-interventional model that predicts the consequence of an action before it runs, then allows it, blocks it, or hands it back to a person | In development |
-| **Decision Forge** | Organization documents → verified decision training data, locally | Open source, this repository |
+| **Laplace** | A causal-interventional model that foresees the consequence of an action before it runs, then lets it proceed, stops it, or hands it back to a person | In development |
+| **Decision Forge** | An organization's documents, turned into verified decision training data | Open source, this repository |
 
-**Where this goes.** People keep the right to decide; agents earn a controlled right to act. Every
-action has a foreseeable consequence before it runs, every delegation narrows authority instead of
-widening it, and every contribution can be measured. Each organization owns its data, its standards,
-and the intelligence trained on them. The full argument is in [Why Decision Forge](docs/vision.md).
+**The world we are building.** Humans keep the right to decide. Agents earn the right to act, within
+limits that only narrow as work passes from hand to hand. Every action is foreseen before it happens,
+and every contribution is measured after it is done. Every organization owns the intelligence that
+carries its judgment.
+
+**We are building the trust layer that lets human organizations keep pace with machine
+intelligence.** Read the full story in [Why Decision Forge](docs/vision.md).
 
 ## What Decision Forge does
 
