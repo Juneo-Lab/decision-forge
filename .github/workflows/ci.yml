@@ -92,8 +92,10 @@ jobs:
             runs/harbor-oracle
             runs/harbor-nop
 
+  # Requires the repository's dependency graph (Settings -> Code security). Enable the graph, then set the
+  # Actions repository variable DEPENDENCY_REVIEW to 'true' to turn this check on.
   dependency-review:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.DEPENDENCY_REVIEW == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

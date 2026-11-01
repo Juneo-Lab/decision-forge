@@ -161,7 +161,7 @@ coverage, Ruff, strict mypy, strict
 MkDocs, wheel and sdist builds. CI runs 10 checks: quality, six test jobs (Ubuntu and macOS × Python
 3.11/3.12/3.13), pinned Data Designer and LangGraph adapter contracts, and Harbor task execution in
 Docker under oracle and no-op controls, plus real local OCR inference and seven-format ingestion.
-Pull requests also run dependency review; CodeQL and OpenSSF Scorecard scan the repository on a schedule.
+CodeQL and OpenSSF Scorecard scan the repository on pull requests and on a schedule.
 
 **Local OCR:** the [seven-format ingestion smoke test](experiments/2026-11-ingestion/README.md)
 archives native file parsing and exact PNG/scanned-PDF transcriptions using bundled PP-OCR small

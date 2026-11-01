@@ -4,7 +4,8 @@
 
 - Run CI on pull requests, merge queues, and `main` only, cancel superseded pull request runs, bound every
   job with a timeout, and expose a single `CI result` status for branch protection.
-- Add dependency review on pull requests, CodeQL analysis for Python and workflows, and OpenSSF Scorecard.
+- Add opt-in dependency review on pull requests (`DEPENDENCY_REVIEW` repository variable), CodeQL analysis
+  for Python and workflows, and OpenSSF Scorecard.
 - Group Dependabot updates so related upgrades land in one lock-file change, and track pre-commit hooks.
 - Validate workflow and Dependabot files in pre-commit.
 
