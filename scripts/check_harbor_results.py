@@ -9,12 +9,12 @@ from typing import Any
 
 
 def check_results(manifest: Path, jobs: Path, agent: str, reward: int) -> dict[str, Any]:
-    expected = set(json.loads(manifest.read_text())["episode_ids"])
+    expected = set(json.loads(manifest.read_text(encoding="utf-8"))["episode_ids"])
     if not expected:
         raise ValueError("Task manifest is empty")
     trials = []
     for path in jobs.rglob("result.json"):
-        result = json.loads(path.read_text())
+        result = json.loads(path.read_text(encoding="utf-8"))
         if "task_name" in result:
             trials.append(result)
     actual = [result["task_name"] for result in trials]

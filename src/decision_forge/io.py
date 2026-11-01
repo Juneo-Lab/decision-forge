@@ -150,6 +150,6 @@ def load_sources(project: Project, root: Path) -> tuple[dict[str, str], dict[str
             if not 0 <= evidence.start < evidence.end <= len(source_text):
                 raise ValueError(f"Evidence span is outside source bounds for rule {rule.id}")
             span = source_text[evidence.start : evidence.end]
-            if len(span) < len(evidence.quote) or collapse_whitespace(span)[0] != quoted:
+            if collapse_whitespace(span)[0] != quoted:
                 raise ValueError(f"Evidence span does not match for rule {rule.id}")
     return contents, hashes

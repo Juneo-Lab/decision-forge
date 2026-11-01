@@ -116,3 +116,21 @@ def test_workflow_sources_reject_non_json_yaml_values(tmp_path):
     )
     with pytest.raises(ValueError, match="not JSON"):
         ingest_manifest(manifest)
+
+
+@pytest.mark.parametrize(
+    ("name", "content"),
+    [
+        ("policy.csv", b'rule,text\r\nR1,"Refunds over 100 USD\r\nrequire manager approval."\r\n'),
+        ("flow.json", json.dumps({"step": "Refunds over 100 USD\r\nrequire approval.\rEscalate."}).encode()),
+    ],
+    ids=["csv", "workflow"],
+)
+def test_carriage_returns_do_not_break_stored_snapshot_hashes(tmp_path, name, content):
+    (tmp_path / name).write_bytes(content)
+    (document,) = ingest_manifest(make_manifest(tmp_path, [{"id": "policy", "path": name, "version": "v1"}]))
+    assert "\r" not in document.text
+    snapshot = tmp_path / "snapshot.txt"
+    snapshot.write_text(document.text, encoding="utf-8")
+    assert digest(snapshot.read_text(encoding="utf-8")) == document.content_hash
+    assert all(document.text[span.start : span.end].endswith("\n") for span in document.spans)

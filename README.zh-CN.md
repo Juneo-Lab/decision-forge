@@ -28,7 +28,7 @@
 | 标签 | 由确定性解释器根据声明规则重新计算 |
 | 溯源 | 验证规则引文和源文件哈希；语料编译补充跨度与定位符 |
 | 验证 | 完整可选适配器环境下，256 项测试、88.18% 语句覆盖率 |
-| CI | Linux 与 macOS 上共 9 项检查，包括适配器与 Harbor 对照验证 |
+| CI | Linux 与 macOS 上共 10 项任务，包括适配器、OCR 与 Harbor 对照验证；另有 CodeQL 与 OpenSSF Scorecard 扫描 |
 | 训练 | 四种导出格式，包括 candidate-readout 决策契约 |
 | 语言 | Python 3.11+ |
 
@@ -147,6 +147,7 @@ Markdown、JSON/YAML、PDF、DOCX/XLSX/PPTX、HTML、CSV/TSV 和 OCR 图片输�
 以及 Ruff、严格 mypy、严格 MkDocs、wheel 和 sdist 构建。CI 包含 10 项检查：代码质量、6 项测试
 （Ubuntu 与 macOS × Python 3.11/3.12/3.13）、固定版本的 Data Designer 与 LangGraph 适配器契约，
 以及 Docker 中的 Harbor oracle 与 no-op 对照验证，加上真实本地 OCR 推理与七格式导入。
+CodeQL 与 OpenSSF Scorecard 会在拉取请求和定期任务中扫描仓库。
 
 **本地 OCR：** [七格式导入测试](experiments/2026-11-ingestion/README.md)归档了原生文件解析结果，
 以及使用内置 PP-OCR 小模型准确识别 PNG 和扫描 PDF 的结果。Tesseract 与视觉模型服务已有协议测试，

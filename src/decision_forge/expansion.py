@@ -18,9 +18,10 @@ from typing import Any, Literal
 from pydantic import Field, JsonValue, ValidationError, model_validator
 
 from decision_forge.dedup import duplicate_verdict
-from decision_forge.generation import policy_fingerprint, set_path, split_plan
+from decision_forge.generation import candidate_for, policy_fingerprint, set_path, split_plan
 from decision_forge.io import atomic_text, canonical, digest, load_sources, read_json, write_json
 from decision_forge.models import (
+    Candidate,
     CandidateIdentifier,
     CandidateVerdict,
     Contract,
@@ -28,9 +29,10 @@ from decision_forge.models import (
     Identifier,
     Node,
     Project,
+    Rule,
 )
 from decision_forge.pipeline import load_run, load_run_project
-from decision_forge.policy import best_choices, evaluate
+from decision_forge.policy import MISSING, best_choices, evaluate, json_equal, lookup
 from decision_forge.providers import StructuredProvider
 
 EXPANSION_VERSION = "verified-synthesis-v2"
@@ -215,19 +217,8 @@ def materialize(
         raise ValueError(
             f"Policy replay produced {sorted(choices)} instead of the requested {sorted(request.valid_choices)}"
         )
-    identity = digest(
-        [
-            base.organization_id,
-            project.organization.policy_version,
-            base.node_id,
-            [rule.model_dump() for rule in rules],
-            base.family_id,
-            state,
-            [candidate.model_dump() for candidate in base.candidates],
-        ]
-    )[:24]
     return Episode(
-        id=f"ep-{identity}",
+        id=synthesized_id(project, base, rules, state),
         organization_id=project.organization.id,
         policy_version=project.organization.policy_version,
         node_id=base.node_id,
@@ -478,6 +469,36 @@ def expand(
     return summary
 
 
+def synthesized_id(project: Project, base: Episode, rules: list[Rule], state: dict[str, Any]) -> str:
+    identity = digest(
+        [
+            base.organization_id,
+            project.organization.policy_version,
+            base.node_id,
+            [rule.model_dump() for rule in rules],
+            base.family_id,
+            state,
+            [candidate.model_dump() for candidate in base.candidates],
+        ]
+    )[:24]
+    return f"ep-{identity}"
+
+
+def expected_candidates(node: Node, observed: list[Candidate]) -> list[Candidate]:
+    """Rebuild a node's candidates, accepting from the artifact only declared candidate-dimension values."""
+    by_id = {candidate.id: candidate for candidate in observed}
+    expected = [candidate.model_copy(deep=True) for candidate in node.candidates]
+    for dimension in node.dimensions:
+        if dimension.path.startswith("state."):
+            continue
+        target = next(c for c in expected if c.id == candidate_for(node, dimension.path).id)
+        attribute = dimension.path.removeprefix(f"candidates.{target.id}.")
+        value = lookup(by_id[target.id].attributes, attribute) if target.id in by_id else MISSING
+        if value is not MISSING and any(json_equal(value, allowed) for allowed in dimension.values):
+            set_path(target.attributes, attribute, deepcopy(value))
+    return expected
+
+
 def load_expansion(
     directory: Path, project: Project, source_hashes: dict[str, str]
 ) -> tuple[list[Episode], dict[str, Any]]:
@@ -523,9 +544,23 @@ def load_expansion(
             key: source_hashes[key] for key in expected_sources
         }:
             raise ValueError(f"Expanded episode was synthesized from different sources: {episode.id}")
-        choices = best_choices(evaluate(episode.state, episode.candidates, rules))
+        # Everything a trainer shows the model must come from the project, not from the artifact.
+        candidates = expected_candidates(node, episode.candidates)
+        if (
+            episode.kind != node.kind
+            or episode.question != node.question
+            or episode.policy_context != [rule.description for rule in rules]
+            or [c.model_dump() for c in episode.candidates] != [c.model_dump() for c in candidates]
+        ):
+            raise ValueError(f"Expanded episode model input differs from the project: {episode.id}")
+        verdicts = evaluate(episode.state, candidates, rules)
+        choices = best_choices(verdicts)
         if choices != episode.valid_choices or not choices:
             raise ValueError(f"Expanded episode label fails policy replay: {episode.id}")
+        if [v.model_dump() for v in verdicts] != [v.model_dump() for v in episode.verdicts]:
+            raise ValueError(f"Expanded episode verdicts fail policy replay: {episode.id}")
+        if episode.id != synthesized_id(project, episode, rules, episode.state):
+            raise ValueError(f"Expanded episode identity does not match its content: {episode.id}")
         if episode.policy_fingerprint != policy_fingerprint(project, episode.node_id, episode.source_hashes):
             raise ValueError(f"Expanded episode policy fingerprint is stale: {episode.id}")
         verified.append(episode)
