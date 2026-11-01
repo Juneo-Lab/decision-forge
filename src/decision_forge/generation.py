@@ -94,6 +94,7 @@ def family_variants(project: Project, scenario: Scenario) -> list[Variant]:
     for index in sorted(rng.sample(range(population), requested_variants(project, scenario))):
         state = copy.deepcopy(scenario.state)
         candidates = [c.model_copy(deep=True) for c in node.candidates]
+        by_id = {candidate.id: candidate for candidate in candidates}
         intervention: dict[str, Any] = {}
         for dimension, width in zip(node.dimensions, widths, strict=True):
             value = dimension.values[index % width]
@@ -102,12 +103,9 @@ def family_variants(project: Project, scenario: Scenario) -> list[Variant]:
             if dimension.path.startswith("state."):
                 set_path(state, dimension.path.removeprefix("state."), value)
             else:
-                candidate_id = candidate_for(node, dimension.path).id
-                candidate = next(c for c in candidates if c.id == candidate_id)
-                attr_path = dimension.path.removeprefix(f"candidates.{candidate.id}.")
-                if attr_path == "id":
-                    raise ValueError("Candidate IDs cannot be mutated")
-                set_path(candidate.attributes, attr_path, value)
+                # Node validation guarantees the path names one candidate and never its ID.
+                candidate = by_id[candidate_for(node, dimension.path).id]
+                set_path(candidate.attributes, dimension.path.removeprefix(f"candidates.{candidate.id}."), value)
         variants.append(Variant(state, candidates, intervention))
     return variants
 

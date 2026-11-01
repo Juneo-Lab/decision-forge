@@ -19,7 +19,7 @@ from pydantic import Field, JsonValue, ValidationError, model_validator
 
 from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD, duplicate_verdict
 from decision_forge.generation import candidate_for, policy_fingerprint, referenced_sources, set_path
-from decision_forge.io import atomic_text, canonical, digest, load_sources, read_json, write_json
+from decision_forge.io import atomic_text, canonical, digest, load_sources, read_json, read_jsonl, write_json
 from decision_forge.models import (
     Candidate,
     CandidateIdentifier,
@@ -203,7 +203,7 @@ def materialize(
                 raise ValueError(f"Proposal value outside the declared dimension domain: {name}")
         elif isinstance(binding.value, (dict, list)):
             raise ValueError(f"Proposal value for {name} must be a scalar")
-        set_path(state, name, deepcopy(binding.value))
+        set_path(state, name, binding.value)
         applied[name] = binding.value
     if not applied:
         raise ValueError("Proposal produced no state change")
@@ -212,7 +212,7 @@ def materialize(
     choices = best_choices(verdicts)
     if not choices:
         raise ValueError("Synthesized state leaves no permitted candidate")
-    if sorted(choices) != sorted(request.valid_choices):
+    if choices != request.valid_choices:
         raise ValueError(
             f"Policy replay produced {sorted(choices)} instead of the requested {sorted(request.valid_choices)}"
         )
@@ -319,9 +319,7 @@ def expand(
     quarantine_path = output / "quarantine.json"
     # A crash between calls leaves verified rows on disk; reload them instead of republishing.
     accepted: list[Episode] = (
-        [Episode.model_validate_json(line) for line in accepted_path.read_text(encoding="utf-8").splitlines() if line]
-        if accepted_path.exists()
-        else []
+        [Episode.model_validate(row) for row in read_jsonl(accepted_path)] if accepted_path.exists() else []
     )
     quarantine: list[dict[str, Any]] = read_json(quarantine_path) if quarantine_path.exists() else []
     shortfalls: list[dict[str, Any]] = []
@@ -493,7 +491,7 @@ def expected_candidates(node: Node, observed: list[Candidate]) -> list[Candidate
         attribute = dimension.path.removeprefix(f"candidates.{target.id}.")
         value = lookup(by_id[target.id].attributes, attribute) if target.id in by_id else MISSING
         if value is not MISSING and any(json_equal(value, allowed) for allowed in dimension.values):
-            set_path(target.attributes, attribute, deepcopy(value))
+            set_path(target.attributes, attribute, value)
     return expected
 
 
@@ -508,11 +506,7 @@ def load_expansion(
     summary = read_json(directory / "expansion.json")
     if summary.get("status") != "complete":
         raise ValueError("Expansion is incomplete; resume it before building")
-    rows = [
-        Episode.model_validate_json(line)
-        for line in (directory / "accepted.jsonl").read_text(encoding="utf-8").splitlines()
-        if line
-    ]
+    rows = [Episode.model_validate(row) for row in read_jsonl(directory / "accepted.jsonl")]
     if digest([row.model_dump(mode="json") for row in rows]) != summary.get("accepted_digest"):
         raise ValueError("Expansion integrity check failed")
     verified: list[Episode] = []

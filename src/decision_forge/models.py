@@ -15,6 +15,7 @@ Identifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$")
 # candidate selection in Node dimensions and evaluation bindings ambiguous.
 CandidateIdentifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$")]
 Split = Literal["train", "development", "test"]
+ORDERING_OPERATORS = frozenset({"gt", "gte", "lt", "lte"})
 Stratum = Literal["routine", "boundary", "change", "feedback"]
 
 
@@ -85,9 +86,7 @@ class Predicate(Contract):
             raise ValueError("The exists operator requires a boolean value; omit it to mean true")
         if self.op == "in" and not isinstance(self.value, list):
             raise ValueError("The in operator requires a list")
-        if self.op in {"gt", "gte", "lt", "lte"} and (
-            isinstance(self.value, bool) or not isinstance(self.value, (float, int))
-        ):
+        if self.op in ORDERING_OPERATORS and (isinstance(self.value, bool) or not isinstance(self.value, (float, int))):
             raise ValueError("Ordering operators require a numeric value")
         return self
 

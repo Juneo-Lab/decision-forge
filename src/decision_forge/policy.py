@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from decision_forge.models import Candidate, CandidateVerdict, Condition, Predicate, Rule
+from decision_forge.models import ORDERING_OPERATORS, Candidate, CandidateVerdict, Condition, Predicate, Rule
 
 MISSING = object()
 
@@ -75,9 +75,6 @@ def matches(condition: Condition, context: dict[str, Any]) -> bool:
     )
 
 
-ORDERING = {"gt", "gte", "lt", "lte"}
-
-
 def conditions_disjoint(left: Condition, right: Condition) -> bool:
     """Whether no context can satisfy both conditions, judged conservatively.
 
@@ -104,13 +101,13 @@ def _excludes(first: Predicate, second: Predicate) -> bool:
             return (other.op == "exists" and one.value != other.value) or (one.value is False and other.op != "exists")
         if one.op == "eq":
             return not _holds(other, one.value)
-        if one.op == "in":
-            return not any(_holds(other, item) for item in one.value)  # type: ignore[union-attr]
-    if first.op in ORDERING and second.op in ORDERING:
+        if one.op == "in" and isinstance(one.value, list):
+            return not any(_holds(other, item) for item in one.value)
+    if first.op in ORDERING_OPERATORS and second.op in ORDERING_OPERATORS:
         return _intervals_disjoint(first, second)
     # An ordering needs a number, 'contains' needs a list.
     operators = {first.op, second.op}
-    return bool(operators & ORDERING) and "contains" in operators
+    return bool(operators & ORDERING_OPERATORS) and "contains" in operators
 
 
 def _holds(predicate: Predicate, value: Any) -> bool:

@@ -8,6 +8,7 @@ from typing import Any, Literal
 from decision_forge.inputs import model_input
 from decision_forge.io import atomic_text, canonical, digest, read_json, write_json
 from decision_forge.pipeline import load_run
+from decision_forge.splits import SPLITS
 from decision_forge.training import decision_row
 
 __all__ = ["export_run", "model_input"]
@@ -31,7 +32,7 @@ def export_run(
     if output.exists() and any(output.iterdir()):
         raise ValueError("Export directory must be empty")
     output.mkdir(parents=True, exist_ok=True)
-    rows: dict[str, list[dict[str, Any]]] = {s: [] for s in ["train", "development", "test"]}
+    rows: dict[str, list[dict[str, Any]]] = {split: [] for split in SPLITS}
     skipped = 0
     budget_filtered = 0
     skipped_by_split = {s: 0 for s in rows}

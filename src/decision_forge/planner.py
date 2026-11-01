@@ -380,7 +380,7 @@ def plan_recipe(
     inspected = _inspect(project)
     record("inspect_project", {}, inspected)
 
-    available, _pool = measure_pool(project, hashes)
+    available, pool = measure_pool(project, hashes)
     record(
         "measure_pool",
         {"scenarios": len(project.scenarios)},
@@ -408,7 +408,7 @@ def plan_recipe(
         note=f"shortfall {report['shortfall']} of {report['requested']}",
     )
 
-    space = synthesizability(project, _pool)
+    space = synthesizability(project, pool)
     requests, unfillable = expansion_requests(wanted, available, options, space)
     cost = estimate_cost(requests, options)
     record("plan_expansion", {"cells": len(requests)}, {"requests": requests, "cost": cost})

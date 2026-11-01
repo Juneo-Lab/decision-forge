@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -20,6 +19,7 @@ from decision_forge.io import (
     load_project,
     load_sources,
     read_json,
+    read_jsonl,
     write_json,
 )
 from decision_forge.models import Episode, Project, Scenario
@@ -279,7 +279,7 @@ def load_run(path: Path) -> list[Episode]:
     manifest = read_json(path / "manifest.json")
     if manifest["status"] != "complete":
         raise ValueError("Build is incomplete; rerun the build before exporting")
-    rows = [json.loads(line) for line in (path / "episodes.jsonl").read_text(encoding="utf-8").splitlines() if line]
+    rows = read_jsonl(path / "episodes.jsonl")
     if digest(rows) != manifest["dataset_digest"]:
         raise ValueError("Dataset integrity check failed")
     return [Episode.model_validate(row) for row in rows]
