@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Count the recipe planner's available pool after the duplicate removal a build applies, so `plan-recipe`
+  no longer reports quotas as feasible that `build --recipe-plan` then rejects.
 - Re-derive every model-visible field of imported synthesis rows: `load_expansion` now rejects rows whose
   question, policy context, candidates, verdicts, or ID differ from what the project produces, even when
   `accepted.jsonl` and its digest were rewritten together.
