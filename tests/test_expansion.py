@@ -13,6 +13,7 @@ from decision_forge.expansion import (
 from decision_forge.io import digest, read_json, write_json
 from decision_forge.models import Episode, Project
 from decision_forge.pipeline import build, load_run
+from decision_forge.splits import lock_path
 
 
 class ScriptedStates:
@@ -275,6 +276,10 @@ def test_expansion_cannot_cross_updated_family_splits(synthesis_project, tmp_pat
     spec = read_json(synthesis_project)
     spec["recipe"]["family_splits"] = {"family": split}
     write_json(synthesis_project, spec)
+    with pytest.raises(ValueError, match="locked to train"):
+        build(synthesis_project, tmp_path / "merged", expansion=tmp_path / "expansion")
+    # Even a deliberate move in the split lock cannot carry synthesized data across splits.
+    lock_path(synthesis_project).unlink()
     with pytest.raises(ValueError, match="Held-out|stale family split"):
         build(synthesis_project, tmp_path / "merged", expansion=tmp_path / "expansion")
     assert not (tmp_path / "merged/episodes.jsonl").exists()

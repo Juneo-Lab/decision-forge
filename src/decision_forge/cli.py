@@ -83,8 +83,14 @@ def build_command(
     near_duplicate_threshold: Annotated[
         float, typer.Option(help="Presentation similarity above which a duplicate is dropped.")
     ] = 0.9,
+    locked_splits: Annotated[
+        bool, typer.Option(help="Fail instead of creating or updating the split lock next to SPEC.")
+    ] = False,
 ) -> None:
-    """Generate, verify, deduplicate, checkpoint, and report decision episodes. Runs offline."""
+    """Generate, verify, deduplicate, checkpoint, and report decision episodes. Runs offline.
+
+    The first build records every family's split in SPEC's split lock; later builds keep it.
+    """
     try:
         display(
             build(
@@ -94,6 +100,7 @@ def build_command(
                 recipe_plan=recipe_plan,
                 expansion=expansion,
                 near_duplicate_threshold=near_duplicate_threshold,
+                locked_splits=locked_splits,
             )["report"]
         )
     except (ValueError, OSError, Timeout) as exc:

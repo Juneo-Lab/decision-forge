@@ -1,82 +1,15 @@
-"""Seeded scenario families with stable split assignment before augmentation."""
+"""Seeded scenario families, generated deterministically from a project's declared dimensions."""
 
 from __future__ import annotations
 
 import copy
 import math
 import random
-from typing import Any, Literal
+from typing import Any
 
 from decision_forge.io import digest
-from decision_forge.models import Candidate, Episode, Node, Project, Scenario
+from decision_forge.models import Candidate, Episode, Node, Project, Scenario, Split
 from decision_forge.policy import best_choices, evaluate
-
-
-def split_plan(project: Project) -> dict[str, Literal["train", "development", "test"]]:
-    """Assign whole scenario families to splits so the realized sizes follow the recipe.
-
-    Hashing each family independently makes split sizes unbounded: a small project can end up
-    with an empty test split, or with more test families than training families. Families are
-    therefore ranked by a stable hash and then sliced into quotas computed from the recipe.
-    """
-    splits = project.recipe.splits
-    fractions: list[tuple[Literal["train", "development", "test"], float]] = [
-        ("train", splits.train),
-        ("development", splits.development),
-        ("test", splits.test),
-    ]
-    order = sorted(
-        {scenario.family_id for scenario in project.scenarios},
-        key=lambda family: digest(f"{project.organization.id}:{family}:split-v2"),
-    )
-    pinned = project.recipe.family_splits
-    if pinned:
-        # Retain published assignments. New families use stable hashes and cannot move held-out data.
-        plan = dict(pinned)
-        for family in order:
-            if family not in plan:
-                value = int(digest(f"{project.organization.id}:{family}:split-v1"), 16) / 2**256
-                plan[family] = (
-                    "train"
-                    if value < splits.train
-                    else ("development" if value < splits.train + splits.development else "test")
-                )
-        return plan
-    total = len(order)
-    quotas: dict[str, int] = {}
-    remainders: list[tuple[float, Literal["train", "development", "test"]]] = []
-    for name, fraction in fractions:
-        exact = fraction * total
-        base = math.floor(exact)
-        quotas[name] = int(base)
-        remainders.append((exact - base, name))
-    unassigned = total - sum(quotas.values())
-    for _, name in sorted(remainders, key=lambda item: (-item[0], item[1]))[:unassigned]:
-        quotas[name] += 1
-    # Every requested split must own at least one family when the project is large enough,
-    # otherwise a configured split is silently unusable downstream (for example Harbor export).
-    required = [name for name, fraction in fractions if fraction > 0]
-    if total >= len(required):
-        for name in required:
-            if quotas[name] == 0:
-                donor = max(quotas, key=lambda candidate: (quotas[candidate], candidate))
-                quotas[donor] -= 1
-                quotas[name] += 1
-    plan = {}
-    cursor = 0
-    for name, _ in fractions:
-        for family in order[cursor : cursor + quotas[name]]:
-            plan[family] = name
-        cursor += quotas[name]
-    return plan
-
-
-def split_for(family_id: str, project: Project) -> str:
-    """Split for one family under the project's quota-based assignment."""
-    try:
-        return split_plan(project)[family_id]
-    except KeyError:
-        raise ValueError(f"Unknown scenario family: {family_id}") from None
 
 
 def requested_variants(project: Project, scenario: Scenario) -> int:
@@ -125,9 +58,7 @@ def policy_fingerprint(project: Project, node_id: str, source_hashes: dict[str, 
     )
 
 
-def generate_family(
-    project: Project, scenario: Scenario, source_hashes: dict[str, str], split: str | None = None
-) -> list[Episode]:
+def generate_family(project: Project, scenario: Scenario, source_hashes: dict[str, str], split: Split) -> list[Episode]:
     node: Node = next(n for n in project.nodes if n.id == scenario.node_id)
     rules = [r for r in project.organization.rules if r.id in node.rule_ids]
     widths = [len(dim.values) for dim in node.dimensions]
@@ -135,7 +66,6 @@ def generate_family(
     if population > 10**12:
         raise ValueError("Scenario space exceeds the supported sampling range")
     count = requested_variants(project, scenario)
-    family_split = split or split_for(scenario.family_id, project)
     rng = random.Random(digest([project.recipe.seed, scenario.id]))
     indices = sorted(rng.sample(range(population), count))
     episodes: dict[str, Episode] = {}
@@ -179,7 +109,7 @@ def generate_family(
             kind=node.kind,
             scenario_id=scenario.id,
             family_id=scenario.family_id,
-            split=family_split,  # type: ignore[arg-type]
+            split=split,
             stratum=scenario.stratum,
             state=state,
             question=node.question,

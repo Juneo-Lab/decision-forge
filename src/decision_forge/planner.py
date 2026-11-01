@@ -18,7 +18,7 @@ from pydantic import Field, JsonValue
 
 from decision_forge.dedup import deduplicate
 from decision_forge.distribution import cell_key, episode_cell
-from decision_forge.generation import generate_family, split_plan
+from decision_forge.generation import generate_family
 from decision_forge.io import canonical, digest, load_project, load_sources, read_json, write_json
 from decision_forge.models import (
     CandidateIdentifier,
@@ -27,8 +27,10 @@ from decision_forge.models import (
     Episode,
     Identifier,
     Project,
+    Split,
 )
 from decision_forge.providers import StructuredProvider
+from decision_forge.splits import resolve_splits, split_plan
 
 PLANNER_VERSION = "recipe-planner-v1"
 
@@ -58,7 +60,7 @@ class ToolCall(Contract):
 class AdvisorWeight(Contract):
     node_id: Identifier
     stratum: Literal["routine", "boundary", "change", "feedback"]
-    split: Literal["train", "development", "test"]
+    split: Split
     valid_choices: list[CandidateIdentifier] = Field(min_length=1, max_length=16)
     weight: float = Field(gt=0, le=1)
 
@@ -367,6 +369,8 @@ def plan_recipe(
     """Plan, audit, and persist an exact distribution for a project specification."""
     options = options or PlanOptions()
     project = load_project(spec)
+    # Plan against the same family splits the build will use; only builds update the lock.
+    resolve_splits(project, spec)
     _, hashes = load_sources(project, spec.parent)
     fingerprint = digest(
         {

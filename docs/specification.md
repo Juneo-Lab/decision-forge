@@ -52,13 +52,28 @@ Build reports state requested and realized episode volumes, plus any scenario th
 episodes than requested, so a shrunken sampling space is visible instead of silent.
 
 Use one family ID for every seed scenario derived from the same original business event. All four
-decision surfaces of one event can share that ID. Families are ranked by a hash of organization ID
-and family ID, independent of the sampling seed, and then sliced into quotas computed from the split
-fractions. Families are never divided across splits, and a configured split that has a nonzero
-fraction receives at least one family once the project has enough families. Changing the split
-fractions or adding families can reallocate an unpinned project. Build snapshots persist
-`recipe.family_splits`; use `update` to preserve the cumulative published registry, including removed
-families, across dataset versions. Cache keys include each scenario's resolved split.
+decision surfaces of one event can share that ID. Families are never divided across splits.
+
+### Split lock
+
+A family's split must not change once data from it has been published, or held-out examples leak
+into training in the next version. The first build of a specification ranks families by a hash of
+organization ID and family ID, independent of the sampling seed, and slices them into quotas computed
+from the split fractions; a configured split with a nonzero fraction receives at least one family
+once the project has enough families. The build then records every assignment in a split lock next
+to the specification (`project.yaml` → `project.splits.lock.json`). Commit it with the specification.
+
+Later builds keep every locked family in its split. A family added later receives a split from a
+hash of its own ID, which no other family influences, and is appended to the lock. Removed families
+stay in the lock, so a family that returns keeps its original split. An explicit
+`recipe.family_splits` pin that contradicts the lock is an error; to move a family deliberately,
+edit the lock. Builds write the lock only after they succeed, and `build --locked-splits` fails
+instead of creating or changing it, which suits CI. `update` additionally carries the previous run's
+cumulative registry forward. Cache keys and run snapshots include each scenario's resolved split.
+
+Without a lock, no assignment can be both stable under added families and bounded in split sizes:
+stability requires each family's split to depend on that family alone, and independent hashing can
+leave a small project without a test split.
 
 The `stratum` field labels routine, boundary, change, or feedback scenarios. Exact accepted-example
 quotas use `recipe.distribution`; `candidate_pool_per_scenario` controls the finite search pool.

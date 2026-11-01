@@ -19,10 +19,11 @@ uv run decision-forge build examples/customer_support/project.yaml --output runs
 uv run decision-forge export runs/demo --output runs/demo-decision --format decision
 ```
 
-The fictional example builds 336 episodes. All variants of a customer case share one split. Families
-are ranked by a stable hash and then sliced into quotas computed from the recipe, so realized split
-sizes track the configured proportions; the report records requested and realized counts. No model
-credentials are required for this workflow.
+The fictional example builds 336 episodes. All variants of a customer case share one split. The first
+build assigns families to splits by quota, so realized split sizes track the configured proportions,
+and records them in `project.splits.lock.json`; later builds keep every family in its split as the
+project grows. The report records requested and realized counts. No model credentials are required
+for this workflow.
 
 ## Command reference
 

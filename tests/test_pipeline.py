@@ -5,11 +5,11 @@ from collections import Counter
 import pytest
 
 from decision_forge.exporters import export_run, model_input
-from decision_forge.generation import split_plan
 from decision_forge.harness import export_harbor
 from decision_forge.io import load_project, load_sources, read_json, write_json
 from decision_forge.models import SplitConfig
 from decision_forge.pipeline import build, impact, load_run
+from decision_forge.splits import split_plan
 
 
 def test_build_resume_and_split_isolation(example_path, tmp_path):

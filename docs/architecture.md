@@ -14,7 +14,8 @@ The package is organized by responsibility:
 | `io` | Canonical serialization, source loading, hashing, atomic writes |
 | `compiler` / `providers` | Explicit model-assisted document compilation |
 | `policy` | Deterministic predicate evaluation and candidate ranking |
-| `generation` | Controlled dimensions, scenario families, split assignment |
+| `generation` | Controlled dimensions and scenario families |
+| `splits` | Family split assignment and the split lock that keeps it across versions |
 | `pipeline` | Caching, manifest lifecycle, reporting, change analysis |
 | `exporters` | Model-visible training views and supervision formats |
 | `harness` | Offline replay and portable task exports |
@@ -23,12 +24,14 @@ The package is organized by responsibility:
 ## Build lifecycle
 
 1. Validate the project and resolve every referenced source inside the project directory.
+   Pin every family to its split from the split lock, assigning new families.
 2. Match rule quotations against source text and hash source contents.
 3. Compute the run fingerprint and acquire a single-writer output lock.
 4. For each scenario, compute a fingerprint from its node, applicable rules, sources, and recipe.
 5. Reuse an integrity-checked cache entry or sample and verify a new scenario family.
 6. Separate accepted episodes from cases with no valid candidate.
-7. Write episodes, reports, the specification snapshot, and a completed manifest atomically.
+7. Write episodes, reports, the specification snapshot, and a completed manifest atomically,
+   then record any new family assignments in the split lock.
 
 A crash leaves the run incomplete. Rerunning the same command reuses completed scenario caches.
 Changed inputs require a new output directory; unaffected caches remain reusable. `impact` previews

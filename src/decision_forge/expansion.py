@@ -18,7 +18,7 @@ from typing import Any, Literal
 from pydantic import Field, JsonValue, ValidationError, model_validator
 
 from decision_forge.dedup import duplicate_verdict
-from decision_forge.generation import candidate_for, policy_fingerprint, set_path, split_plan
+from decision_forge.generation import candidate_for, policy_fingerprint, set_path
 from decision_forge.io import atomic_text, canonical, digest, load_sources, read_json, write_json
 from decision_forge.models import (
     Candidate,
@@ -34,6 +34,7 @@ from decision_forge.models import (
 from decision_forge.pipeline import load_run, load_run_project
 from decision_forge.policy import MISSING, best_choices, evaluate, json_equal, lookup
 from decision_forge.providers import StructuredProvider
+from decision_forge.splits import split_plan
 
 EXPANSION_VERSION = "verified-synthesis-v2"
 
