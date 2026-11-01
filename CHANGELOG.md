@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Re-derive every model-visible field of imported synthesis rows: `load_expansion` now rejects rows whose
+  question, policy context, candidates, verdicts, or ID differ from what the project produces, even when
+  `accepted.jsonl` and its digest were rewritten together.
+- Accept compiler and corpus evidence whose quote differs from the source only in whitespace runs. Such
+  quotes were bound during compilation but produced a `project.json` that failed validation on load.
 - Add automatic source format detection and DOCX, XLSX, PPTX, HTML and CSV/TSV parsers with locations.
 - Add image and per-page PDF OCR through local RapidOCR/PP-OCR small models, Tesseract, and explicitly
   selected OpenAI-compatible vision endpoints. Keep model weights local during ingestion.

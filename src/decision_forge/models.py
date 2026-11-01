@@ -48,11 +48,12 @@ class Evidence(Contract):
         if (self.start is None) != (self.end is None):
             raise ValueError("Evidence start and end must be supplied together")
         if self.start is not None and self.end is not None:
-            # Hard-wrapped sources can make the exact span longer than the quote itself.
+            # Quotes bind to source text modulo whitespace runs: hard-wrapped sources can make the span
+            # longer than the quote, and a quote with extra spaces can be longer than its span.
             if self.end <= self.start:
                 raise ValueError("Evidence end must be greater than start")
-            if self.end - self.start < len(self.quote):
-                raise ValueError("Evidence offsets must delimit at least the exact quote")
+            if self.end - self.start < len(" ".join(self.quote.split())):
+                raise ValueError("Evidence offsets must delimit at least the whitespace-normalized quote")
         return self
 
 
