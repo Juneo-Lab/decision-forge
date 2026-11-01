@@ -11,7 +11,7 @@ from pydantic import Field, JsonValue
 
 from decision_forge.generation import policy_fingerprint, set_path
 from decision_forge.io import canonical, digest
-from decision_forge.models import Contract, Episode, Project
+from decision_forge.models import Contract, Episode, Project, Stratum
 from decision_forge.policy import best_choices, evaluate
 from decision_forge.providers import StructuredProvider
 
@@ -19,7 +19,7 @@ from decision_forge.providers import StructuredProvider
 class Intervention(Contract):
     state_updates: dict[str, JsonValue] = Field(default_factory=dict)
     relation: Literal["same_choices", "disjoint_choices"]
-    stratum: Literal["routine", "boundary", "change", "feedback"] = "boundary"
+    stratum: Stratum = "boundary"
     candidate_order_seed: int | None = None
 
 

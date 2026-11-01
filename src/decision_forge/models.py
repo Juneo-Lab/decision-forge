@@ -15,6 +15,7 @@ Identifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$")
 # candidate selection in Node dimensions and evaluation bindings ambiguous.
 CandidateIdentifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$")]
 Split = Literal["train", "development", "test"]
+Stratum = Literal["routine", "boundary", "change", "feedback"]
 
 
 class Contract(BaseModel):
@@ -172,7 +173,7 @@ class Scenario(Contract):
     family_id: Identifier
     state: dict[str, JsonValue]
     source_ids: list[Identifier] = Field(min_length=1)
-    stratum: Literal["routine", "boundary", "change", "feedback"] = "routine"
+    stratum: Stratum = "routine"
 
 
 class SplitConfig(Contract):
@@ -191,7 +192,7 @@ class DistributionTarget(Contract):
     """An exact accepted-example quota, including its answer set and evaluation split."""
 
     node_id: Identifier
-    stratum: Literal["routine", "boundary", "change", "feedback"]
+    stratum: Stratum
     split: Split
     valid_choices: list[CandidateIdentifier] = Field(min_length=1)
     count: int = Field(ge=0, le=100000)

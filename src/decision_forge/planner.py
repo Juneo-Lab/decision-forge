@@ -28,6 +28,7 @@ from decision_forge.models import (
     Identifier,
     Project,
     Split,
+    Stratum,
 )
 from decision_forge.providers import StructuredProvider
 from decision_forge.splits import resolve_splits, split_plan
@@ -39,7 +40,7 @@ class PlanObjective(Contract):
     """What the planner should target. `explicit` passes targets through unchanged."""
 
     mode: Literal["uniform_cells", "explicit"] = "uniform_cells"
-    strata: list[Literal["routine", "boundary", "change", "feedback"]] = Field(default_factory=list)
+    strata: list[Stratum] = Field(default_factory=list)
     per_cell: int = Field(default=50, ge=1, le=100000)
     total_examples: int | None = Field(default=None, ge=1)
     targets: list[DistributionTarget] = Field(default_factory=list)
@@ -59,7 +60,7 @@ class ToolCall(Contract):
 
 class AdvisorWeight(Contract):
     node_id: Identifier
-    stratum: Literal["routine", "boundary", "change", "feedback"]
+    stratum: Stratum
     split: Split
     valid_choices: list[CandidateIdentifier] = Field(min_length=1, max_length=16)
     weight: float = Field(gt=0, le=1)

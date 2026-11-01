@@ -213,20 +213,7 @@ def _build(
             "removed": dedup_report["removed"],
             "split_leaks": dedup_report["cross_split_pairs"],
         },
-        "generation_cost": {
-            "provider_calls": int(((expansion_summary or {}).get("calls")) or 0),
-            # None means the endpoint reported no price; reporting 0 would read as free data.
-            "provider_cost_usd": ((expansion_summary or {}).get("usage") or {}).get("cost_usd"),
-            "cost_basis": (
-                "provider_reported"
-                if ((expansion_summary or {}).get("usage") or {}).get("cost_usd") is not None
-                else ("no_model_calls" if not synthesized else "unreported_by_endpoint")
-            ),
-            "per_accepted_example_usd": ((expansion_summary or {}).get("usage") or {}).get("per_published_example_usd"),
-            "offline_examples": generated_accepted,
-            "synthesized_examples": len(synthesized),
-            "scope": "offline_generation_plus_verified_synthesis" if synthesized else "offline_generation_only",
-        },
+        "generation_cost": _generation_cost(expansion_summary, generated_accepted, len(synthesized)),
         "scenarios_below_requested_variants": shortfalls,
         "cache_hits": cache_hits,
         "by_kind": dict(Counter(e.kind.value for e in accepted)),
@@ -268,6 +255,24 @@ def _build(
     manifest.update(status="complete", dataset_digest=digest([e.model_dump() for e in accepted]), report=report)
     write_json(manifest_path, manifest)
     return manifest
+
+
+def _generation_cost(expansion: dict[str, Any] | None, offline: int, synthesized: int) -> dict[str, Any]:
+    expansion = expansion or {}
+    usage = expansion.get("usage") or {}
+    cost = usage.get("cost_usd")
+    # A missing price stays unknown; reporting 0 would read as free data.
+    unpriced = "unreported_by_endpoint" if synthesized else "no_model_calls"
+    basis = "provider_reported" if cost is not None else unpriced
+    return {
+        "provider_calls": int(expansion.get("calls") or 0),
+        "provider_cost_usd": cost,
+        "cost_basis": basis,
+        "per_accepted_example_usd": usage.get("per_published_example_usd"),
+        "offline_examples": offline,
+        "synthesized_examples": synthesized,
+        "scope": "offline_generation_plus_verified_synthesis" if synthesized else "offline_generation_only",
+    }
 
 
 def load_run(path: Path) -> list[Episode]:

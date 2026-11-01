@@ -30,6 +30,7 @@ from decision_forge.models import (
     Node,
     Project,
     Rule,
+    Stratum,
 )
 from decision_forge.pipeline import load_run, load_run_project
 from decision_forge.policy import MISSING, best_choices, evaluate, json_equal, lookup
@@ -63,7 +64,7 @@ class StateProposal(Contract):
 
 class ExpansionRequest(Contract):
     node_id: Identifier
-    stratum: Literal["routine", "boundary", "change", "feedback"] = "boundary"
+    stratum: Stratum = "boundary"
     split: Literal["train", "development"] = "train"
     valid_choices: list[CandidateIdentifier] = Field(min_length=1, max_length=16)
     count: int = Field(ge=1, le=10000)
