@@ -233,3 +233,17 @@ def test_compile_anchors_quotes_across_hard_wrapped_sources(project, tmp_path):
     assert evidence.start is not None and evidence.end is not None
     text = source.read_text()
     assert text[evidence.start : evidence.end].replace("\n", " ") == target
+
+
+def test_whitespace_tolerant_quotes_produce_a_loadable_project(project, example_path, tmp_path):
+    from decision_forge.io import load_project, load_sources
+
+    for evidence in project.organization.rules[0].evidence:
+        evidence.quote = evidence.quote.replace(" ", "  ", 2) + " "
+    result = compile_documents(
+        [example_path.parent / "sources/policies.md"], tmp_path / "compiled", FixtureProvider(project)
+    )
+    evidence = result.organization.rules[0].evidence[0]
+    assert evidence.end - evidence.start < len(evidence.quote)
+    reloaded = load_project(tmp_path / "compiled/project.json")
+    load_sources(reloaded, tmp_path / "compiled")

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Re-derive every model-visible field of imported synthesis rows: `load_expansion` now rejects rows whose
+  question, policy context, candidates, verdicts, or ID differ from what the project produces, even when
+  `accepted.jsonl` and its digest were rewritten together.
+- Accept compiler and corpus evidence whose quote differs from the source only in whitespace runs. Such
+  quotes were bound during compilation but produced a `project.json` that failed validation on load.
 - Fix `compile-corpus` failing with "Source content hash changed" after spending its model budget when a
   CSV/TSV, spreadsheet, office, HTML, PDF, or JSON/YAML value contains carriage returns. Parsed text now
   uses `\n` line endings so stored snapshots read back with the recorded hash.
