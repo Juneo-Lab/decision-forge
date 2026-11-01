@@ -19,5 +19,14 @@ channel. Do not place credentials, private company data, or exploit details in p
 - Build artifacts may contain original business context. Store and share them with appropriate access.
 - Task exports require an isolated execution environment before running generated or third-party agents.
 
+## Verifying releases
+
+Release artifacts are built by the Release workflow and carry GitHub build provenance attestations.
+Verify a downloaded artifact with
+`gh attestation verify <artifact> --repo Juneo-Lab/decision-forge`. See the
+[release process](docs/releasing.md) for details.
+
+## Supported versions
+
 Version 0.3.0 is an alpha release. Security fixes are applied to the current main branch and included in
 the next patch release. The v1.0 milestone establishes the long-term support policy.

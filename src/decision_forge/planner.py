@@ -16,6 +16,7 @@ from typing import Any, Literal
 
 from pydantic import Field, JsonValue
 
+from decision_forge.dedup import deduplicate
 from decision_forge.distribution import cell_key, episode_cell
 from decision_forge.generation import generate_family, split_plan
 from decision_forge.io import canonical, digest, load_project, load_sources, read_json, write_json
@@ -68,21 +69,21 @@ class AdvisorWeights(Contract):
     weights: list[AdvisorWeight] = Field(min_length=1, max_length=500)
 
 
-def measure_pool(project: Project, hashes: dict[str, str]) -> tuple[Counter[str], list[Episode]]:
+def measure_pool(
+    project: Project, hashes: dict[str, str], near_duplicate_threshold: float = 0.9
+) -> tuple[Counter[str], list[Episode]]:
     """Dry-run the deterministic pool without writing artifacts.
 
     Planning must observe what the project can actually emit, including rejection of states with
-    no permitted candidate, otherwise quotas are fiction.
+    no permitted candidate and the duplicate removal a build applies before quotas, otherwise quotas
+    are fiction. Builds using a different near-duplicate threshold can realize a different pool.
     """
     plan = split_plan(project)
-    cells: Counter[str] = Counter()
     episodes: list[Episode] = []
     for scenario in project.scenarios:
-        for episode in generate_family(project, scenario, hashes, plan[scenario.family_id]):
-            episodes.append(episode)
-            if episode.valid_choices:
-                cells[episode_cell(episode)] += 1
-    return cells, episodes
+        episodes.extend(generate_family(project, scenario, hashes, plan[scenario.family_id]))
+    accepted, _ = deduplicate([e for e in episodes if e.valid_choices], threshold=near_duplicate_threshold)
+    return Counter(episode_cell(episode) for episode in accepted), episodes
 
 
 def _decode(cell: str) -> tuple[str, str, str, list[str]]:
@@ -308,7 +309,7 @@ def estimate_cost(requests: list[dict[str, Any]], options: PlanOptions) -> dict[
 
 TOOLS: dict[str, str] = {
     "inspect_project": "Summarize nodes, candidates, strata, families, and declared quotas.",
-    "measure_pool": "Generate the deterministic pool in memory and count examples per exact cell.",
+    "measure_pool": "Generate the deterministic pool in memory, remove duplicates, and count examples per exact cell.",
     "propose_quotas": "Derive exact per-cell quotas from the objective, optionally model-weighted.",
     "check_feasibility": "Compare requested quotas with measured supply and list shortfalls.",
     "plan_expansion": "Turn shortfalls into verified-expansion requests with a call estimate.",

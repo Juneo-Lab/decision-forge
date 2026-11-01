@@ -1,0 +1,11 @@
+# Normalize line endings so content hashes and fixtures match across platforms.
+* text=auto eol=lf
+
+*.png binary
+*.pdf binary
+*.svg text
+
+# Archived experiment artifacts and the lock file are generated; keep them out of language
+# statistics and collapse them in pull request diffs.
+experiments/** linguist-generated=true
+uv.lock linguist-generated=true

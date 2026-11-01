@@ -1,4 +1,4 @@
-"""Publish the checked-in roadmap through GitHub's REST API.
+"""Publish the checked-in roadmap and label taxonomy through GitHub's REST API.
 
 Dry-run is the default. Use --apply after choosing the exact owner/repository.
 Authentication is read from GH_TOKEN or GITHUB_TOKEN and is never logged.
@@ -12,6 +12,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -73,8 +74,31 @@ def ensure_repository(api: GitHub, repo: str, create: bool) -> None:
         raise ValueError("The authenticated account has no push permission for this repository")
 
 
+def sync_labels(api: GitHub, repo: str, labels: list[dict[str, str]]) -> int:
+    """Create or update declared labels. Labels that are not declared are left untouched."""
+    base = f"/repos/{repo}"
+    existing = {item["name"].lower(): item for item in api.pages(f"{base}/labels")}
+    changed = 0
+    for label in labels:
+        body = {key: label[key] for key in ["name", "color", "description"]}
+        current = existing.get(label["name"].lower())
+        if current is None:
+            api.request("POST", f"{base}/labels", json=body)
+        elif any(current.get(key) != body[key] for key in body):
+            api.request("PATCH", f"{base}/labels/{quote(current['name'], safe='')}", json=body)
+        else:
+            continue
+        changed += 1
+    return changed
+
+
 def publish(api: GitHub, repo: str, roadmap: dict[str, Any]) -> dict[str, int]:
     base = f"/repos/{repo}"
+    declared = {label["name"] for label in roadmap.get("labels", [])}
+    undeclared = {name for item in roadmap["issues"] for name in item.get("labels", [])} - declared
+    if undeclared:
+        raise ValueError(f"Roadmap issues use undeclared labels: {sorted(undeclared)}")
+    labels_changed = sync_labels(api, repo, roadmap["labels"]) if declared else 0
     existing_milestones = {item["title"]: item for item in api.pages(f"{base}/milestones")}
     milestones = {}
     for item in roadmap["milestones"]:
@@ -99,15 +123,25 @@ def publish(api: GitHub, repo: str, roadmap: dict[str, Any]) -> dict[str, int]:
         }
         if existing:
             api.request("PATCH", f"{base}/issues/{existing['number']}", json=body)
+            # Add declared labels without removing labels applied during triage.
+            current = {label["name"] for label in existing.get("labels", [])}
+            missing = sorted(set(item.get("labels", [])) - current)
+            if missing:
+                api.request("POST", f"{base}/issues/{existing['number']}/labels", json={"labels": missing})
             updated += 1
         else:
-            issue = api.request("POST", f"{base}/issues", json=body)
+            issue = api.request("POST", f"{base}/issues", json={**body, "labels": item.get("labels", [])})
             if item["state"] == "closed":
                 api.request(
                     "PATCH", f"{base}/issues/{issue['number']}", json={"state": "closed", "state_reason": "completed"}
                 )
             created += 1
-    return {"milestones": len(milestones), "issues_created": created, "issues_updated": updated}
+    return {
+        "labels_changed": labels_changed,
+        "milestones": len(milestones),
+        "issues_created": created,
+        "issues_updated": updated,
+    }
 
 
 def main() -> None:
@@ -118,13 +152,14 @@ def main() -> None:
     args = parser.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repo):
         parser.error("Expected owner/repository")
-    roadmap = json.loads((ROOT / ".github/roadmap.json").read_text())
+    roadmap = json.loads((ROOT / ".github/roadmap.json").read_text(encoding="utf-8"))
     if not args.apply:
         print(
             json.dumps(
                 {
                     "mode": "dry-run",
                     "repository": args.repo,
+                    "labels": [label["name"] for label in roadmap.get("labels", [])],
                     "milestones": [m["title"] for m in roadmap["milestones"]],
                     "issues": len(roadmap["issues"]),
                 },

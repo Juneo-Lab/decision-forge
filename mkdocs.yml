@@ -56,6 +56,7 @@ nav:
   - Platform workflows: platform-workflows.md
   - Data protocol: data-protocol.md
   - Benchmarks: benchmarks.md
+  - Release process: releasing.md
   - References: references.md
 markdown_extensions:
   - tables

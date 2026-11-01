@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import Any, Literal
 
@@ -29,46 +30,54 @@ def ingest_events(database: Path, events: list[RuntimeEvent]) -> dict[str, int]:
     database.parent.mkdir(parents=True, exist_ok=True)
     # Create privately before SQLite opens the file.
     database.touch(mode=0o600, exist_ok=True)
-    inserted = duplicate = 0
-    with sqlite3.connect(database) as connection:
-        connection.execute(
-            "CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, workflow TEXT, "
-            "sequence INTEGER, body TEXT, UNIQUE(workflow, sequence))"
-        )
-        for event in events:
-            body = canonical(event.model_dump(mode="json"))
-            existing = connection.execute("SELECT body FROM events WHERE id=?", (event.id,)).fetchone()
-            if existing:
-                if existing[0] != body:
-                    raise ValueError("Runtime event ID conflicts with previously ingested content")
-                duplicate += 1
-                continue
-            prior = connection.execute(
-                "SELECT body FROM events WHERE workflow=? ORDER BY sequence", (event.workflow_id,)
-            ).fetchall()
-            parsed = [RuntimeEvent.model_validate_json(r[0]) for r in prior]
-            if event.sequence != len(parsed):
-                raise ValueError("Workflow event sequence must be contiguous and start at zero")
-            associated = [e for e in parsed if e.decision_id == event.decision_id]
-            if event.kind == "decision":
-                if associated:
-                    raise ValueError("Decision ID already exists in this workflow")
-            elif (
-                not associated
-                or associated[0].kind != "decision"
-                or any(e.episode_id != event.episode_id for e in associated)
-            ):
-                raise ValueError("Runtime event must associate with an existing decision and episode")
-            if event.kind == "review" and not all(
-                isinstance(event.payload.get(k), str) and str(event.payload[k]).strip()
-                for k in ("reviewer", "reason", "choice")
-            ):
-                raise ValueError("A verified review requires reviewer, reason, and choice")
-            connection.execute(
-                "INSERT INTO events VALUES (?, ?, ?, ?)", (event.id, event.workflow_id, event.sequence, body)
-            )
-            inserted += 1
+    try:
+        with closing(sqlite3.connect(database)) as connection, connection:
+            inserted, duplicate = _append_events(connection, events)
+    except sqlite3.Error as exc:
+        raise ValueError(f"Runtime event database error: {exc}") from None
     return {"inserted": inserted, "duplicates": duplicate}
+
+
+def _append_events(connection: sqlite3.Connection, events: list[RuntimeEvent]) -> tuple[int, int]:
+    inserted = duplicate = 0
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, workflow TEXT, "
+        "sequence INTEGER, body TEXT, UNIQUE(workflow, sequence))"
+    )
+    for event in events:
+        body = canonical(event.model_dump(mode="json"))
+        existing = connection.execute("SELECT body FROM events WHERE id=?", (event.id,)).fetchone()
+        if existing:
+            if existing[0] != body:
+                raise ValueError("Runtime event ID conflicts with previously ingested content")
+            duplicate += 1
+            continue
+        prior = connection.execute(
+            "SELECT body FROM events WHERE workflow=? ORDER BY sequence", (event.workflow_id,)
+        ).fetchall()
+        parsed = [RuntimeEvent.model_validate_json(r[0]) for r in prior]
+        if event.sequence != len(parsed):
+            raise ValueError("Workflow event sequence must be contiguous and start at zero")
+        associated = [e for e in parsed if e.decision_id == event.decision_id]
+        if event.kind == "decision":
+            if associated:
+                raise ValueError("Decision ID already exists in this workflow")
+        elif (
+            not associated
+            or associated[0].kind != "decision"
+            or any(e.episode_id != event.episode_id for e in associated)
+        ):
+            raise ValueError("Runtime event must associate with an existing decision and episode")
+        if event.kind == "review" and not all(
+            isinstance(event.payload.get(k), str) and str(event.payload[k]).strip()
+            for k in ("reviewer", "reason", "choice")
+        ):
+            raise ValueError("A verified review requires reviewer, reason, and choice")
+        connection.execute(
+            "INSERT INTO events VALUES (?, ?, ?, ?)", (event.id, event.workflow_id, event.sequence, body)
+        )
+        inserted += 1
+    return inserted, duplicate
 
 
 def feedback_requests(run: Path, database: Path) -> dict[str, Any]:
@@ -78,8 +87,13 @@ def feedback_requests(run: Path, database: Path) -> dict[str, Any]:
     must enforce access to this local event store at their application boundary.
     """
     episodes = {e.id: e for e in load_run(run)}
-    with sqlite3.connect(f"file:{database.resolve()}?mode=ro", uri=True) as connection:
-        rows = connection.execute("SELECT body FROM events ORDER BY workflow, sequence").fetchall()
+    if not database.is_file():
+        raise ValueError(f"Runtime event database does not exist: {database}")
+    try:
+        with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
+            rows = connection.execute("SELECT body FROM events ORDER BY workflow, sequence").fetchall()
+    except sqlite3.Error as exc:
+        raise ValueError(f"Runtime event database cannot be read: {exc}") from None
     events = [RuntimeEvent.model_validate_json(row[0]) for row in rows]
     latest: dict[tuple[str, str], RuntimeEvent] = {}
     decisions: dict[tuple[str, str], RuntimeEvent] = {}

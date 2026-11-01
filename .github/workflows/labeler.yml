@@ -1,0 +1,18 @@
+name: Label pull request
+on:
+  # pull_request_target can label pull requests from forks. The job never checks out or runs their code.
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@v6
+        with:
+          sync-labels: false

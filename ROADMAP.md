@@ -5,7 +5,8 @@ decision data platform. Milestones are ordered by dependencies and acceptance cr
 will be assigned when maintainers confirm capacity.
 
 The machine-readable backlog lives in [.github/roadmap.json](.github/roadmap.json). The publishing
-script creates matching GitHub milestones and issues without duplicating previously published items.
+script creates matching GitHub labels, milestones, and issues without duplicating previously published
+items.
 The **Sync roadmap** workflow runs when this backlog changes on `main`, or on manual dispatch.
 It uses GitHub's temporary repository token with issue-write permission and preserves existing
 milestone and issue states so maintainers can track progress directly on GitHub.
@@ -97,8 +98,10 @@ instructions reproduce on clean systems; model/data quality and throughput repor
 versions, costs, and protocols; maintainers publish a support and deprecation policy.
 
 Implemented increment: reproducible cold/warm benchmarks at 2,800 and 28,000 episodes, optional SDK
-contract tests and clean-install checks. Downstream model-quality studies, public package provenance
-and stable extension guarantees remain release acceptance work.
+contract tests and clean-install checks. A tag-triggered release workflow verifies version consistency,
+smoke-tests the wheel, attests build provenance, and supports opt-in PyPI trusted publishing; the first
+attested release and published-package validation are still pending. Downstream model-quality
+studies, public package provenance and stable extension guarantees remain release acceptance work.
 
 ## Contribution lanes
 
