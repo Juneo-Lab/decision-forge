@@ -111,3 +111,22 @@ def test_removed_family_cannot_return_as_training_data(example_path, tmp_path):
     write_json(spec, original.model_dump(mode="json"))
     update_dataset(spec, tmp_path / "v2", tmp_path / "v3")
     assert {e.split for e in load_run(tmp_path / "v3") if e.family_id == test_family} == {"test"}
+
+
+def test_event_store_paths_and_errors_are_reported_without_tracebacks(example_path, tmp_path):
+    run = tmp_path / "run"
+    build(example_path, run)
+    episode = load_run(run)[0]
+    with pytest.raises(ValueError, match="does not exist"):
+        feedback_requests(run, tmp_path / "missing.sqlite")
+    empty = tmp_path / "empty.sqlite"
+    sqlite3.connect(empty).close()
+    with pytest.raises(ValueError, match="cannot be read"):
+        feedback_requests(run, empty)
+    # URI metacharacters in the path must not redirect the read-only connection to another file.
+    database = tmp_path / "a#b?c%d" / "events.sqlite"
+    event = RuntimeEvent(
+        id="e1", workflow_id="w", decision_id="d", sequence=0, kind="decision", episode_id=episode.id, payload={}
+    )
+    assert ingest_events(database, [event]) == {"inserted": 1, "duplicates": 0}
+    assert feedback_requests(run, database)["requests"] == []

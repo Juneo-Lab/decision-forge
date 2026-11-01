@@ -119,7 +119,7 @@ class PDFAdapter:
                 content = page.get_contents()
                 if content is not None and len(content.get_data()) > 10_000_000:
                     raise ValueError("PDF page exceeds the decoded content limit")
-                value = page.extract_text() or ""
+                value = normalize_newlines(page.extract_text() or "")
             if self.runner and (self.runner.config.mode == "always" or not value.strip()):
                 ocr_pages += 1
                 if ocr_pages > self.runner.config.max_pages:
@@ -192,7 +192,7 @@ class WorkflowAdapter:
                 for index, child in enumerate(value):
                     visit(child, pointer + "/" + str(index), depth + 1)
             else:
-                segments.append((pointer, value if isinstance(value, str) else canonical(value)))
+                segments.append((pointer, normalize_newlines(value) if isinstance(value, str) else canonical(value)))
 
         visit(data, "")
         text = ""
@@ -231,12 +231,17 @@ SUFFIXES = {
 }
 
 
+def normalize_newlines(text: str) -> str:
+    """Use ``\\n`` line endings so stored snapshots read back with an identical content hash."""
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def join_fragments(fragments: list[Fragment]) -> tuple[str, list[Span]]:
     text = ""
     spans = []
     for fragment in collect(iter(fragments)):
         start = len(text)
-        text += fragment.text + "\n"
+        text += normalize_newlines(fragment.text) + "\n"
         spans.append(
             Span(
                 start=start,

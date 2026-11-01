@@ -56,3 +56,13 @@ def test_replay_records_missing_and_wrong_choices(example_path, tmp_path):
     assert result["answered"] == 2
     assert result["correct"] == 1
     assert result["coverage"] == 2 / 336
+
+
+def test_evaluate_decisions_rejects_non_object_bindings(example_path, tmp_path):
+    bindings = tmp_path / "bindings.json"
+    write_json(bindings, [])
+    reference = example_path.parent / "decision-reference.json"
+    result = CliRunner().invoke(app, ["evaluate-decisions", str(example_path), str(reference), str(bindings)])
+    assert result.exit_code == 1
+    assert "JSON object keyed by node ID" in result.output
+    assert result.exception is None or isinstance(result.exception, SystemExit)

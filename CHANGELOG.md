@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Fix `compile-corpus` failing with "Source content hash changed" after spending its model budget when a
+  CSV/TSV, spreadsheet, office, HTML, PDF, or JSON/YAML value contains carriage returns. Parsed text now
+  uses `\n` line endings so stored snapshots read back with the recorded hash.
+- Hash exported JSONL files and Data Designer outputs as UTF-8 regardless of the platform locale.
+- Close SQLite connections after runtime event ingestion, open the read-only event store through a
+  properly escaped file URI, and report missing or empty event stores as CLI errors instead of tracebacks.
+- Report non-object decision bindings in `evaluate-decisions` as a CLI error instead of a traceback.
 - Add a tag-triggered release workflow that verifies version consistency, runs the test suite, builds and
   smoke-tests the wheel, attests build provenance, creates a GitHub release from the changelog, and
   optionally publishes to PyPI through trusted publishing.
