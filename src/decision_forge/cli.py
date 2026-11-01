@@ -302,10 +302,13 @@ def evaluate_decisions_command(spec: Path, reference: Path, bindings: Path, outp
     try:
         project = load_project(spec)
         load_sources(project, spec.parent)
+        raw_bindings = read_json(bindings)
+        if not isinstance(raw_bindings, dict):
+            raise ValueError("Decision bindings must be a JSON object keyed by node ID")
         result = evaluate_decisions(
             project,
             DecisionReference.model_validate(read_json(reference)),
-            {key: NodeBinding.model_validate(value) for key, value in read_json(bindings).items()},
+            {key: NodeBinding.model_validate(value) for key, value in raw_bindings.items()},
         )
         if output:
             write_json(output, result)

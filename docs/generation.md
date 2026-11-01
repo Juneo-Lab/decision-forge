@@ -23,7 +23,7 @@ a plan can be audited and resumed instead of being re-derived in memory:
 | Tool | Purpose |
 | --- | --- |
 | `inspect_project` | Nodes, candidates, dimensions, families, strata, declared quotas |
-| `measure_pool` | Generate the deterministic pool in memory and count examples per exact cell |
+| `measure_pool` | Generate the deterministic pool in memory, remove duplicates as a build would, and count examples per exact cell |
 | `propose_quotas` | Derive quotas from the objective, optionally scaled by a model advisor |
 | `check_feasibility` | Compare requested quotas with measured supply |
 | `plan_expansion` | Turn the shortfall into verified-synthesis requests plus a call estimate |

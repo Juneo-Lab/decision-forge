@@ -152,7 +152,7 @@ def main() -> None:
     args = parser.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repo):
         parser.error("Expected owner/repository")
-    roadmap = json.loads((ROOT / ".github/roadmap.json").read_text())
+    roadmap = json.loads((ROOT / ".github/roadmap.json").read_text(encoding="utf-8"))
     if not args.apply:
         print(
             json.dumps(

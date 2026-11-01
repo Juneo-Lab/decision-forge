@@ -215,3 +215,75 @@ def test_derived_quotas_never_exceed_held_out_supply(example_path, tmp_path):
     assert plan["held_out_clamped"], "a clamped test cell must be reported"
     for row in plan["held_out_clamped"]:
         assert row["held_out_available"] < row["requested"]
+
+
+def _duplicate_family_project(tmp_path):
+    """Two families share every decision-relevant state, so a build keeps only one copy of each."""
+    (tmp_path / "policy.md").write_text("Approve when amount is at most 100. Escalate otherwise.\n", encoding="utf-8")
+    evidence = [{"source_id": "policy", "quote": "Approve when amount is at most 100."}]
+    write_json(
+        tmp_path / "project.json",
+        {
+            "organization": {
+                "id": "org",
+                "name": "Org",
+                "policy_version": "1",
+                "rules": [
+                    {
+                        "id": "approve-small",
+                        "description": "Approve amounts up to 100.",
+                        "effect": "allow",
+                        "score": 1,
+                        "when": {
+                            "all_of": [
+                                {"path": "candidate.id", "op": "eq", "value": "approve"},
+                                {"path": "state.amount", "op": "lte", "value": 100},
+                            ]
+                        },
+                        "evidence": evidence,
+                    },
+                    {
+                        "id": "escalate",
+                        "description": "Escalation is always available.",
+                        "effect": "allow",
+                        "score": 0,
+                        "when": {"all_of": [{"path": "candidate.id", "op": "eq", "value": "escalate"}]},
+                        "evidence": evidence,
+                    },
+                ],
+            },
+            "sources": [{"id": "policy", "path": "policy.md"}],
+            "nodes": [
+                {
+                    "id": "refund",
+                    "kind": "select_actions",
+                    "question": "How should the refund proceed?",
+                    "candidates": [
+                        {"id": "approve", "description": "Approve the refund."},
+                        {"id": "escalate", "description": "Escalate the refund."},
+                    ],
+                    "rule_ids": ["approve-small", "escalate"],
+                    "dimensions": [{"path": "state.amount", "values": [10, 50, 500, 900]}],
+                }
+            ],
+            "scenarios": [
+                {"id": f"s-{family}", "node_id": "refund", "family_id": family, "state": {}, "source_ids": ["policy"]}
+                for family in ("family-a", "family-b")
+            ],
+            "recipe": {"splits": {"train": 1.0, "development": 0.0, "test": 0.0}},
+        },
+    )
+    return tmp_path / "project.json"
+
+
+@pytest.mark.parametrize(("per_cell", "feasible"), [(2, True), (4, False)])
+def test_planner_counts_the_pool_a_build_keeps_after_deduplication(tmp_path, per_cell, feasible):
+    spec = _duplicate_family_project(tmp_path)
+    plan = plan_recipe(spec, tmp_path / "plan", PlanObjective(mode="uniform_cells", per_cell=per_cell))
+    assert plan["feasibility"]["available"] == 4
+    assert plan["feasibility"]["feasible"] is feasible
+    if feasible:
+        build(spec, tmp_path / "run", recipe_plan=tmp_path / "plan/plan.json")
+    else:
+        with pytest.raises(ValueError, match="infeasible"):
+            build(spec, tmp_path / "run", recipe_plan=tmp_path / "plan/plan.json")

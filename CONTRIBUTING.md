@@ -78,6 +78,11 @@ passing `ruff`, `mypy`, `pytest --cov-fail-under=80`, and `mkdocs build --strict
 
 Documentation-only changes require relevant link, asset, and strict site-build checks.
 
+## Releases
+
+Maintainers cut releases by pushing a version tag; the [release process](docs/releasing.md) describes
+the checklist, the automated verification, and how to verify published artifacts.
+
 ## Documentation deployment
 
 The Docs workflow builds and uploads the site for documentation pull requests and main-branch updates.
