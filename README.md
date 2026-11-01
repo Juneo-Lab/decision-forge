@@ -156,6 +156,8 @@ Artifacts in `runs/demo/`: `episodes.jsonl`, `rejected.jsonl`, `distribution.jso
 `report.json`, `report.md`, a hash-bound `project.snapshot.json`, and an integrity-checked
 `manifest.json`. Rebuilding reuses content-addressed scenario caches; changing an input is detected
 and refused rather than silently mixed into the old run.
+The example's committed `project.splits.lock.json` records every family's split, so adding scenario
+families later never moves an existing family between training and held-out data.
 
 ## Why the data is trustworthy
 
@@ -167,7 +169,7 @@ records connect the declared rules to the organization's documents.
 | **Policy-verified labels** | A deterministic interpreter applies priority, deny precedence, and set-valued ties to every candidate. Synthesis proposes states; the interpreter supplies their labels. |
 | **Source-grounded rules** | Evidence quotations are validated against source text, allowing whitespace normalization. `compile-corpus` recomputes spans and source locators from extracted claims. |
 | **Content-bound review** | Compiler output is a draft. Builds require accepted decisions for all current review items: rules, nodes, conflicts, and `dataset:recipe`. Authored specifications remain usable directly. |
-| **Family isolation** | Related variants share a split. Duplicate detection keeps the held-out copy and reports cross-split overlap. Expansion imports validate current scenario/family/split lineage and re-derive every model-visible field. |
+| **Family isolation** | Related variants share a split, and a committed split lock keeps every family in its split across dataset versions. Duplicate detection keeps the held-out copy and reports cross-split overlap. Expansion imports validate current scenario/family/split lineage and re-derive every model-visible field. |
 | **Checkpoint recovery** | Completed extraction chunks and accepted synthesis records are reused. Failed or interrupted calls retain their budget reservations; a response lost before checkpointing may require another call. |
 | **Bounded corpus compilation and synthesis** | `compile-corpus` reserves budgets per HTTP attempt. `expand` reserves logical proposal calls and their input bytes; response-mode fallback may issue multiple HTTP attempts within one proposal call. Both retain budget journals and support explicit budget increases for resumption. |
 | **Visible distribution gaps** | Requested and realized quotas, rejected proposals, and remaining shortfalls are reported. Only verified examples enter the dataset. |

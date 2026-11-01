@@ -15,7 +15,7 @@ from pydantic import Field, JsonValue, model_validator
 from decision_forge.corpus import CallJournal
 from decision_forge.generation import set_path
 from decision_forge.io import digest
-from decision_forge.models import Contract, Identifier, Project
+from decision_forge.models import Contract, Identifier, Project, Split
 from decision_forge.policy import best_choices, evaluate
 from decision_forge.providers import StructuredProvider
 
@@ -33,7 +33,7 @@ class WorkflowTask(Contract):
     schema_version: Literal["1.0"] = "1.0"
     id: Identifier
     family_id: Identifier
-    split: Literal["train", "development", "test"]
+    split: Split
     initial_state: dict[str, JsonValue]
     start: str
     steps: list[WorkflowStep] = Field(min_length=1)

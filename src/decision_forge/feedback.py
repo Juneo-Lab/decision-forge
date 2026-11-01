@@ -10,8 +10,9 @@ from typing import Any, Literal
 from pydantic import Field, JsonValue
 
 from decision_forge.io import canonical, digest, load_project, read_json, write_json
-from decision_forge.models import Contract, Identifier
+from decision_forge.models import Contract, Identifier, Split
 from decision_forge.pipeline import load_run, load_run_project
+from decision_forge.splits import read_lock, resolve_splits, write_lock
 
 
 class RuntimeEvent(Contract):
@@ -180,7 +181,7 @@ def update_dataset(spec: Path, previous: Path, output: Path, cache: Path | None 
     previous_project = load_run_project(previous)
     if project.organization.id != previous_project.organization.id:
         raise ValueError("A dataset update must retain organization identity")
-    old_splits = (
+    old_splits: dict[str, Split] = (
         previous_manifest.get("family_registry")
         or previous_manifest.get("family_splits")
         or {e.family_id: e.split for e in load_run(previous)}
@@ -190,6 +191,8 @@ def update_dataset(spec: Path, previous: Path, output: Path, cache: Path | None 
             raise ValueError("A published family cannot move between training and held-out splits")
     active = {s.family_id for s in project.scenarios}
     project.recipe.family_splits = {k: v for k, v in old_splits.items() if k in active} | project.recipe.family_splits
+    lock = resolve_splits(project, spec)
+    lock.families = old_splits | lock.families
     contents, hashes = load_sources(project, spec.parent)
     output.mkdir(parents=True, exist_ok=True)
     cache = cache or output.parent / ".forge-cache"
@@ -208,4 +211,6 @@ def update_dataset(spec: Path, previous: Path, output: Path, cache: Path | None 
             "family_splits_preserved": True,
         }
         write_json(output / "update.json", report)
+    if read_lock(spec) != lock:
+        write_lock(spec, lock)
     return report

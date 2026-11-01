@@ -13,6 +13,7 @@ Identifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$")
 # Candidate IDs are embedded in candidate.<id>.<attribute> paths, so a dot would make
 # candidate selection in Node dimensions and evaluation bindings ambiguous.
 CandidateIdentifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$")]
+Split = Literal["train", "development", "test"]
 
 
 class Contract(BaseModel):
@@ -190,7 +191,7 @@ class DistributionTarget(Contract):
 
     node_id: Identifier
     stratum: Literal["routine", "boundary", "change", "feedback"]
-    split: Literal["train", "development", "test"]
+    split: Split
     valid_choices: list[CandidateIdentifier] = Field(min_length=1)
     count: int = Field(ge=0, le=100000)
 
@@ -205,7 +206,7 @@ class Recipe(Contract):
     seed: int = 42
     variants_per_scenario: int = Field(default=16, ge=1, le=10000)
     splits: SplitConfig = Field(default_factory=SplitConfig)
-    family_splits: dict[str, Literal["train", "development", "test"]] = Field(default_factory=dict)
+    family_splits: dict[str, Split] = Field(default_factory=dict)
     candidate_pool_per_scenario: int | None = Field(default=None, ge=1, le=10000)
     distribution: list[DistributionTarget] = Field(default_factory=list)
     require_full_distribution: bool = True
@@ -279,7 +280,7 @@ class Episode(Contract):
     kind: DecisionKind
     scenario_id: str
     family_id: str
-    split: Literal["train", "development", "test"]
+    split: Split
     stratum: str
     state: dict[str, JsonValue]
     question: str

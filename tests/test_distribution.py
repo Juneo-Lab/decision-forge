@@ -3,10 +3,11 @@ import shutil
 import pytest
 
 from decision_forge.distribution import select_distribution
-from decision_forge.generation import generate_family, split_plan
+from decision_forge.generation import generate_family
 from decision_forge.io import load_project, load_sources, read_json, write_json
 from decision_forge.models import Dimension, DistributionTarget
 from decision_forge.pipeline import build, load_run
+from decision_forge.splits import split_plan
 
 
 def test_candidate_intervention_is_applied_to_current_row_without_mutating_project(project, example_path):
@@ -17,11 +18,11 @@ def test_candidate_intervention_is_applied_to_current_row_without_mutating_proje
     before = project.model_dump()
     _, hashes = load_sources(project, example_path.parent)
     scenario = next(s for s in project.scenarios if s.node_id == node.id)
-    first = generate_family(project, scenario, hashes)
+    first = generate_family(project, scenario, hashes, "train")
     assert project.model_dump() == before
     for episode in first:
         assert episode.candidates[0].attributes["marker"] == episode.intervention[path]
-    assert first == generate_family(project, scenario, hashes)
+    assert first == generate_family(project, scenario, hashes, "train")
 
 
 def test_exact_label_quotas_are_reproducible_and_report_every_filter(example_path, project, tmp_path):
@@ -79,10 +80,10 @@ def test_split_map_freezes_published_families(project):
     assert all(after[family] == split for family, split in first.items())
 
 
-def test_cache_cannot_keep_stale_splits_after_family_growth(example_path, tmp_path):
+def test_family_growth_keeps_published_splits_and_caches_follow_the_plan(example_path, tmp_path):
     shutil.copytree(example_path.parent, tmp_path / "input")
     spec = tmp_path / "input/project.yaml"
-    build(spec, tmp_path / "first")
+    first = build(spec, tmp_path / "first")["family_splits"]
     project = load_project(spec)
     for index in range(2):
         extra = project.scenarios[0].model_copy(deep=True)
@@ -90,6 +91,6 @@ def test_cache_cannot_keep_stale_splits_after_family_growth(example_path, tmp_pa
         extra.family_id = f"new-family-{index}"
         project.scenarios.append(extra)
     write_json(spec, project.model_dump(mode="json"))
-    build(spec, tmp_path / "second")
-    plan = split_plan(project)
-    assert all(e.split == plan[e.family_id] for e in load_run(tmp_path / "second"))
+    second = build(spec, tmp_path / "second")["family_splits"]
+    assert {family: second[family] for family in first} == first
+    assert all(e.split == second[e.family_id] for e in load_run(tmp_path / "second"))

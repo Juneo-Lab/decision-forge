@@ -10,6 +10,13 @@
 
 ### Fixed
 
+- Keep every published family in its split across dataset versions (#35). Rebuilding with `build` after
+  adding scenario families could move existing families between train, development, and test, leaking
+  held-out examples into training. The first build now records each family's split in a split lock next
+  to the specification (`project.splits.lock.json`); later builds keep locked families in place, give
+  new families a stable per-family split, and remember removed families. `build --locked-splits` fails
+  instead of creating or changing the lock. Plans from `plan-recipe` made with older versions must be
+  regenerated.
 - Attest only the wheel and sdist in the release workflow; `uv build` also writes `dist/.gitignore`.
 
 ## 0.3.1

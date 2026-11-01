@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "organization_id": "northstar-demo",
+  "families": {
+    "support-case-0": "train",
+    "support-case-1": "train",
+    "support-case-10": "test",
+    "support-case-11": "train",
+    "support-case-2": "development",
+    "support-case-3": "development",
+    "support-case-4": "train",
+    "support-case-5": "train",
+    "support-case-6": "train",
+    "support-case-7": "development",
+    "support-case-8": "train",
+    "support-case-9": "test"
+  }
+}

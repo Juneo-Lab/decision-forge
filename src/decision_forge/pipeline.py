@@ -12,7 +12,7 @@ from filelock import FileLock
 from decision_forge import __version__
 from decision_forge.dedup import deduplicate
 from decision_forge.distribution import select_distribution
-from decision_forge.generation import generate_family, requested_variants, split_plan
+from decision_forge.generation import generate_family, requested_variants
 from decision_forge.io import (
     atomic_text,
     canonical,
@@ -24,6 +24,7 @@ from decision_forge.io import (
 )
 from decision_forge.models import Episode, Project, Scenario
 from decision_forge.review import require_review
+from decision_forge.splits import read_lock, require_current_lock, resolve_splits, write_lock
 
 
 def engine_fingerprint() -> str:
@@ -37,8 +38,8 @@ def scenario_fingerprint(
     scenario: Scenario,
     hashes: dict[str, str],
     *,
-    engine: str | None = None,
-    resolved_split: str | None = None,
+    engine: str,
+    resolved_split: str,
 ) -> str:
     node = next(n for n in project.nodes if n.id == scenario.node_id)
     rules = [r for r in project.organization.rules if r.id in node.rule_ids]
@@ -46,11 +47,11 @@ def scenario_fingerprint(
     return digest(
         {
             "engine": __version__,
-            "engine_fingerprint": engine or engine_fingerprint(),
+            "engine_fingerprint": engine,
             "organization": project.organization.id,
             "policy_version": project.organization.policy_version,
             "scenario": scenario.model_dump(),
-            "resolved_split": resolved_split or split_plan(project)[scenario.family_id],
+            "resolved_split": resolved_split,
             "node": node.model_dump(),
             "rules": [r.model_dump() for r in rules],
             "recipe": {
@@ -74,9 +75,13 @@ def build(
     recipe_plan: Path | None = None,
     expansion: Path | None = None,
     near_duplicate_threshold: float = 0.9,
+    locked_splits: bool = False,
 ) -> dict[str, Any]:
     project = load_project(spec)
     require_review(spec)
+    lock = resolve_splits(project, spec)
+    if locked_splits:
+        require_current_lock(spec, lock)
     contents, hashes = load_sources(project, spec.parent)
     if recipe_plan is not None:
         # A plan is an overlay, never an edit: the specification on disk stays the reviewed source.
@@ -93,7 +98,7 @@ def build(
     cache = cache or output.parent / ".forge-cache"
     cache.mkdir(parents=True, exist_ok=True)
     with FileLock(str(output / ".build.lock"), timeout=0):
-        return _build(
+        manifest = _build(
             project,
             contents,
             hashes,
@@ -103,6 +108,10 @@ def build(
             expansion_summary,
             near_duplicate_threshold,
         )
+    # Record new assignments only once a dataset that uses them has been published.
+    if read_lock(spec) != lock:
+        write_lock(spec, lock)
+    return manifest
 
 
 def _build(
@@ -115,10 +124,15 @@ def _build(
     expansion_summary: dict[str, Any] | None = None,
     near_duplicate_threshold: float = 0.9,
 ) -> dict[str, Any]:
+    # Callers resolve splits first, so every family is pinned and the plan is the recipe's own record.
+    plan = dict(project.recipe.family_splits)
+    if set(plan) != {scenario.family_id for scenario in project.scenarios}:
+        raise ValueError("Family splits must be resolved before a build")
+    engine = engine_fingerprint()
     fingerprint = digest(
         {
             "engine": __version__,
-            "engine_fingerprint": engine_fingerprint(),
+            "engine_fingerprint": engine,
             "project": project.model_dump(),
             "sources": hashes,
         }
@@ -129,21 +143,19 @@ def _build(
     manifest: dict[str, Any] = {
         "schema_version": "1.0",
         "engine_version": __version__,
-        "engine_fingerprint": engine_fingerprint(),
+        "engine_fingerprint": engine,
         "fingerprint": fingerprint,
         "status": "running",
         "source_hashes": hashes,
         "scenario_fingerprints": {},
         "recipe": project.recipe.model_dump(mode="json"),
-        "family_splits": split_plan(project),
-        "family_registry": split_plan(project),
+        "family_splits": plan,
+        "family_registry": plan,
     }
     write_json(manifest_path, manifest)
     accepted: list[Episode] = []
     rejected: list[Episode] = []
     cache_hits = 0
-    plan = split_plan(project)
-    engine = engine_fingerprint()
     requested = 0
     shortfalls: dict[str, int] = {}
     for scenario in project.scenarios:
@@ -225,7 +237,6 @@ def _build(
     }
     write_json(output / "report.json", report)
     snapshot = project.model_copy(deep=True)
-    snapshot.recipe.family_splits = plan
     for source in snapshot.sources:
         source.path = f"sources/{source.id}.txt"
         source.content_hash = hashes[source.id]
@@ -284,9 +295,10 @@ def load_run_project(path: Path) -> Project:
 
 def impact(spec: Path, previous_run: Path) -> dict[str, list[str]]:
     project = load_project(spec)
+    resolve_splits(project, spec)
     _, hashes = load_sources(project, spec.parent)
     previous = read_json(previous_run / "manifest.json")["scenario_fingerprints"]
-    plan, engine = split_plan(project), engine_fingerprint()
+    plan, engine = project.recipe.family_splits, engine_fingerprint()
     current = {
         s.id: scenario_fingerprint(project, s, hashes, engine=engine, resolved_split=plan[s.family_id])
         for s in project.scenarios
