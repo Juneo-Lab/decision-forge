@@ -6,6 +6,8 @@
 
 **Compile organizational policy into verifiable decision training data.**
 
+The open data engine for trusted delegation to AI agents.
+
 [![CI](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/Juneo-Lab/decision-forge?include_prereleases&color=FF5A1F)](https://github.com/Juneo-Lab/decision-forge/releases)
@@ -13,6 +15,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Typed](https://img.shields.io/badge/typing-strict%20mypy-2a6db2)](pyproject.toml)
 
+[Why Decision Forge](#why-decision-forge) ·
 [Quickstart](#quickstart) ·
 [How it works](#how-it-works) ·
 [Documentation](docs/index.md) ·
@@ -25,6 +28,51 @@
 </div>
 
 ![Decision Forge pipeline: compile and review organizational knowledge, shape scenarios across four decision surfaces and distributions, verify labels through policy replay, and export training data.](docs/assets/decision-forge-overview-v2.png)
+
+## Why Decision Forge
+
+**Organizations are gaining a second workforce.** For three hundred years, organizations were made of
+people. Today, AI agents work on their own for hours, take over tasks people used to hand to a
+colleague, and call one another through protocols such as A2A and MCP. Intelligence is now abundant.
+It has not yet turned into organizational capacity.
+
+**The connection layer is ready. The trust layer is empty.** Organizations learned to delegate to
+thousands of people because each of them can foresee what an action will do, works inside
+authorization and rules, and answers for the result. Agents arrive with none of that. Hand over too
+much and they act out of bounds; hold back and they never leave the pilot. What is missing is not
+more intelligence. It is the ability to **foresee the consequence of an action before it runs**.
+
+**That ability cannot be learned from public data.** Language models learned language from text, and
+video and world models are learning physics from pixels. What happens inside an organization when an
+agent reassigns a lead, shares a client file, or approves a refund is not on the public web. It lives
+in three places only the organization has:
+
+| What a model needs | Where it lives | What Decision Forge does with it |
+| --- | --- | --- |
+| **Decision context**: the state, roles, and options at the moment of action | Workflows, tickets, CRM records | Reconstructs decision-time scenarios with explicit candidate actions, grouped into families |
+| **Judgment standard**: what this organization allows, forbids, or escalates | Handbooks, SOPs, approval rules, permission tables | Compiles rules with verified source quotations, puts them through business review, and replays them to label every example |
+| **Execution receipts**: what actually happened after the action | Approvals, outcomes, runtime logs | Ingests runtime events and reviewed outcomes as feedback for the next dataset version |
+
+Every organization's standard is its own: the same action can be right in one company and out of
+bounds in the next. There is no universal "correct decision" to download.
+
+**Decision Forge is the open data engine for that standard.** It compiles an organization's own
+documents into decision training data with verified labels, source provenance, and family-isolated
+splits, and it runs locally, so the data and the judgment standard stay inside the organization. It
+is the data layer of the stack we are building at Juneo Lab:
+
+| Layer | Role | Status |
+| --- | --- | --- |
+| **AI-native organizations** | People and agents allocate work, share information, act, and accept results together; their execution receipts flow back into the data | Built with partner organizations |
+| **Laplace** | A causal-interventional model that predicts the consequence of an action before it runs, then allows it, blocks it, or hands it back to a person | In development |
+| **Decision Forge** | Organization documents → verified decision training data, locally | Open source, this repository |
+
+**Where this goes.** People keep the right to decide; agents earn a controlled right to act. Every
+action has a foreseeable consequence before it runs, every delegation narrows authority instead of
+widening it, and every contribution can be measured. Each organization owns its data, its standards,
+and the intelligence trained on them. The full argument is in [Why Decision Forge](docs/vision.md).
+
+## What Decision Forge does
 
 Organizational decisions depend on policies, thresholds, escalation rules, and acceptance criteria
 recorded in handbooks, SOPs, and workflow definitions. Decision Forge turns that knowledge into
@@ -61,7 +109,8 @@ business review accepts them, or an authored specification skips both steps. Eve
 runs offline: scenario families and quotas, label replay through the policy interpreter, deduplication
 with family split isolation, and training exports.
 
-The pipeline organizes workflow decision points into four surfaces:
+The pipeline organizes workflow decision points into the four kinds of decisions an organization
+delegates to people and agents:
 
 | Surface | Question the model learns to answer |
 | --- | --- |
@@ -262,6 +311,7 @@ The [roadmap](ROADMAP.md) tracks each remaining acceptance item against a milest
 
 | Guide | What it covers |
 | --- | --- |
+| [Why Decision Forge](docs/vision.md) | The problem, the data it needs, and where this project fits |
 | [Project status](docs/status.md) | Implemented paths and remaining validation |
 | [Architecture](docs/architecture.md) | Component boundaries and data flow |
 | [Specification](docs/specification.md) | Rule, scenario, and recipe semantics |

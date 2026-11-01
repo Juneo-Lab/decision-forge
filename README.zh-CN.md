@@ -6,6 +6,8 @@
 
 **把组织制度编译成可验证的决策训练数据。**
 
+让组织可以放心把工作委托给 AI Agent 的开源数据引擎。
+
 [![CI](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/Juneo-Lab/decision-forge?include_prereleases&color=FF5A1F)](https://github.com/Juneo-Lab/decision-forge/releases)
@@ -13,6 +15,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Typed](https://img.shields.io/badge/typing-strict%20mypy-2a6db2)](pyproject.toml)
 
+[为什么做 Decision Forge](#为什么做-decision-forge) ·
 [快速开始](#快速开始) ·
 [工作原理](#工作原理) ·
 [文档](docs/index.md) ·
@@ -25,6 +28,46 @@
 </div>
 
 ![Decision Forge：编译与审核组织知识，按四类决策与场景分布构造样本，通过规则重放验证标签，导出训练数据。](docs/assets/decision-forge-overview-v2.png)
+
+## 为什么做 Decision Forge
+
+**组织，正在迎来第二种劳动力。** 过去三百年，组织只由人构成。如今，AI Agent 能独立工作数小时，
+接手原本交给同事的任务，并通过 A2A、MCP 等协议互相调用。智能已经可以大规模供给，却还没有变成
+组织的增长。
+
+**连接层已经就绪，信任层仍是空的。** 人类组织之所以敢把工作交给成千上万的人，是因为每个人在行动
+之前能预见后果，在授权与制度之内行事，做完之后可以评价、可以问责。Agent 加入组织时，这些都不
+存在：放手太快会越界出事，不敢放手就永远停在试点。缺的不是更多智能，而是**在动作执行之前，
+预见它的后果**。
+
+**这种能力，从公开数据里学不到。** 语言模型从文本里学会了语言，视频和世界模型正在从像素里学习
+物理。可当一个 Agent 重新分配商机、共享客户档案或批准一笔退款时，组织里会发生什么，并不在公开
+世界里。它只存在于组织内部的三个地方：
+
+| 模型需要什么 | 存在于哪里 | Decision Forge 怎么处理 |
+| --- | --- | --- |
+| **决策上下文**：动作发生那一刻的状态、角色与候选选项 | 流程、工单、CRM 记录 | 重建决策时刻的场景与显式候选动作，并按场景族组织 |
+| **判断标准**：这个组织允许什么、禁止什么、什么需要升级 | 手册、SOP、审批规则、权限表 | 编译带有已验证源文引证的规则，经过业务审核，再通过规则重放为每个样本打标签 |
+| **执行回执**：动作之后真实发生了什么 | 审批、结果、运行日志 | 接入运行事件与经过审核的结果，作为下一版数据集的反馈 |
+
+每个组织的判断标准都不一样：同一个动作，在这家公司是对的，在另一家可能就越界了。不存在一个可以
+直接下载的通用“正确决策”。
+
+**Decision Forge，就是把这套标准变成数据的开源引擎。** 它把组织自己的文档编译成带有已验证标签、
+来源记录和场景族隔离切分的决策训练数据，并且在本地运行，数据与判断标准都留在组织内部。它是
+Juneo Lab 正在构建的技术栈中的数据层：
+
+| 层 | 作用 | 状态 |
+| --- | --- | --- |
+| **AI Native 组织** | 人与 Agent 共同分配任务、共享信息、执行操作、验收成果；执行回执回流到数据 | 与合作组织共同构建 |
+| **Laplace** | 因果-干预模型：在动作执行之前预测后果，再决定放行、拦截或交还给人 | 研发中 |
+| **Decision Forge** | 组织文档 → 已验证的决策训练数据，本地运行 | 开源，即本仓库 |
+
+**我们要去的地方。** 人类保留决定权，Agent 获得可控的行动权。每一个动作，执行之前后果可知；每一次
+授权，层层转交只收窄、不放大；每一份贡献，都可以度量。每个组织都拥有自己的数据、自己的标准，以及
+在它们之上训练出来的智能。完整论述见 [Why Decision Forge](docs/vision.md)。
+
+## Decision Forge 做什么
 
 组织决策依赖手册、SOP 和流程定义中的政策、阈值、升级规则与验收标准。Decision Forge 将这些知识
 转化为可复现的决策模型监督数据。
@@ -55,7 +98,7 @@
 `compile-corpus` 通过显式指定的模型端点从组织源材料起草规则，经业务审核接受；手工编写的规格可跳过这两步。
 审核之后的步骤全部离线完成：场景族与配额、通过规则解释器重放标签、去重与场景族切分隔离，以及训练导出。
 
-管线将工作流中的决策节点组织为四类：
+管线将工作流中的决策节点组织为组织委托给人与 Agent 的四类决策：
 
 | 决策面 | 模型要回答的问题 |
 | --- | --- |
@@ -241,6 +284,7 @@ oracle 与 no-op 对照验证，加上真实本地 OCR 推理与七格式导入�
 
 | 指南 | 内容 |
 | --- | --- |
+| [Why Decision Forge](docs/vision.md) | 要解决的问题、所需的数据，以及本项目的位置 |
 | [项目状态](docs/status.md) | 已实现的路径与待完成验证 |
 | [架构](docs/architecture.md) | 组件边界与数据流 |
 | [规格](docs/specification.md) | 规则、场景与配方语义 |
