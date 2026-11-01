@@ -10,7 +10,7 @@ from typing import Any
 from filelock import FileLock
 
 from decision_forge import __version__
-from decision_forge.dedup import deduplicate
+from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD, deduplicate
 from decision_forge.distribution import select_distribution
 from decision_forge.generation import generate_family, requested_variants
 from decision_forge.io import (
@@ -74,7 +74,7 @@ def build(
     cache: Path | None = None,
     recipe_plan: Path | None = None,
     expansion: Path | None = None,
-    near_duplicate_threshold: float = 0.9,
+    near_duplicate_threshold: float = NEAR_DUPLICATE_THRESHOLD,
     locked_splits: bool = False,
 ) -> dict[str, Any]:
     project = load_project(spec)
@@ -122,7 +122,7 @@ def _build(
     cache: Path,
     expanded: list[Episode] | None = None,
     expansion_summary: dict[str, Any] | None = None,
-    near_duplicate_threshold: float = 0.9,
+    near_duplicate_threshold: float = NEAR_DUPLICATE_THRESHOLD,
 ) -> dict[str, Any]:
     # Callers resolve splits first, so every family is pinned and the plan is the recipe's own record.
     plan = dict(project.recipe.family_splits)

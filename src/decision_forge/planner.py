@@ -8,7 +8,6 @@ appended to a ledger so a plan can be audited and resumed instead of being re-de
 
 from __future__ import annotations
 
-import json
 from collections import Counter
 from math import ceil
 from pathlib import Path
@@ -16,8 +15,8 @@ from typing import Any, Literal
 
 from pydantic import Field, JsonValue
 
-from decision_forge.dedup import deduplicate
-from decision_forge.distribution import cell_key, episode_cell
+from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD, deduplicate
+from decision_forge.distribution import Cell, cell_key, episode_cell, target_cell
 from decision_forge.generation import generate_family
 from decision_forge.io import canonical, digest, load_project, load_sources, read_json, write_json
 from decision_forge.models import (
@@ -73,7 +72,7 @@ class AdvisorWeights(Contract):
 
 
 def measure_pool(
-    project: Project, hashes: dict[str, str], near_duplicate_threshold: float = 0.9
+    project: Project, hashes: dict[str, str], near_duplicate_threshold: float = NEAR_DUPLICATE_THRESHOLD
 ) -> tuple[Counter[str], list[Episode]]:
     """Dry-run the deterministic pool without writing artifacts.
 
@@ -89,24 +88,8 @@ def measure_pool(
     return Counter(episode_cell(episode) for episode in accepted), episodes
 
 
-def _decode(cell: str) -> tuple[str, str, str, list[str]]:
-    node, stratum, split, choices = canonical_loads(cell)
-    return node, stratum, split, list(choices)
-
-
-def canonical_loads(value: str) -> Any:
-    return json.loads(value)
-
-
 def _target(cell: str, count: int) -> DistributionTarget:
-    node, stratum, split, choices = _decode(cell)
-    return DistributionTarget(
-        node_id=node,
-        stratum=stratum,  # type: ignore[arg-type]
-        split=split,  # type: ignore[arg-type]
-        valid_choices=choices,
-        count=count,
-    )
+    return DistributionTarget(**Cell.parse(cell)._asdict(), count=count)
 
 
 def validate_targets(project: Project, targets: list[DistributionTarget]) -> None:
@@ -136,11 +119,11 @@ def propose_quotas(
     """Choose exact quotas and report what the deterministic pool cannot supply."""
     if objective.mode == "explicit":
         validate_targets(project, objective.targets)
-        explicit = {cell_key(t.node_id, t.stratum, t.split, t.valid_choices): t.count for t in objective.targets}
+        explicit = {target_cell(t): t.count for t in objective.targets}
         return explicit, {"mode": "explicit", "cells_requested": len(explicit), "advisor": None}
     candidates = sorted(available)
     if objective.strata:
-        candidates = [cell for cell in candidates if _decode(cell)[1] in set(objective.strata)]
+        candidates = [cell for cell in candidates if Cell.parse(cell).stratum in objective.strata]
     if not candidates:
         raise ValueError("No candidate pool cells match the planning objective")
     per_cell = objective.per_cell
@@ -152,7 +135,7 @@ def propose_quotas(
     clamped: list[dict[str, Any]] = []
     for cell in candidates:
         quoted = per_cell
-        if _decode(cell)[2] == "test" and available[cell] < quoted:
+        if Cell.parse(cell).split == "test" and available[cell] < quoted:
             clamped.append({"cell": cell, "requested": quoted, "held_out_available": available[cell]})
             quoted = available[cell]
         wanted[cell] = quoted
@@ -165,9 +148,7 @@ def propose_quotas(
     }
 
 
-def apply_advisor(
-    weights: AdvisorWeights, wanted: dict[str, int], available: Counter[str]
-) -> tuple[dict[str, int], dict[str, Any]]:
+def apply_advisor(weights: AdvisorWeights, wanted: dict[str, int]) -> tuple[dict[str, int], dict[str, Any]]:
     """Scale quotas by model-proposed weights, rejecting cells the planner did not measure."""
     adjusted: dict[str, int] = {}
     unknown: list[str] = []
@@ -226,7 +207,7 @@ def expansion_requests(
         shortfall = wanted[cell] - available.get(cell, 0)
         if shortfall <= 0:
             continue
-        node, stratum, split, choices = _decode(cell)
+        node, stratum, split, choices = Cell.parse(cell)
         if split == "test":
             unfillable.append({"cell": cell, "shortfall": shortfall, "reason": "held_out_split"})
             continue
@@ -295,7 +276,7 @@ def held_out_shortfall(wanted: dict[str, int], available: Counter[str]) -> dict[
     cells = []
     for cell in sorted(wanted):
         shortfall = wanted[cell] - available.get(cell, 0)
-        if shortfall > 0 and _decode(cell)[2] == "test":
+        if shortfall > 0 and Cell.parse(cell).split == "test":
             cells.append({"cell": cell, "shortfall": shortfall})
     return {"cells": cells, "shortfall": sum(row["shortfall"] for row in cells)}
 
@@ -344,16 +325,7 @@ def _advisor_request(cells: list[str], wanted: dict[str, int]) -> str:
         {
             "task": "Re-weight exact decision-count cells so the dataset covers each node, stratum and "
             "answer set without inflating trivially easy cells.",
-            "cells": [
-                {
-                    "node_id": _decode(cell)[0],
-                    "stratum": _decode(cell)[1],
-                    "split": _decode(cell)[2],
-                    "valid_choices": _decode(cell)[3],
-                    "proposed": wanted[cell],
-                }
-                for cell in cells
-            ],
+            "cells": [{**Cell.parse(cell)._asdict(), "proposed": wanted[cell]} for cell in cells],
             "response_schema": "weights: [{node_id, stratum, split, valid_choices, weight in (0, 1]}]",
         }
     )
@@ -425,7 +397,7 @@ def plan_recipe(
             _advisor_request(sorted(wanted), wanted),
             AdvisorWeights.model_json_schema(),
         )
-        wanted, proposal_note = apply_advisor(AdvisorWeights.model_validate(proposal), wanted, available)
+        wanted, proposal_note = apply_advisor(AdvisorWeights.model_validate(proposal), wanted)
         record("propose_quotas", {"mode": "advisor"}, wanted, note=str(proposal_note["mode"]))
     else:
         record("propose_quotas", {"mode": objective.mode}, wanted, note=str(proposal_note["mode"]))

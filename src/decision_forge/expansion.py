@@ -17,7 +17,7 @@ from typing import Any, Literal
 
 from pydantic import Field, JsonValue, ValidationError, model_validator
 
-from decision_forge.dedup import duplicate_verdict
+from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD, duplicate_verdict
 from decision_forge.generation import candidate_for, policy_fingerprint, set_path
 from decision_forge.io import atomic_text, canonical, digest, load_sources, read_json, write_json
 from decision_forge.models import (
@@ -80,7 +80,7 @@ class ExpansionOptions(Contract):
     max_calls: int = Field(default=20, ge=1, le=1000)
     max_input_bytes: int = Field(default=4_000_000, ge=1)
     max_empty_rounds: int = Field(default=2, ge=1, le=10)
-    near_duplicate_threshold: float = Field(default=0.9, gt=0, le=1)
+    near_duplicate_threshold: float = Field(default=NEAR_DUPLICATE_THRESHOLD, gt=0, le=1)
 
 
 class ProposalBatch(Contract):
