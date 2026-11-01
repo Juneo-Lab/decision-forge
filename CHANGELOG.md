@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Declare the `type/` and `area/` label taxonomy in `.github/roadmap.json`; the roadmap publisher now
+  creates and updates those labels and applies them to roadmap issues without removing triage labels.
+- Label pull requests by area automatically from the files they change.
+- Add `.editorconfig` and `.gitattributes` (LF line endings, generated experiment artifacts), and a
+  definition-of-done checklist to the pull request template.
 - Count the recipe planner's available pool after the duplicate removal a build applies, so `plan-recipe`
   no longer reports quotas as feasible that `build --recipe-plan` then rejects.
 - Re-derive every model-visible field of imported synthesis rows: `load_expansion` now rejects rows whose

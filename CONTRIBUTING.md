@@ -57,13 +57,18 @@ readable without a project board.
 | `area/generation` | Scenarios, quotas, synthesis, deduplication |
 | `area/training` | Export contracts, candidate-readout encoding, evaluation loop |
 | `area/harness` | Workflow tasks, Harbor export, grading |
+| `area/feedback` | Runtime events, reviewed feedback, lineage, targeted updates |
+| `area/infra` | CI, packaging, releases, and repository automation |
 | `area/docs` | Site, README, and reference material |
 | `good first issue` | Scoped, has a clear acceptance criterion, no design decision required |
 | `help wanted` | Maintainers will review but will not drive it |
 | `blocked` | Waiting on an external dependency or a maintainer decision |
 
-Labels are applied by maintainers during triage. A pull request that changes behaviour should reference
-the issue whose acceptance criterion it satisfies, so closing the issue closes the claim.
+The taxonomy is declared in [.github/roadmap.json](.github/roadmap.json) and synchronized to GitHub by
+the **Sync roadmap** workflow; edit labels there rather than in the GitHub UI. Pull requests receive
+`area/` labels automatically from the files they change ([.github/labeler.yml](.github/labeler.yml));
+maintainers add the `type/` label and adjust areas during triage. A pull request that changes behaviour
+should reference the issue whose acceptance criterion it satisfies, so closing the issue closes the claim.
 
 ## Definition of done
 

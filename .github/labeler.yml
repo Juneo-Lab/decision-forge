@@ -1,0 +1,47 @@
+# Applied by .github/workflows/labeler.yml. Keep in sync with the area/ labels in .github/roadmap.json.
+area/compiler:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/decision_forge/{compiler,corpus,sources,document_formats,ocr,review,providers,inputs}.py
+          - tests/test_{compiler,corpus,sources,document_formats,ocr,review}.py
+area/policy:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/decision_forge/{policy,models,compatibility}.py
+          - tests/test_{policy,contracts}.py
+area/generation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/decision_forge/{generation,distribution,dedup,expansion,planner,transformations,pipeline,adapters}.py
+          - tests/test_{distribution,dedup,expansion,planner,transformations,rewrites,pipeline,adapters}.py
+area/training:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/decision_forge/{training,exporters,evaluation}.py
+          - scripts/finetune_evaluation.py
+          - tests/test_{decision_training,evaluation,finetune_loop}.py
+area/harness:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/decision_forge/{harness,workflows}.py
+          - scripts/check_harbor_results.py
+          - tests/test_{workflows,harbor_results,cli_harness}.py
+area/feedback:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/decision_forge/feedback.py
+          - tests/test_feedback.py
+area/infra:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+          - pyproject.toml
+          - uv.lock
+          - .pre-commit-config.yaml
+          - scripts/publish_github.py
+area/docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**
+          - mkdocs.yml
+          - '*.md'
