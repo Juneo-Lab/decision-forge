@@ -114,15 +114,28 @@ uv run decision-forge build runs/compiled/project.json --output runs/reviewed-da
 ```
 
 Review every rule, decision node, and flagged conflict. Nodes expose candidates, rules, and generation
-dimensions for inspection. Allow/deny pairs enter the queue in three cases: identical conditions,
-joint witnesses from a seed scenario/candidate, or a priority override where the higher-priority rule
-resolves the same conflict. Rules that a higher-priority rule of the same effect always outranks enter
-the queue as shadowed, dead rules. This analysis detects concrete witnesses; it does not exhaust every
-possible state. Reviewers examine the full rule context.
+dimensions for inspection. Allow/deny pairs enter the queue when they have identical conditions or
+jointly match the same candidate in a seed or generated episode. Unequal priorities classify the item
+as an override; equal priorities classify it as a conflict. Rules that a higher-priority rule of the
+same effect always outranks enter the queue as shadowed, dead rules.
+
+Generated overlap checks reuse the deterministic generator's sample, including state and candidate
+attribute dimensions, before filtering, deduplication, or distribution selection. Each scenario is
+generated at most once per snapshot using `candidate_pool_per_scenario` when set, otherwise
+`variants_per_scenario` (at most 10,000 sampled combinations per scenario). The existing population
+limit of 10^12 combinations still applies. This analysis does not enumerate the full Cartesian space,
+arbitrary states, or model-written synthesis. Reviewers examine the full rule context.
+
+Conflict/override content retains `seed_witnesses` and adds `generated_witnesses`: at most one witness
+per rule pair, with scenario, candidate, episode ID, and dimension intervention values. The additional
+`generation` object binds the sampling seed and both pool-size settings, so changing them re-opens the
+item even if its first witness stays the same. Item IDs and policy evaluation semantics are unchanged.
+Existing opposite-effect review items need renewed acceptance because their content now includes these
+fields; rule, node, dataset, and same-effect shadowing decisions retain their existing bindings.
 
 A review records identity, reason, time, decision, and the fingerprint of the reviewed item plus the
 sources its evidence cites. Editing an unrelated rule no longer invalidates an accepted decision,
-while any change to the reviewed rule, its evidence, or a cited source re-opens that item. A
+while any change to the reviewed rule, its evidence, or a cited source re-opens that item.
 Node reviews also bind referenced rules, scenarios and their source permissions. A dataset review
 binds the recipe and organization policy version. A hash-linked history detects accidental modification. Identity is operator-supplied; organization SSO
 and cryptographic reviewer authentication are future integration work.
