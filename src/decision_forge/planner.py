@@ -17,7 +17,7 @@ from pydantic import Field, JsonValue
 
 from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD, deduplicate
 from decision_forge.distribution import Cell, cell_key, episode_cell, target_cell
-from decision_forge.generation import generate_family
+from decision_forge.generation import generate_family, state_space_size
 from decision_forge.io import canonical, digest, load_project, load_sources, read_json, write_json
 from decision_forge.models import (
     CandidateIdentifier,
@@ -249,9 +249,7 @@ def synthesizability(project: Project, pool: list[Episode]) -> dict[str, dict[st
     for node in project.nodes:
         domains = allowed_state_paths(project, node)
         open_paths = sorted(name for name, entry in domains.items() if entry["kind"] == "predicate")
-        population = 1
-        for dimension in node.dimensions:
-            population *= max(1, len(dimension.values))
+        population = state_space_size(node)
         seen = len(observed.get(node.id, set()))
         if open_paths:
             result[node.id] = {

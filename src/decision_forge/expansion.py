@@ -18,7 +18,7 @@ from typing import Any, Literal
 from pydantic import Field, JsonValue, ValidationError, model_validator
 
 from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD, duplicate_verdict
-from decision_forge.generation import candidate_for, policy_fingerprint, set_path
+from decision_forge.generation import candidate_for, policy_fingerprint, referenced_sources, set_path
 from decision_forge.io import atomic_text, canonical, digest, load_sources, read_json, write_json
 from decision_forge.models import (
     Candidate,
@@ -539,7 +539,7 @@ def load_expansion(
         if episode.split != current_split:
             raise ValueError(f"Expanded episode has stale family split: {episode.id}")
         rules = project.select_rules(node.rule_ids)
-        expected_sources = set(scenario.source_ids) | {e.source_id for rule in rules for e in rule.evidence}
+        expected_sources = referenced_sources(scenario, rules)
         if set(episode.source_ids) != expected_sources or episode.source_hashes != {
             key: source_hashes[key] for key in expected_sources
         }:

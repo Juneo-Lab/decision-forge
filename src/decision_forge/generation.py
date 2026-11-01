@@ -9,15 +9,29 @@ from dataclasses import dataclass
 from typing import Any
 
 from decision_forge.io import digest
-from decision_forge.models import Candidate, Episode, Node, Project, Scenario, Split
+from decision_forge.models import Candidate, Episode, Node, Project, Rule, Scenario, Split
 from decision_forge.policy import best_choices, evaluate
+
+MAX_STATE_SPACE = 10**12
+
+
+def state_space_size(node: Node) -> int:
+    """Number of distinct dimension-value combinations a node declares."""
+    return math.prod(len(dimension.values) for dimension in node.dimensions)
 
 
 def requested_variants(project: Project, scenario: Scenario) -> int:
     """Number of distinct episodes a scenario is configured to contribute."""
-    node = project.node(scenario.node_id)
-    population = math.prod(len(dim.values) for dim in node.dimensions)
-    return min(population, project.recipe.candidate_pool_per_scenario or project.recipe.variants_per_scenario)
+    recipe = project.recipe
+    return min(
+        state_space_size(project.node(scenario.node_id)),
+        recipe.candidate_pool_per_scenario or recipe.variants_per_scenario,
+    )
+
+
+def referenced_sources(scenario: Scenario, rules: list[Rule]) -> set[str]:
+    """Sources a scenario's examples depend on: its own and those its rules quote."""
+    return set(scenario.source_ids) | {evidence.source_id for rule in rules for evidence in rule.evidence}
 
 
 def candidate_for(node: Node, path: str) -> Candidate:
@@ -73,7 +87,7 @@ def family_variants(project: Project, scenario: Scenario) -> list[Variant]:
     node = project.node(scenario.node_id)
     widths = [len(dim.values) for dim in node.dimensions]
     population = math.prod(widths)
-    if population > 10**12:
+    if population > MAX_STATE_SPACE:
         raise ValueError("Scenario space exceeds the supported sampling range")
     rng = random.Random(digest([project.recipe.seed, scenario.id]))
     variants = []
@@ -102,9 +116,9 @@ def generate_family(project: Project, scenario: Scenario, source_hashes: dict[st
     node = project.node(scenario.node_id)
     rules = project.select_rules(node.rule_ids)
     episodes: dict[str, Episode] = {}
-    referenced_sources = set(scenario.source_ids)
-    referenced_sources.update(e.source_id for r in rules for e in r.evidence)
-    grounding = policy_fingerprint(project, node.id, {key: source_hashes[key] for key in sorted(referenced_sources)})
+    sources = sorted(referenced_sources(scenario, rules))
+    hashes = {key: source_hashes[key] for key in sources}
+    grounding = policy_fingerprint(project, node.id, hashes)
     for variant in family_variants(project, scenario):
         state, candidates = variant.state, variant.candidates
         verdicts = evaluate(state, candidates, rules)
@@ -135,8 +149,8 @@ def generate_family(project: Project, scenario: Scenario, source_hashes: dict[st
             policy_context=[r.description for r in rules],
             valid_choices=best_choices(verdicts),
             verdicts=verdicts,
-            source_ids=sorted(referenced_sources),
-            source_hashes={key: source_hashes[key] for key in sorted(referenced_sources)},
+            source_ids=sources,
+            source_hashes=hashes,
             rule_ids=node.rule_ids,
             intervention=variant.intervention,
             policy_fingerprint=grounding,

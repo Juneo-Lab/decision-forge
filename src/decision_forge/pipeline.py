@@ -12,7 +12,7 @@ from filelock import FileLock
 from decision_forge import __version__
 from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD, deduplicate
 from decision_forge.distribution import select_distribution
-from decision_forge.generation import generate_family, requested_variants
+from decision_forge.generation import generate_family, referenced_sources, requested_variants
 from decision_forge.io import (
     atomic_text,
     canonical,
@@ -43,7 +43,7 @@ def scenario_fingerprint(
 ) -> str:
     node = project.node(scenario.node_id)
     rules = project.select_rules(node.rule_ids)
-    source_ids = set(scenario.source_ids) | {e.source_id for r in rules for e in r.evidence}
+    source_ids = referenced_sources(scenario, rules)
     return digest(
         {
             "engine": __version__,

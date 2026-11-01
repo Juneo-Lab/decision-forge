@@ -12,7 +12,7 @@ from pydantic import Field, JsonValue
 from decision_forge.generation import policy_fingerprint, set_path
 from decision_forge.inputs import episode_presentation, presentation_text
 from decision_forge.io import canonical, digest
-from decision_forge.models import Contract, Episode, Project, Stratum
+from decision_forge.models import Contract, Episode, Project, Rule, Stratum
 from decision_forge.policy import best_choices, evaluate
 from decision_forge.providers import StructuredProvider
 
@@ -22,6 +22,17 @@ class Intervention(Contract):
     relation: Literal["same_choices", "disjoint_choices"]
     stratum: Stratum = "boundary"
     candidate_order_seed: int | None = None
+
+
+def _replay_parent(project: Project, parent: Episode, operation: str) -> tuple[list[Rule], list[str]]:
+    """Confirm a parent episode still belongs to the project's policy, then replay its label."""
+    node = project.find_node(parent.node_id)
+    if node is None or set(parent.rule_ids) != set(node.rule_ids):
+        raise ValueError(f"{operation} node or rule lineage does not match")
+    if parent.policy_fingerprint != policy_fingerprint(project, node.id, parent.source_hashes):
+        raise ValueError("Parent policy fingerprint does not match the supplied project")
+    rules = project.select_rules(node.rule_ids)
+    return rules, best_choices(evaluate(parent.state, parent.candidates, rules))
 
 
 def transform_episode(project: Project, parent: Episode, intervention: Intervention) -> Episode:
@@ -35,13 +46,7 @@ def transform_episode(project: Project, parent: Episode, intervention: Intervent
         or parent.policy_version != project.organization.policy_version
     ):
         raise ValueError("Transformation requires the originating organization policy version")
-    node = project.find_node(parent.node_id)
-    if node is None or set(parent.rule_ids) != set(node.rule_ids):
-        raise ValueError("Transformation node or rule lineage does not match")
-    if parent.policy_fingerprint != policy_fingerprint(project, node.id, parent.source_hashes):
-        raise ValueError("Parent policy fingerprint does not match the supplied project")
-    rules = project.select_rules(node.rule_ids)
-    original = best_choices(evaluate(parent.state, parent.candidates, rules))
+    rules, original = _replay_parent(project, parent, "Transformation")
     if set(original) != set(parent.valid_choices) or not original:
         raise ValueError("Parent labels fail independent policy replay")
     if intervention.stratum == "feedback" and parent.split != "train":
@@ -156,13 +161,7 @@ def rewrite_presentation(
     verifier: StructuredProvider | None = None,
 ) -> Episode:
     """Paraphrase a decision presentation and publish it only after independent verification."""
-    node = project.find_node(episode.node_id)
-    if node is None or set(episode.rule_ids) != set(node.rule_ids):
-        raise ValueError("Rewrite node or rule lineage does not match")
-    if episode.policy_fingerprint != policy_fingerprint(project, episode.node_id, episode.source_hashes):
-        raise ValueError("Parent policy fingerprint does not match the supplied project")
-    rules = project.select_rules(node.rule_ids)
-    original_choices = best_choices(evaluate(episode.state, episode.candidates, rules))
+    rules, original_choices = _replay_parent(project, episode, "Rewrite")
     if original_choices != episode.valid_choices:
         raise ValueError("Parent labels fail independent policy replay")
     request = canonical(
