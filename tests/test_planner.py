@@ -1,6 +1,5 @@
 import json
 import shutil
-from collections import Counter
 
 import pytest
 
@@ -95,13 +94,12 @@ def test_infeasible_plan_is_refused_by_build(example_path, tmp_path):
 def test_advisor_may_only_reweight_measured_cells():
     cell = cell_key("refund", "routine", "train", ["execute"])
     wanted = {cell: 10}
-    available = Counter({cell: 10})
     weights = AdvisorWeights(
         weights=[
             AdvisorWeight(node_id="refund", stratum="routine", split="train", valid_choices=["execute"], weight=0.5)
         ]
     )
-    scaled, note = apply_advisor(weights, wanted, available)
+    scaled, note = apply_advisor(weights, wanted)
     assert scaled == {cell: 5}
     assert note["mode"] == "advisor_scaled"
     outside = AdvisorWeights(
@@ -110,7 +108,7 @@ def test_advisor_may_only_reweight_measured_cells():
         ]
     )
     with pytest.raises(ValueError, match="outside the measured pool"):
-        apply_advisor(outside, wanted, available)
+        apply_advisor(outside, wanted)
 
 
 def test_advisor_provider_scales_quotas_and_is_recorded(example_path, tmp_path):

@@ -10,8 +10,9 @@ from typing import Any, Literal
 from pydantic import Field, JsonValue
 
 from decision_forge.generation import policy_fingerprint, set_path
+from decision_forge.inputs import episode_presentation, presentation_text
 from decision_forge.io import canonical, digest
-from decision_forge.models import Contract, Episode, Project
+from decision_forge.models import Contract, Episode, Project, Rule, Stratum
 from decision_forge.policy import best_choices, evaluate
 from decision_forge.providers import StructuredProvider
 
@@ -19,8 +20,19 @@ from decision_forge.providers import StructuredProvider
 class Intervention(Contract):
     state_updates: dict[str, JsonValue] = Field(default_factory=dict)
     relation: Literal["same_choices", "disjoint_choices"]
-    stratum: Literal["routine", "boundary", "change", "feedback"] = "boundary"
+    stratum: Stratum = "boundary"
     candidate_order_seed: int | None = None
+
+
+def _replay_parent(project: Project, parent: Episode, operation: str) -> tuple[list[Rule], list[str]]:
+    """Confirm a parent episode still belongs to the project's policy, then replay its label."""
+    node = project.find_node(parent.node_id)
+    if node is None or set(parent.rule_ids) != set(node.rule_ids):
+        raise ValueError(f"{operation} node or rule lineage does not match")
+    if parent.policy_fingerprint != policy_fingerprint(project, node.id, parent.source_hashes):
+        raise ValueError("Parent policy fingerprint does not match the supplied project")
+    rules = project.select_rules(node.rule_ids)
+    return rules, best_choices(evaluate(parent.state, parent.candidates, rules))
 
 
 def transform_episode(project: Project, parent: Episode, intervention: Intervention) -> Episode:
@@ -34,13 +46,7 @@ def transform_episode(project: Project, parent: Episode, intervention: Intervent
         or parent.policy_version != project.organization.policy_version
     ):
         raise ValueError("Transformation requires the originating organization policy version")
-    node = next((n for n in project.nodes if n.id == parent.node_id), None)
-    if node is None or set(parent.rule_ids) != set(node.rule_ids):
-        raise ValueError("Transformation node or rule lineage does not match")
-    if parent.policy_fingerprint != policy_fingerprint(project, node.id, parent.source_hashes):
-        raise ValueError("Parent policy fingerprint does not match the supplied project")
-    rules = [r for r in project.organization.rules if r.id in node.rule_ids]
-    original = best_choices(evaluate(parent.state, parent.candidates, rules))
+    rules, original = _replay_parent(project, parent, "Transformation")
     if set(original) != set(parent.valid_choices) or not original:
         raise ValueError("Parent labels fail independent policy replay")
     if intervention.stratum == "feedback" and parent.split != "train":
@@ -104,14 +110,6 @@ def _numbers(text: str) -> list[str]:
     return sorted(_NUMBER.findall(text))
 
 
-def presentation_text(episode: Episode) -> str:
-    return (
-        episode.question
-        + "\n"
-        + "\n".join(f"{candidate.id}: {candidate.description}" for candidate in episode.candidates)
-    )
-
-
 def verify_presentation(
     original: Episode, rewrite: PresentationRewrite, verifier: Callable[[str, str, dict[str, Any]], dict[str, Any]]
 ) -> dict[str, Any]:
@@ -126,13 +124,11 @@ def verify_presentation(
         raise ValueError("Rewrite must describe exactly the declared candidates")
     if any(not text.strip() for text in rewrite.candidate_descriptions.values()):
         raise ValueError("Rewrite must not blank a candidate description")
-    original_numbers = _numbers(presentation_text(original))
-    rewritten = (
-        rewrite.question + "\n" + "\n".join(f"{key}: {value}" for key, value in rewrite.candidate_descriptions.items())
-    )
+    original_numbers = _numbers(episode_presentation(original))
+    rewritten = presentation_text(rewrite.question, rewrite.candidate_descriptions.items())
     if _numbers(rewritten) != original_numbers:
         raise ValueError("Rewrite changed a numeric value; thresholds must be preserved")
-    original_length = len(presentation_text(original))
+    original_length = len(episode_presentation(original))
     if not 0.4 <= len(rewritten) / max(original_length, 1) <= 3.0:
         raise ValueError("Rewrite length is not a paraphrase of the original presentation")
     verdict = RewriteVerdict.model_validate(
@@ -165,13 +161,7 @@ def rewrite_presentation(
     verifier: StructuredProvider | None = None,
 ) -> Episode:
     """Paraphrase a decision presentation and publish it only after independent verification."""
-    node = next((n for n in project.nodes if n.id == episode.node_id), None)
-    if node is None or set(episode.rule_ids) != set(node.rule_ids):
-        raise ValueError("Rewrite node or rule lineage does not match")
-    if episode.policy_fingerprint != policy_fingerprint(project, episode.node_id, episode.source_hashes):
-        raise ValueError("Parent policy fingerprint does not match the supplied project")
-    rules = [rule for rule in project.organization.rules if rule.id in node.rule_ids]
-    original_choices = best_choices(evaluate(episode.state, episode.candidates, rules))
+    rules, original_choices = _replay_parent(project, episode, "Rewrite")
     if original_choices != episode.valid_choices:
         raise ValueError("Parent labels fail independent policy replay")
     request = canonical(

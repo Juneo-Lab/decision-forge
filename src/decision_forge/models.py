@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import re
+from collections.abc import Collection
 from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
@@ -14,6 +15,8 @@ Identifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$")
 # candidate selection in Node dimensions and evaluation bindings ambiguous.
 CandidateIdentifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$")]
 Split = Literal["train", "development", "test"]
+ORDERING_OPERATORS = frozenset({"gt", "gte", "lt", "lte"})
+Stratum = Literal["routine", "boundary", "change", "feedback"]
 
 
 class Contract(BaseModel):
@@ -83,9 +86,7 @@ class Predicate(Contract):
             raise ValueError("The exists operator requires a boolean value; omit it to mean true")
         if self.op == "in" and not isinstance(self.value, list):
             raise ValueError("The in operator requires a list")
-        if self.op in {"gt", "gte", "lt", "lte"} and (
-            isinstance(self.value, bool) or not isinstance(self.value, (float, int))
-        ):
+        if self.op in ORDERING_OPERATORS and (isinstance(self.value, bool) or not isinstance(self.value, (float, int))):
             raise ValueError("Ordering operators require a numeric value")
         return self
 
@@ -171,7 +172,7 @@ class Scenario(Contract):
     family_id: Identifier
     state: dict[str, JsonValue]
     source_ids: list[Identifier] = Field(min_length=1)
-    stratum: Literal["routine", "boundary", "change", "feedback"] = "routine"
+    stratum: Stratum = "routine"
 
 
 class SplitConfig(Contract):
@@ -190,7 +191,7 @@ class DistributionTarget(Contract):
     """An exact accepted-example quota, including its answer set and evaluation split."""
 
     node_id: Identifier
-    stratum: Literal["routine", "boundary", "change", "feedback"]
+    stratum: Stratum
     split: Split
     valid_choices: list[CandidateIdentifier] = Field(min_length=1)
     count: int = Field(ge=0, le=100000)
@@ -227,6 +228,19 @@ class Project(Contract):
     scenarios: list[Scenario] = Field(min_length=1)
     recipe: Recipe = Field(default_factory=Recipe)
 
+    def find_node(self, node_id: str) -> Node | None:
+        return next((node for node in self.nodes if node.id == node_id), None)
+
+    def node(self, node_id: str) -> Node:
+        node = self.find_node(node_id)
+        if node is None:
+            raise ValueError(f"Unknown node: {node_id}")
+        return node
+
+    def select_rules(self, rule_ids: Collection[str]) -> list[Rule]:
+        """Rules with the given IDs, in organization order, which identities and fingerprints hash."""
+        return [rule for rule in self.organization.rules if rule.id in rule_ids]
+
     @model_validator(mode="after")
     def references(self) -> Self:
         for values, label in [
@@ -254,7 +268,7 @@ class Project(Contract):
             raise ValueError("Split assignments reference unknown families")
         cells: set[tuple[str, str, str, tuple[str, ...]]] = set()
         for target in self.recipe.distribution:
-            target_node = next((n for n in self.nodes if n.id == target.node_id), None)
+            target_node = self.find_node(target.node_id)
             if target_node is None or not set(target.valid_choices) <= {c.id for c in target_node.candidates}:
                 raise ValueError("Distribution target references an unknown node or candidate")
             cell = (target.node_id, target.stratum, target.split, tuple(target.valid_choices))
