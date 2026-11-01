@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add a tag-triggered release workflow that verifies version consistency, runs the test suite, builds and
+  smoke-tests the wheel, attests build provenance, creates a GitHub release from the changelog, and
+  optionally publishes to PyPI through trusted publishing.
+- Ship a `py.typed` marker so downstream type checkers use the package's inline annotations.
+- Add project URLs, supported Python versions, and typing classifiers to the package metadata, and
+  repository links to the citation file.
 - Add automatic source format detection and DOCX, XLSX, PPTX, HTML and CSV/TSV parsers with locations.
 - Add image and per-page PDF OCR through local RapidOCR/PP-OCR small models, Tesseract, and explicitly
   selected OpenAI-compatible vision endpoints. Keep model weights local during ingestion.
