@@ -37,6 +37,20 @@ decision-forge = "decision_forge.cli:app"
 [project.optional-dependencies]
 documents = [
     "pypdf>=6,<7",
+    "python-docx>=1.2,<2",
+    "openpyxl>=3.1,<4",
+    "python-pptx>=1.0,<2",
+    "beautifulsoup4>=4.13,<5",
+]
+ocr = [
+    "Pillow>=11,<13",
+    "pypdfium2>=4.30,<6",
+]
+ocr-rapid = [
+    "rapidocr>=3.10,<4",
+    "onnxruntime>=1.20,<2",
+    "Pillow>=11,<13",
+    "pypdfium2>=4.30,<6",
 ]
 orchestration = [
     "langgraph==1.2.19",

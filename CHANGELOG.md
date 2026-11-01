@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Add automatic source format detection and DOCX, XLSX, PPTX, HTML and CSV/TSV parsers with locations.
+- Add image and per-page PDF OCR through local RapidOCR/PP-OCR small models, Tesseract, and explicitly
+  selected OpenAI-compatible vision endpoints. Keep model weights local during ingestion.
+- Preserve OCR model identity, confidence, bounding boxes, access metadata, cache integrity and attempt
+  journals. Require an explicit flag for OCR service calls and retain the business review gate.
+- Bound archive expansion, image pixels, page counts, spreadsheet traversal and normalized output.
+- Add real local PP-OCR inference tests and a fictional seven-format example generator.
+- Ingestion metadata and default format detection have changed. Recompile into a new output directory;
+  existing content-bound reviews are not transferred to newly parsed source snapshots.
+
 ## 0.3.0
 
 Version 0.3.0 packages organization compilation and distribution-aware decision synthesis.

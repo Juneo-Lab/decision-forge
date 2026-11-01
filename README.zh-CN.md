@@ -27,7 +27,7 @@
 | 离线数据路径 | 已审核规则 → 场景 → 已验证标签 → 导出 |
 | 标签 | 由确定性解释器根据声明规则重新计算 |
 | 溯源 | 验证规则引文和源文件哈希；语料编译补充跨度与定位符 |
-| 验证 | 完整可选适配器环境下，228 项测试、87.57% 语句覆盖率 |
+| 验证 | 完整可选适配器环境下，256 项测试、88.18% 语句覆盖率 |
 | CI | Linux 与 macOS 上共 9 项检查，包括适配器与 Harbor 对照验证 |
 | 训练 | 四种导出格式，包括 candidate-readout 决策契约 |
 | 语言 | Python 3.11+ |
@@ -130,7 +130,10 @@ uv run decision-forge build runs/acme/project.json --output runs/acme-data
 ```
 
 按[语料清单格式](docs/organization-compiler.md)创建 `corpus.yaml`。支持带版本和访问元数据的文本、
-Markdown、JSON、YAML 与 PDF（需要 `documents` extra）。抽取过程分块且可恢复；装配要求规则证据
+Markdown、JSON/YAML、PDF、DOCX/XLSX/PPTX、HTML、CSV/TSV 和 OCR 图片输入。安装 `documents`
+启用办公文档与 PDF 解析，安装 `ocr-rapid` 启用本地 PP-OCR 小模型。
+[文件格式与 OCR](docs/document-ingestion.md)说明自动识别格式、Tesseract 和显式视觉 OCR 服务配置。
+抽取过程分块且可恢复；装配要求规则证据
 能够关联到已抽取的主张。无效 schema 和歧义引文会产生验证错误；规则冲突进入审核队列裁决。
 源文快照和已解析的生成对象保存在本地私有产物中，包括缓存与修复记录。服务凭证不写入这些产物。
 
@@ -140,10 +143,14 @@ Markdown、JSON、YAML 与 PDF（需要 `documents` extra）。抽取过程分�
 
 ## 证据
 
-**本地验证（macOS ARM64、Python 3.12、全部可选依赖）：** 228 项测试、87.57% 语句覆盖率，
-以及 Ruff、严格 mypy、严格 MkDocs、wheel 和 sdist 构建。CI 包含 9 项检查：代码质量、6 项测试
+**本地验证（macOS ARM64、Python 3.12、全部可选依赖）：** 256 项测试、88.18% 语句覆盖率，
+以及 Ruff、严格 mypy、严格 MkDocs、wheel 和 sdist 构建。CI 包含 10 项检查：代码质量、6 项测试
 （Ubuntu 与 macOS × Python 3.11/3.12/3.13）、固定版本的 Data Designer 与 LangGraph 适配器契约，
-以及 Docker 中的 Harbor oracle 与 no-op 对照验证。
+以及 Docker 中的 Harbor oracle 与 no-op 对照验证，加上真实本地 OCR 推理与七格式导入。
+
+**本地 OCR：** [七格式导入测试](experiments/2026-11-ingestion/README.md)归档了原生文件解析结果，
+以及使用内置 PP-OCR 小模型准确识别 PNG 和扫描 PDF 的结果。Tesseract 与视觉模型服务已有协议测试，
+模型质量另行评估。
 
 **离线基准：** 对 25、100、400 个合成场景族测量冷缓存和热缓存构建。[基准报告](docs/benchmarks.md)
 记录实测吞吐、主机与依赖版本以及一致的数据集摘要，同时归档原始 JSON。
@@ -162,7 +169,8 @@ Markdown、JSON、YAML 与 PDF（需要 `documents` extra）。抽取过程分�
 
 **已支持**
 
-- 带版本和访问元数据的文本、Markdown、JSON、YAML、PDF 组织源材料。
+- 带版本和访问元数据的文本、Markdown、JSON/YAML、PDF、DOCX/XLSX/PPTX、HTML、CSV/TSV 组织源材料。
+- 使用本地 PP-OCR 小模型、Tesseract 或显式视觉模型服务的图片及扫描 PDF OCR。
 - 将文档编译为规则、节点、候选和场景，并设置内容绑定的审核门禁。
 - 四类决策面的确定性标签推导。
 - 分布配额、可行性报告、验证式合成和全局去重。

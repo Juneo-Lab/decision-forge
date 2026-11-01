@@ -31,7 +31,7 @@ See [project status](docs/status.md) for the current implementation and next mil
 | Offline data path | reviewed rules → scenarios → verified labels → exports |
 | Labels | recomputed from declared rules by a deterministic interpreter |
 | Provenance | verified rule quotations and source hashes; corpus compilation adds spans and locators |
-| Validation | 228 tests, 87.57% statement coverage in the full optional-adapter environment |
+| Validation | 256 tests, 88.18% statement coverage in the full optional-adapter environment |
 | CI | 9 checks across Linux and macOS, including adapter and Harbor controls |
 | Training | four export formats, including the candidate-readout decision contract |
 | Language | Python 3.11+ |
@@ -140,7 +140,10 @@ uv run decision-forge build runs/acme/project.json --output runs/acme-data
 ```
 
 Create `corpus.yaml` using the [corpus manifest format](docs/organization-compiler.md). Text,
-Markdown, JSON, YAML, and PDF (with the `documents` extra) carry version and access metadata.
+Markdown, JSON, YAML, PDF, DOCX, XLSX, PPTX, HTML, CSV/TSV, and OCR image inputs carry version and
+access metadata. Install `documents` for native office/PDF parsing and `ocr-rapid` for local
+PP-OCR small models. [Document formats and OCR](docs/document-ingestion.md) covers automatic format
+detection, Tesseract, and explicit vision OCR service configuration.
 Extraction is chunked and resumable; assembly requires rule evidence to resolve to extracted claims.
 Invalid schemas and ambiguous quotations produce validation errors; policy conflicts enter the review
 queue for adjudication. Source snapshots and parsed generated objects are stored in private local
@@ -153,11 +156,15 @@ label is replayed from the declared policy.
 
 ## Evidence
 
-**Local validation (macOS ARM64, Python 3.12, all optional extras):** 228 tests, 87.57% statement
+**Local validation (macOS ARM64, Python 3.12, all optional extras):** 256 tests, 88.18% statement
 coverage, Ruff, strict mypy, strict
-MkDocs, wheel and sdist builds. CI runs 9 checks: quality, six test jobs (Ubuntu and macOS × Python
+MkDocs, wheel and sdist builds. CI runs 10 checks: quality, six test jobs (Ubuntu and macOS × Python
 3.11/3.12/3.13), pinned Data Designer and LangGraph adapter contracts, and Harbor task execution in
-Docker under oracle and no-op controls.
+Docker under oracle and no-op controls, plus real local OCR inference and seven-format ingestion.
+
+**Local OCR:** the [seven-format ingestion smoke test](experiments/2026-11-ingestion/README.md)
+archives native file parsing and exact PNG/scanned-PDF transcriptions using bundled PP-OCR small
+models. Tesseract and vision endpoints have contract tests; their model quality is evaluated separately.
 
 **Offline benchmark:** cold and warm builds are measured on 25, 100, and 400 synthetic families.
 The [benchmark report](docs/benchmarks.md) records measured throughput, host and dependency versions,
@@ -179,7 +186,8 @@ small fictional inputs; organizational training-quality evaluation remains a sep
 
 **Supported**
 
-- Text, Markdown, JSON, YAML, and PDF organizational sources with versions and access metadata.
+- Text, Markdown, JSON/YAML, PDF, DOCX/XLSX/PPTX, HTML and CSV/TSV sources with versions and access metadata.
+- Image and scanned-PDF OCR with local PP-OCR small models, Tesseract, or an explicit vision endpoint.
 - Document compilation into rules, nodes, candidates, and scenarios, with a content-bound review gate.
 - Deterministic label derivation for all four decision surfaces.
 - Distribution quotas, feasibility reporting, verified synthesis, and global duplicate detection.

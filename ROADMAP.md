@@ -27,7 +27,10 @@ Acceptance: ingest at least two document formats through the adapter contract; p
 locations and access metadata; report extraction accuracy on reviewed fixtures; isolate incomplete
 or conflicting rules in an explicit review queue.
 
-Implementation evidence: source adapters and review/evaluation interfaces are implemented. The
+Implementation evidence: source adapters and review/evaluation interfaces are implemented.
+Office (DOCX/XLSX/PPTX), HTML, CSV/TSV and image inputs now retain source locations; built-in
+OCR supports bundled local PP-OCR small models, Tesseract and explicit vision-service endpoints.
+Real local inference and parser fixtures cover ingestion; remote model quality is tracked separately. The
 [flagship model experiment](experiments/2026-10-m1/README.md) preserves successful compilation,
 reference disagreements, and rejected review items. Larger multi-document interaction studies and
 cross-document retrieval and interaction acceptance remain open in issue #12. Aggregate token

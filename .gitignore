@@ -16,4 +16,7 @@ site/
 runs/
 .forge-cache/
 .forge-compile-cache/
+.forge-ocr-cache/
 private/
+
+.coverage.*
