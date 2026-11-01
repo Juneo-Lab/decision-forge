@@ -297,3 +297,17 @@ uv build
 ## 许可证
 
 Decision Forge 采用 [Apache-2.0](LICENSE) 许可证，署名信息见 [NOTICE](NOTICE)。
+
+## Star 趋势
+
+<div align="center">
+
+<a href="https://www.star-history.com/#juneo-lab/decision-forge&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=juneo-lab/decision-forge&type=Date&theme=dark">
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=juneo-lab/decision-forge&type=Date">
+    <img alt="Star history chart for Juneo-Lab/decision-forge" src="https://api.star-history.com/svg?repos=juneo-lab/decision-forge&type=Date" width="600">
+  </picture>
+</a>
+
+</div>
