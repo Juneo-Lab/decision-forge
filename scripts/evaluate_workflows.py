@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import argparse
-import os
 from pathlib import Path
 
 from decision_forge.corpus import CallJournal, CompilationOptions
 from decision_forge.io import digest, load_project, load_sources, read_json, write_json
-from decision_forge.providers import OpenAICompatibleProvider
+from decision_forge.providers import OpenAICompatibleProvider, env_api_key
 from decision_forge.review import require_review
 from decision_forge.workflows import WorkflowTask, solve_workflow
 
@@ -41,7 +40,7 @@ def main() -> None:
             provider = OpenAICompatibleProvider(
                 args.base_url,
                 model,
-                os.environ.get("FORGE_API_KEY", ""),
+                env_api_key(),
                 retries=0,
                 max_output_tokens=4096,
                 temperature=None,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -23,7 +22,7 @@ from decision_forge.harness import export_harbor, replay
 from decision_forge.io import digest, load_project, load_sources, read_json, write_json
 from decision_forge.models import Episode, Project, Split
 from decision_forge.pipeline import build, impact, load_run
-from decision_forge.providers import OpenAICompatibleProvider, ResponseMode
+from decision_forge.providers import OpenAICompatibleProvider, ResponseMode, env_api_key
 from decision_forge.review import ReviewDecision, record_review, review_status
 from decision_forge.sources import ingest_manifest
 
@@ -160,7 +159,7 @@ def compile_command(
     fixed records use native strict schemas.
     """
     with cli_errors():
-        provider = OpenAICompatibleProvider(base_url, model, os.environ.get("FORGE_API_KEY", ""))
+        provider = OpenAICompatibleProvider(base_url, model, env_api_key())
         project = compile_documents(sources, output, provider)
         display(
             {
@@ -240,7 +239,7 @@ def compile_corpus_command(
         provider = OpenAICompatibleProvider(
             base_url,
             model,
-            os.environ.get("FORGE_API_KEY", ""),
+            env_api_key(),
             retries=0,
             response_mode=mode,
             reasoning_effort=reasoning_effort,
@@ -256,6 +255,8 @@ def compile_corpus_command(
             chunk_characters=chunk_characters,
             overlap_characters=overlap_characters,
         )
+        # The identity records temperature 0 whatever --temperature says. It keys existing caches and
+        # compilation fingerprints, so correcting it would orphan them; change it only with a version bump.
         identity = digest({"endpoint": provider.base_url, "model": model, "temperature": 0})
         display(compile_corpus(manifest, output, provider, identity, options, allow_external_ocr=allow_external_ocr))
 
@@ -350,7 +351,7 @@ def workflow_run_command(
         provider = OpenAICompatibleProvider(
             base_url,
             model,
-            os.environ.get("FORGE_API_KEY", ""),
+            env_api_key(),
             retries=0,
             temperature=None,
             reasoning_effort=reasoning_effort,
@@ -502,7 +503,7 @@ def plan_recipe_command(
         if base_url or model:
             if not (base_url and model):
                 raise ValueError("An advisor model requires both --base-url and --model")
-            provider = OpenAICompatibleProvider(base_url, model, os.environ.get("FORGE_API_KEY", ""))
+            provider = OpenAICompatibleProvider(base_url, model, env_api_key())
         plan = plan_recipe(
             spec,
             output,
@@ -547,7 +548,7 @@ def expand_command(
         provider = OpenAICompatibleProvider(
             base_url,
             model,
-            os.environ.get("FORGE_API_KEY", ""),
+            env_api_key(),
             retries=0,
             temperature=None,
             max_output_tokens=max_output_tokens,
@@ -571,6 +572,8 @@ def expand_command(
                 max_input_bytes=max_input_bytes,
                 near_duplicate_threshold=near_duplicate_threshold,
             ),
+            # Unlike compile-corpus, this hashes the URL as typed (a trailing slash changes it). Kept
+            # as is because it keys resumable expansion artifacts.
             provider_id=digest({"endpoint": base_url, "model": model}),
         )
         display(summary)
@@ -604,9 +607,9 @@ def rewrite_command(
     from decision_forge.transformations import rewrite_presentation
 
     with cli_errors():
-        provider = OpenAICompatibleProvider(base_url, model, os.environ.get("FORGE_API_KEY", ""), temperature=None)
+        provider = OpenAICompatibleProvider(base_url, model, env_api_key(), temperature=None)
         verifier = (
-            OpenAICompatibleProvider(base_url, verifier_model, os.environ.get("FORGE_API_KEY", ""), temperature=None)
+            OpenAICompatibleProvider(base_url, verifier_model, env_api_key(), temperature=None)
             if verifier_model
             else None
         )
