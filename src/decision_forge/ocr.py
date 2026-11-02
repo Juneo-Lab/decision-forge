@@ -118,7 +118,7 @@ class OCRRunner:
                 self.paths[key] = str(path)
                 models[key] = hashlib.sha256(path.read_bytes()).hexdigest()
         dependency("PIL.Image", "ocr")
-        packages = {name: version(name) for name in ("Pillow",)}
+        packages = {"Pillow": version("Pillow")}
         if config.backend == "rapidocr":
             dependency("rapidocr", "ocr-rapid")
             packages.update({name: version(name) for name in ("rapidocr", "onnxruntime")})
@@ -204,56 +204,62 @@ class OCRRunner:
         if self.config.backend == "openai":
             return self._remote(png)
         if self.config.backend == "tesseract":
-            with tempfile.TemporaryDirectory(prefix="forge-ocr-") as folder:
-                image = Path(folder) / "page.png"
-                image.write_bytes(png)
-                try:
-                    result = subprocess.run(
-                        [
-                            self.binary,
-                            str(image),
-                            "stdout",
-                            "--tessdata-dir",
-                            self.paths["tessdata_dir"],
-                            "-l",
-                            self.config.language,
-                            "tsv",
-                        ],
-                        capture_output=True,
-                        timeout=self.config.timeout_seconds,
-                        check=True,
-                    )
-                except (subprocess.SubprocessError, OSError):
-                    raise ValueError("Tesseract OCR failed or timed out") from None
-            grouped: dict[tuple[str, ...], list[OCRLine]] = {}
-            for row in csv.DictReader(io.StringIO(result.stdout.decode("utf-8")), delimiter="\t"):
-                if not row.get("text", "").strip() or float(row["conf"]) < 0:
-                    continue
-                left, top, width, height = (float(row[k]) for k in ("left", "top", "width", "height"))
-                key = tuple(row[k] for k in ("page_num", "block_num", "par_num", "line_num"))
-                grouped.setdefault(key, []).append(
-                    OCRLine(
-                        text=row["text"],
-                        confidence=float(row["conf"]) / 100,
-                        box=[left, top, left + width, top + height],
-                    )
+            return self._tesseract(png), None
+        return self._rapidocr(png), None
+
+    def _tesseract(self, png: bytes) -> list[OCRLine]:
+        with tempfile.TemporaryDirectory(prefix="forge-ocr-") as folder:
+            image = Path(folder) / "page.png"
+            image.write_bytes(png)
+            try:
+                result = subprocess.run(
+                    [
+                        self.binary,
+                        str(image),
+                        "stdout",
+                        "--tessdata-dir",
+                        self.paths["tessdata_dir"],
+                        "-l",
+                        self.config.language,
+                        "tsv",
+                    ],
+                    capture_output=True,
+                    timeout=self.config.timeout_seconds,
+                    check=True,
                 )
-            lines = []
-            for words in grouped.values():
-                boxes = [word.box for word in words if word.box is not None]
-                lines.append(
-                    OCRLine(
-                        text=" ".join(word.text for word in words),
-                        confidence=min(word.confidence for word in words if word.confidence is not None),
-                        box=[
-                            min(b[0] for b in boxes),
-                            min(b[1] for b in boxes),
-                            max(b[2] for b in boxes),
-                            max(b[3] for b in boxes),
-                        ],
-                    )
+            except (subprocess.SubprocessError, OSError):
+                raise ValueError("Tesseract OCR failed or timed out") from None
+        grouped: dict[tuple[str, ...], list[OCRLine]] = {}
+        for row in csv.DictReader(io.StringIO(result.stdout.decode("utf-8")), delimiter="\t"):
+            if not row.get("text", "").strip() or float(row["conf"]) < 0:
+                continue
+            left, top, width, height = (float(row[k]) for k in ("left", "top", "width", "height"))
+            key = tuple(row[k] for k in ("page_num", "block_num", "par_num", "line_num"))
+            grouped.setdefault(key, []).append(
+                OCRLine(
+                    text=row["text"],
+                    confidence=float(row["conf"]) / 100,
+                    box=[left, top, left + width, top + height],
                 )
-            return lines, None
+            )
+        lines = []
+        for words in grouped.values():
+            boxes = [word.box for word in words if word.box is not None]
+            lines.append(
+                OCRLine(
+                    text=" ".join(word.text for word in words),
+                    confidence=min(word.confidence for word in words if word.confidence is not None),
+                    box=[
+                        min(b[0] for b in boxes),
+                        min(b[1] for b in boxes),
+                        max(b[2] for b in boxes),
+                        max(b[3] for b in boxes),
+                    ],
+                )
+            )
+        return lines
+
+    def _rapidocr(self, png: bytes) -> list[OCRLine]:
         rapidocr = dependency("rapidocr", "ocr-rapid")
         if self.engine is None:
             self.engine = rapidocr.RapidOCR(
@@ -269,12 +275,12 @@ class OCRRunner:
             )
         result = self.engine(png, use_cls=False)
         if result.txts is None:
-            return [], None
+            return []
         lines = []
         for text, score, box in zip(result.txts, result.scores, result.boxes, strict=True):
             xs, ys = [float(point[0]) for point in box], [float(point[1]) for point in box]
             lines.append(OCRLine(text=text, confidence=float(score), box=[min(xs), min(ys), max(xs), max(ys)]))
-        return lines, None
+        return lines
 
     def _remote(self, png: bytes) -> tuple[list[OCRLine], dict[str, Any] | None]:
         payload = {
