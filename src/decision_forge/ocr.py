@@ -21,9 +21,12 @@ import httpx
 from filelock import FileLock
 from pydantic import Field, model_validator
 
-from decision_forge.document_formats import Fragment, dependency
+from decision_forge.document_formats import MAX_FRAGMENTS, Fragment, dependency
 from decision_forge.io import MAX_SOURCE_BYTES, digest, read_json, write_json
 from decision_forge.models import Contract
+
+# Cached OCR results and service responses carry layout metadata, so they may exceed the text limit.
+MAX_OCR_ARTIFACT_BYTES = 4 * MAX_SOURCE_BYTES
 
 
 class OCRConfig(Contract):
@@ -155,7 +158,7 @@ class OCRRunner:
         path = self.cache / f"{key}.json"
         with FileLock(str(path) + ".lock", timeout=0):
             if path.exists():
-                if path.stat().st_size > 4 * MAX_SOURCE_BYTES:
+                if path.stat().st_size > MAX_OCR_ARTIFACT_BYTES:
                     raise ValueError("Oversized OCR cache entry")
                 cached = read_json(path)
                 if cached.get("key") != key or cached.get("digest") != digest(cached.get("result")):
@@ -166,7 +169,7 @@ class OCRRunner:
                     raise ValueError("OCR page-call limit exhausted")
                 self.calls += 1
                 event = self.cache / f"{key}.attempt.json"
-                if event.exists() and event.stat().st_size > 4 * MAX_SOURCE_BYTES:
+                if event.exists() and event.stat().st_size > MAX_OCR_ARTIFACT_BYTES:
                     raise ValueError("Oversized OCR attempt journal")
                 attempts = read_json(event) if event.exists() else []
                 attempts.append({"key": key, "attempt": len(attempts) + 1, "status": "reserved", "usage": None})
@@ -192,7 +195,7 @@ class OCRRunner:
     def _check(self, lines: list[OCRLine]) -> None:
         if not lines or not any(line.text.strip() for line in lines):
             raise ValueError("OCR found no text; provide a transcription for blank or unreadable pages")
-        if len(lines) > 100_000 or sum(len(line.text.encode()) + 1 for line in lines) > MAX_SOURCE_BYTES:
+        if len(lines) > MAX_FRAGMENTS or sum(len(line.text.encode()) + 1 for line in lines) > MAX_SOURCE_BYTES:
             raise ValueError("OCR output exceeds the source text limit")
         if any(line.confidence is not None and line.confidence < self.config.min_confidence for line in lines):
             raise ValueError("OCR confidence is below the configured threshold; review the source before retrying")
@@ -303,7 +306,7 @@ class OCRRunner:
                 data = bytearray()
                 for chunk in response.iter_bytes():
                     data.extend(chunk)
-                    if len(data) > 4 * MAX_SOURCE_BYTES:
+                    if len(data) > MAX_OCR_ARTIFACT_BYTES:
                         raise ValueError("OCR response exceeds the size limit")
             body = json.loads(data)
             usage = body.get("usage")

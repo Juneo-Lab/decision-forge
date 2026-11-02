@@ -12,6 +12,13 @@ from typing import Any
 
 from decision_forge.io import MAX_SOURCE_BYTES
 
+# Ingestion limits keep hostile or malformed files from exhausting memory before parsing finishes.
+MAX_ARCHIVE_MEMBERS = 5000
+MAX_ARCHIVE_EXPANDED_BYTES = 50_000_000
+MAX_SPREADSHEET_CELLS = 200_000
+MAX_SLIDES = 500
+MAX_FRAGMENTS = 100_000
+
 
 @dataclass
 class Fragment:
@@ -34,7 +41,7 @@ def check_office_archive(path: Path) -> None:
     try:
         with zipfile.ZipFile(path) as archive:
             items = archive.infolist()
-            if len(items) > 5000 or sum(item.file_size for item in items) > 50_000_000:
+            if len(items) > MAX_ARCHIVE_MEMBERS or sum(item.file_size for item in items) > MAX_ARCHIVE_EXPANDED_BYTES:
                 raise ValueError("Office archive exceeds expanded size/member limits")
             if any(item.flag_bits & 1 for item in items):
                 raise ValueError("Encrypted office archives must be decrypted before ingestion")
@@ -83,13 +90,13 @@ def office_fragments(path: Path, kind: str) -> Iterator[Fragment]:
         count = 0
         try:
             for sheet in workbook:
-                if (sheet.max_row or 0) * (sheet.max_column or 0) > 200_000:
+                if (sheet.max_row or 0) * (sheet.max_column or 0) > MAX_SPREADSHEET_CELLS:
                     raise ValueError("Spreadsheet exceeds the 200,000-cell traversal limit")
                 # Third-party writers can under-report dimensions; stream the actual XML.
                 sheet.reset_dimensions()
                 for row in sheet.iter_rows():
                     count += max(1, len(row))
-                    if count > 200_000:
+                    if count > MAX_SPREADSHEET_CELLS:
                         raise ValueError("Spreadsheet exceeds the 200,000-cell traversal limit")
                     for cell in row:
                         if cell.value is not None:
@@ -102,7 +109,7 @@ def office_fragments(path: Path, kind: str) -> Iterator[Fragment]:
     elif kind == "pptx":
         pptx = dependency("pptx", "documents")
         presentation = pptx.Presentation(path)
-        if len(presentation.slides) > 500:
+        if len(presentation.slides) > MAX_SLIDES:
             raise ValueError("Presentation exceeds the 500-slide limit")
 
         def shapes(items: Any, prefix: str) -> Iterator[Fragment]:
@@ -161,7 +168,7 @@ def collect(fragments: Iterator[Fragment]) -> list[Fragment]:
         if not fragment.text.strip():
             continue
         total += len(fragment.text.encode()) + 1
-        if total > MAX_SOURCE_BYTES or len(result) >= 100_000:
+        if total > MAX_SOURCE_BYTES or len(result) >= MAX_FRAGMENTS:
             raise ValueError("Normalized source exceeds text/fragment limits")
         result.append(fragment)
     return result

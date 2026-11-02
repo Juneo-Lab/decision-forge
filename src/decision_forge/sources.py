@@ -28,6 +28,9 @@ from decision_forge.models import Contract, Identifier, ensure_unique
 from decision_forge.ocr import OCRConfig, OCRRunner, image_png
 
 PDF_RENDER_LOCK = RLock()
+MAX_PDF_PAGES = 500
+MAX_PDF_PAGE_CONTENT_BYTES = 10_000_000
+MAX_WORKFLOW_DEPTH = 64
 
 
 class AccessMetadata(Contract):
@@ -108,7 +111,7 @@ class PDFAdapter:
         reader = pypdf.PdfReader(path)
         if reader.is_encrypted:
             raise ValueError("Encrypted PDFs must be decrypted before ingestion")
-        if len(reader.pages) > 500:
+        if len(reader.pages) > MAX_PDF_PAGES:
             raise ValueError("PDF exceeds the 500-page ingestion limit")
         text = ""
         spans = []
@@ -117,7 +120,7 @@ class PDFAdapter:
             value = ""
             if not (self.runner and self.runner.config.mode == "always"):
                 content = page.get_contents()
-                if content is not None and len(content.get_data()) > 10_000_000:
+                if content is not None and len(content.get_data()) > MAX_PDF_PAGE_CONTENT_BYTES:
                     raise ValueError("PDF page exceeds the decoded content limit")
                 value = normalize_newlines(page.extract_text() or "")
             if self.runner and (self.runner.config.mode == "always" or not value.strip()):
@@ -182,7 +185,7 @@ class WorkflowAdapter:
         segments: list[tuple[str, str]] = []
 
         def visit(value: object, pointer: str, depth: int = 0) -> None:
-            if depth > 64:
+            if depth > MAX_WORKFLOW_DEPTH:
                 raise ValueError("Workflow nesting exceeds 64 levels")
             if isinstance(value, dict):
                 for key, child in value.items():
