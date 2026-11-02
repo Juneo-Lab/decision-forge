@@ -18,10 +18,18 @@ MAX_WITNESSES = 5
 ReviewDecision = Literal["accepted", "rejected"]
 
 
-def _rule_items(project: Project, hashes: dict[str, str]) -> dict[str, dict[str, Any]]:
+def _source_registry(project: Project, hashes: dict[str, str]) -> dict[str, dict[str, Any]]:
+    """Each source's declared record and content hash; review items bind to the sources they cite."""
+    return {s.id: {"record": s.model_dump(mode="json"), "hash": hashes[s.id]} for s in project.sources}
+
+
+def _same_condition(left: Rule, right: Rule) -> bool:
+    return canonical(left.when.model_dump()) == canonical(right.when.model_dump())
+
+
+def _rule_items(project: Project, registry: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Review items for single rules, each bound to the sources its evidence cites."""
     items = {}
-    registry = {s.id: {"record": s.model_dump(mode="json"), "hash": hashes[s.id]} for s in project.sources}
     for rule in project.organization.rules:
         sources = {evidence.source_id for evidence in rule.evidence}
         items[f"rule:{rule.id}"] = {
@@ -46,7 +54,7 @@ def _shadowing(left: Rule, right: Rule) -> bool:
     if left.effect != right.effect or left.priority == right.priority:
         return False
     higher, lower = (left, right) if left.priority > right.priority else (right, left)
-    if canonical(higher.when.model_dump()) == canonical(lower.when.model_dump()):
+    if _same_condition(higher, lower):
         return True
     if higher.when.any_of or lower.when.any_of:
         return False
@@ -70,7 +78,8 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
     project = load_project(spec)
     _, hashes = load_sources(project, spec.parent)
     fingerprint = digest({"project": project.model_dump(), "sources": hashes})
-    rule_items = _rule_items(project, hashes)
+    registry = _source_registry(project, hashes)
+    rule_items = _rule_items(project, registry)
     rule_fingerprints = {item_id.removeprefix("rule:"): item_fingerprint(item) for item_id, item in rule_items.items()}
     items: list[dict[str, Any]] = [{"id": item_id, **item} for item_id, item in sorted(rule_items.items())]
     items.append(
@@ -85,10 +94,11 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
             },
         }
     )
-    registry = {s.id: {"record": s.model_dump(mode="json"), "hash": hashes[s.id]} for s in project.sources}
     rules = {r.id: r for r in project.organization.rules}
     for node in project.nodes:
+        # Review lists rules in node order; identities and fingerprints elsewhere use organization order.
         node_rules = [rules[i] for i in node.rule_ids]
+        scenarios = [s for s in project.scenarios if s.node_id == node.id]
         items.append(
             {
                 "id": f"node:{node.id}",
@@ -96,30 +106,27 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
                 "content": {
                     "node": node.model_dump(mode="json"),
                     "rules": {r.id: rule_fingerprints[r.id] for r in node_rules},
-                    "scenarios": [s.model_dump(mode="json") for s in project.scenarios if s.node_id == node.id],
+                    "scenarios": [s.model_dump(mode="json") for s in scenarios],
                 },
                 "sources": {
                     source: registry[source]
                     for source in sorted(
                         {e.source_id for r in node_rules for e in r.evidence}
-                        | {i for s in project.scenarios if s.node_id == node.id for i in s.source_ids}
+                        | {i for s in scenarios for i in s.source_ids}
                     )
                 },
             }
         )
         node_fingerprint = item_fingerprint(items[-1])
         situations = [
-            (scenario.id, variant)
-            for scenario in project.scenarios
-            if scenario.node_id == node.id
-            for variant in family_variants(project, scenario)
+            (scenario.id, variant) for scenario in scenarios for variant in family_variants(project, scenario)
         ]
         for left, right in combinations(node_rules, 2):
             opposite = left.effect != right.effect
             shadow = _shadowing(left, right)
             if not opposite and not shadow:
                 continue
-            identical = canonical(left.when.model_dump()) == canonical(right.when.model_dump())
+            identical = _same_condition(left, right)
             witnesses = _witnesses(left, right, situations) if opposite else []
             # Synthesis can reach states the deterministic pool never samples, so a pair that is not
             # provably disjoint is reviewed even before any generated state exercises it.
