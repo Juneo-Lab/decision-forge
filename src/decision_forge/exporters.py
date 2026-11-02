@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any, Literal, get_args
 
 from decision_forge.inputs import model_input
-from decision_forge.io import atomic_text, canonical, digest, read_json, write_json
-from decision_forge.pipeline import load_run
+from decision_forge.io import atomic_text, canonical, digest, write_json
+from decision_forge.pipeline import load_run, run_digest
 from decision_forge.splits import SPLITS
 from decision_forge.training import decision_row
 
@@ -29,7 +29,7 @@ def export_run(
     if train_limit is not None and train_limit < 1:
         raise ValueError("Training example limit must be positive")
     episodes = load_run(run)
-    dataset_digest = read_json(run / "manifest.json")["dataset_digest"]
+    dataset_digest = run_digest(run)
     if output.resolve() == run.resolve():
         raise ValueError("Export to a separate directory")
     if output.exists() and any(output.iterdir()):

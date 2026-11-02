@@ -7,11 +7,13 @@ from contextlib import closing
 from pathlib import Path
 from typing import Any, Literal
 
+from filelock import FileLock
 from pydantic import Field, JsonValue
 
-from decision_forge.io import canonical, digest, load_project, read_json, write_json
+from decision_forge.io import canonical, digest, load_project, load_sources, read_json, write_json
 from decision_forge.models import Contract, Identifier, Split
-from decision_forge.pipeline import load_run, load_run_project
+from decision_forge.pipeline import _build, load_run, load_run_project, run_digest
+from decision_forge.review import require_review
 from decision_forge.splits import read_lock, resolve_splits, write_lock
 
 
@@ -137,7 +139,7 @@ def feedback_requests(run: Path, database: Path) -> dict[str, Any]:
         )
     return {
         "protocol": "development-review-feedback-v1",
-        "dataset_digest": read_json(run / "manifest.json")["dataset_digest"],
+        "dataset_digest": run_digest(run),
         "requests": requests,
         "excluded": excluded,
         "observations_used_as_labels": 0,
@@ -168,23 +170,17 @@ def lineage(run: Path) -> dict[str, Any]:
 
 def update_dataset(spec: Path, previous: Path, output: Path, cache: Path | None = None) -> dict[str, Any]:
     """Rebuild after policy changes while preserving all published family assignments."""
-    from filelock import FileLock
-
-    from decision_forge.io import load_sources
-    from decision_forge.pipeline import _build
-    from decision_forge.review import require_review
-
     project = load_project(spec)
     require_review(spec)
     previous_manifest = read_json(previous / "manifest.json")
-    load_run(previous)
+    previous_episodes = load_run(previous)
     previous_project = load_run_project(previous)
     if project.organization.id != previous_project.organization.id:
         raise ValueError("A dataset update must retain organization identity")
     old_splits: dict[str, Split] = (
         previous_manifest.get("family_registry")
         or previous_manifest.get("family_splits")
-        or {e.family_id: e.split for e in load_run(previous)}
+        or {e.family_id: e.split for e in previous_episodes}
     )
     for family, split in project.recipe.family_splits.items():
         if family in old_splits and split != old_splits[family]:

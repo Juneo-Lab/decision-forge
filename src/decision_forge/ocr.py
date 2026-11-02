@@ -6,6 +6,7 @@ import base64
 import csv
 import hashlib
 import io
+import json
 import math
 import os
 import shutil
@@ -304,8 +305,6 @@ class OCRRunner:
                     data.extend(chunk)
                     if len(data) > 4 * MAX_SOURCE_BYTES:
                         raise ValueError("OCR response exceeds the size limit")
-            import json
-
             body = json.loads(data)
             usage = body.get("usage")
             safe_usage = (

@@ -7,8 +7,9 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any, TypedDict
 
-from decision_forge.exporters import export_run, model_input
-from decision_forge.io import canonical, digest, load_project, load_sources, read_json, write_json
+from decision_forge.exporters import export_run
+from decision_forge.inputs import model_input
+from decision_forge.io import atomic_text, canonical, digest, load_project, load_sources, read_json, write_json
 from decision_forge.pipeline import build, load_run
 from decision_forge.review import require_review, review_status
 
@@ -73,8 +74,6 @@ def designer_process(run: Path, output: Path) -> dict[str, Any]:
         for e in episodes
     ]
     seed_path = output.resolve() / "seed.jsonl"
-    from decision_forge.io import atomic_text
-
     atomic_text(seed_path, "".join(canonical(row) + "\n" for row in seeds))
     # Explicit configuration prevents the SDK's first-run default setup (or a
     # user's later edits to it) from changing the resumable job fingerprint.

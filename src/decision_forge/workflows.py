@@ -14,7 +14,7 @@ from pydantic import Field, JsonValue, model_validator
 
 from decision_forge.corpus import CallJournal
 from decision_forge.generation import set_path
-from decision_forge.io import digest
+from decision_forge.io import canonical, digest
 from decision_forge.models import Contract, Identifier, Project, Split, dotted_path, paths_overlap
 from decision_forge.policy import best_choices, evaluate
 from decision_forge.providers import StructuredProvider
@@ -211,8 +211,6 @@ def solve_workflow(
     project: Project, task: WorkflowTask, provider: StructuredProvider, journal: CallJournal | None = None
 ) -> dict[str, Any]:
     """Run one explicitly supplied provider; no gold choices appear in requests."""
-    from decision_forge.io import canonical
-
     env = WorkflowEnvironment(project, task)
     calls: list[dict[str, Any]] = []
     started = time.monotonic()
