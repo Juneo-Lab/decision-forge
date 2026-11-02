@@ -10,7 +10,7 @@ from pydantic import Field, JsonValue
 from decision_forge.compatibility import project_payload
 from decision_forge.generation import candidate_for, set_path
 from decision_forge.io import digest
-from decision_forge.models import Contract, DecisionKind, Project, ensure_unique
+from decision_forge.models import Contract, DecisionKind, Project, ensure_unique, paths_overlap
 from decision_forge.policy import best_choices, evaluate, json_equal
 
 
@@ -67,7 +67,7 @@ def evaluate_decisions(
             raise ValueError("Every reference fact requires an explicit input binding")
         paths = [b.path for b in binding.facts]
         ensure_unique(paths, "evaluation binding paths")
-        if any(a != b and b.startswith(a + ".") for a in paths for b in paths):
+        if paths_overlap(paths):
             raise ValueError("Evaluation binding paths must not overlap")
         state: dict[str, Any] = {}
         candidates = [c.model_copy(deep=True) for c in node.candidates]

@@ -15,7 +15,7 @@ from pydantic import Field, JsonValue, model_validator
 from decision_forge.corpus import CallJournal
 from decision_forge.generation import set_path
 from decision_forge.io import digest
-from decision_forge.models import Contract, Identifier, Project, Split
+from decision_forge.models import Contract, Identifier, Project, Split, dotted_path, paths_overlap
 from decision_forge.policy import best_choices, evaluate
 from decision_forge.providers import StructuredProvider
 
@@ -53,9 +53,9 @@ class WorkflowTask(Contract):
             ):
                 raise ValueError("Effects and escalation choices must reference declared transitions")
             for effects in step.effects.values():
-                if any(not key or any(not part for part in key.split(".")) for key in effects):
+                if not all(dotted_path(key) for key in effects):
                     raise ValueError("Effect paths must be nonempty dotted paths")
-                if any(a != b and b.startswith(a + ".") for a in effects for b in effects):
+                if paths_overlap(list(effects)):
                     raise ValueError("Effect paths must not overlap")
         return self
 
