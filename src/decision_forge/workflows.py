@@ -14,8 +14,16 @@ from pydantic import Field, JsonValue, model_validator
 
 from decision_forge.corpus import CallJournal
 from decision_forge.generation import set_path
-from decision_forge.io import digest
-from decision_forge.models import Contract, Identifier, Project, Split
+from decision_forge.io import canonical, digest
+from decision_forge.models import (
+    CandidateVerdict,
+    Contract,
+    Identifier,
+    Project,
+    Split,
+    dotted_path,
+    paths_overlap,
+)
 from decision_forge.policy import best_choices, evaluate
 from decision_forge.providers import StructuredProvider
 
@@ -40,6 +48,12 @@ class WorkflowTask(Contract):
     success_states: dict[str, JsonValue] = Field(default_factory=dict)
     max_steps: int = Field(default=20, ge=1, le=100)
 
+    def step(self, step_id: str | None) -> WorkflowStep:
+        found = next((step for step in self.steps if step.id == step_id), None)
+        if found is None:
+            raise ValueError(f"Workflow {self.id} has no step {step_id}")
+        return found
+
     @model_validator(mode="after")
     def references(self) -> Self:
         ids = {s.id for s in self.steps}
@@ -53,9 +67,9 @@ class WorkflowTask(Contract):
             ):
                 raise ValueError("Effects and escalation choices must reference declared transitions")
             for effects in step.effects.values():
-                if any(not key or any(not part for part in key.split(".")) for key in effects):
+                if not all(dotted_path(key) for key in effects):
                     raise ValueError("Effect paths must be nonempty dotted paths")
-                if any(a != b and b.startswith(a + ".") for a in effects for b in effects):
+                if paths_overlap(list(effects)):
                     raise ValueError("Effect paths must not overlap")
         return self
 
@@ -105,7 +119,7 @@ class WorkflowEnvironment:
     def observe(self) -> dict[str, Any]:
         if self.done:
             return {"task_id": self.task.id, "done": True, "state": copy.deepcopy(self.state)}
-        step = next(s for s in self.task.steps if s.id == self.current)
+        step = self.task.step(self.current)
         node = self.project.node(step.node_id)
         return {
             "task_id": self.task.id,
@@ -121,11 +135,8 @@ class WorkflowEnvironment:
     def call(self, tool: str, choice: str) -> dict[str, Any]:
         if self.done:
             raise ValueError("Workflow has ended; reset before another action")
-        step = next(s for s in self.task.steps if s.id == self.current)
-        node = self.project.node(step.node_id)
-        rules = self.project.select_rules(node.rule_ids)
-        verdicts = evaluate(self.state, node.candidates, rules)
-        permitted = tool == step.tool and any(v.candidate_id == choice and v.allowed for v in verdicts)
+        step = self.task.step(self.current)
+        permitted = _permitted(step, _verdicts(self.project, step, self.state), tool, choice)
         before = copy.deepcopy(self.state)
         if permitted:
             self.state = _apply(self.state, step.effects.get(choice, {}))
@@ -145,6 +156,16 @@ class WorkflowEnvironment:
         return {"permitted": permitted, "observation": self.observe()}
 
 
+def _verdicts(project: Project, step: WorkflowStep, state: dict[str, Any]) -> list[CandidateVerdict]:
+    node = project.node(step.node_id)
+    return evaluate(state, node.candidates, project.select_rules(node.rule_ids))
+
+
+def _permitted(step: WorkflowStep, verdicts: list[CandidateVerdict], tool: Any, choice: Any) -> bool:
+    """Whether the step's own tool was used for a choice the declared policy allows."""
+    return tool == step.tool and any(v.candidate_id == choice and v.allowed for v in verdicts)
+
+
 def grade_workflow(project: Project, task: WorkflowTask, trace: list[dict[str, Any]]) -> dict[str, Any]:
     """Replay independently without trusting runtime verdicts, state claims or success flags."""
     validate_task(project, task)
@@ -160,12 +181,9 @@ def grade_workflow(project: Project, task: WorkflowTask, trace: list[dict[str, A
         if current is None:
             invalid = "Trace continues after termination"
             break
-        step = next(s for s in task.steps if s.id == current)
-        node = project.node(step.node_id)
-        verdicts = evaluate(state, node.candidates, project.select_rules(node.rule_ids))
-        allowed = event.get("tool") == step.tool and any(
-            v.candidate_id == event.get("choice") and v.allowed for v in verdicts
-        )
+        step = task.step(current)
+        verdicts = _verdicts(project, step, state)
+        allowed = _permitted(step, verdicts, event.get("tool"), event.get("choice"))
         expected_after = _apply(state, step.effects.get(event["choice"], {})) if allowed else state
         expected_next = step.next_steps[event["choice"]] if allowed else current
         expected = {
@@ -203,6 +221,9 @@ def grade_workflow(project: Project, task: WorkflowTask, trace: list[dict[str, A
     }
 
 
+SOLVER_PROMPT = "Select the next permitted business action using the supplied policy and state. Return one choice ID."
+
+
 class WorkflowChoice(Contract):
     choice: str
 
@@ -211,8 +232,6 @@ def solve_workflow(
     project: Project, task: WorkflowTask, provider: StructuredProvider, journal: CallJournal | None = None
 ) -> dict[str, Any]:
     """Run one explicitly supplied provider; no gold choices appear in requests."""
-    from decision_forge.io import canonical
-
     env = WorkflowEnvironment(project, task)
     calls: list[dict[str, Any]] = []
     started = time.monotonic()
@@ -221,15 +240,16 @@ def solve_workflow(
         observation = env.observe()
         before = time.monotonic()
         try:
-            system = (
-                "Select the next permitted business action using the supplied policy and state. Return one choice ID."
-            )
             if journal:
                 output = journal.invoke(
-                    provider, digest(observation), system, canonical(observation), WorkflowChoice.model_json_schema()
+                    provider,
+                    digest(observation),
+                    SOLVER_PROMPT,
+                    canonical(observation),
+                    WorkflowChoice.model_json_schema(),
                 )
             else:
-                output = provider.generate(system, canonical(observation), WorkflowChoice.model_json_schema())
+                output = provider.generate(SOLVER_PROMPT, canonical(observation), WorkflowChoice.model_json_schema())
             choice = WorkflowChoice.model_validate(output).choice
             env.call(observation["tool"], choice)
         except (ValueError, OSError) as exc:

@@ -6,6 +6,7 @@ import base64
 import csv
 import hashlib
 import io
+import json
 import math
 import os
 import shutil
@@ -20,9 +21,12 @@ import httpx
 from filelock import FileLock
 from pydantic import Field, model_validator
 
-from decision_forge.document_formats import Fragment, dependency
+from decision_forge.document_formats import MAX_FRAGMENTS, Fragment, dependency
 from decision_forge.io import MAX_SOURCE_BYTES, digest, read_json, write_json
 from decision_forge.models import Contract
+
+# Cached OCR results and service responses carry layout metadata, so they may exceed the text limit.
+MAX_OCR_ARTIFACT_BYTES = 4 * MAX_SOURCE_BYTES
 
 
 class OCRConfig(Contract):
@@ -114,7 +118,7 @@ class OCRRunner:
                 self.paths[key] = str(path)
                 models[key] = hashlib.sha256(path.read_bytes()).hexdigest()
         dependency("PIL.Image", "ocr")
-        packages = {name: version(name) for name in ("Pillow",)}
+        packages = {"Pillow": version("Pillow")}
         if config.backend == "rapidocr":
             dependency("rapidocr", "ocr-rapid")
             packages.update({name: version(name) for name in ("rapidocr", "onnxruntime")})
@@ -154,7 +158,7 @@ class OCRRunner:
         path = self.cache / f"{key}.json"
         with FileLock(str(path) + ".lock", timeout=0):
             if path.exists():
-                if path.stat().st_size > 4 * MAX_SOURCE_BYTES:
+                if path.stat().st_size > MAX_OCR_ARTIFACT_BYTES:
                     raise ValueError("Oversized OCR cache entry")
                 cached = read_json(path)
                 if cached.get("key") != key or cached.get("digest") != digest(cached.get("result")):
@@ -165,7 +169,7 @@ class OCRRunner:
                     raise ValueError("OCR page-call limit exhausted")
                 self.calls += 1
                 event = self.cache / f"{key}.attempt.json"
-                if event.exists() and event.stat().st_size > 4 * MAX_SOURCE_BYTES:
+                if event.exists() and event.stat().st_size > MAX_OCR_ARTIFACT_BYTES:
                     raise ValueError("Oversized OCR attempt journal")
                 attempts = read_json(event) if event.exists() else []
                 attempts.append({"key": key, "attempt": len(attempts) + 1, "status": "reserved", "usage": None})
@@ -191,7 +195,7 @@ class OCRRunner:
     def _check(self, lines: list[OCRLine]) -> None:
         if not lines or not any(line.text.strip() for line in lines):
             raise ValueError("OCR found no text; provide a transcription for blank or unreadable pages")
-        if len(lines) > 100_000 or sum(len(line.text.encode()) + 1 for line in lines) > MAX_SOURCE_BYTES:
+        if len(lines) > MAX_FRAGMENTS or sum(len(line.text.encode()) + 1 for line in lines) > MAX_SOURCE_BYTES:
             raise ValueError("OCR output exceeds the source text limit")
         if any(line.confidence is not None and line.confidence < self.config.min_confidence for line in lines):
             raise ValueError("OCR confidence is below the configured threshold; review the source before retrying")
@@ -200,56 +204,62 @@ class OCRRunner:
         if self.config.backend == "openai":
             return self._remote(png)
         if self.config.backend == "tesseract":
-            with tempfile.TemporaryDirectory(prefix="forge-ocr-") as folder:
-                image = Path(folder) / "page.png"
-                image.write_bytes(png)
-                try:
-                    result = subprocess.run(
-                        [
-                            self.binary,
-                            str(image),
-                            "stdout",
-                            "--tessdata-dir",
-                            self.paths["tessdata_dir"],
-                            "-l",
-                            self.config.language,
-                            "tsv",
-                        ],
-                        capture_output=True,
-                        timeout=self.config.timeout_seconds,
-                        check=True,
-                    )
-                except (subprocess.SubprocessError, OSError):
-                    raise ValueError("Tesseract OCR failed or timed out") from None
-            grouped: dict[tuple[str, ...], list[OCRLine]] = {}
-            for row in csv.DictReader(io.StringIO(result.stdout.decode("utf-8")), delimiter="\t"):
-                if not row.get("text", "").strip() or float(row["conf"]) < 0:
-                    continue
-                left, top, width, height = (float(row[k]) for k in ("left", "top", "width", "height"))
-                key = tuple(row[k] for k in ("page_num", "block_num", "par_num", "line_num"))
-                grouped.setdefault(key, []).append(
-                    OCRLine(
-                        text=row["text"],
-                        confidence=float(row["conf"]) / 100,
-                        box=[left, top, left + width, top + height],
-                    )
+            return self._tesseract(png), None
+        return self._rapidocr(png), None
+
+    def _tesseract(self, png: bytes) -> list[OCRLine]:
+        with tempfile.TemporaryDirectory(prefix="forge-ocr-") as folder:
+            image = Path(folder) / "page.png"
+            image.write_bytes(png)
+            try:
+                result = subprocess.run(
+                    [
+                        self.binary,
+                        str(image),
+                        "stdout",
+                        "--tessdata-dir",
+                        self.paths["tessdata_dir"],
+                        "-l",
+                        self.config.language,
+                        "tsv",
+                    ],
+                    capture_output=True,
+                    timeout=self.config.timeout_seconds,
+                    check=True,
                 )
-            lines = []
-            for words in grouped.values():
-                boxes = [word.box for word in words if word.box is not None]
-                lines.append(
-                    OCRLine(
-                        text=" ".join(word.text for word in words),
-                        confidence=min(word.confidence for word in words if word.confidence is not None),
-                        box=[
-                            min(b[0] for b in boxes),
-                            min(b[1] for b in boxes),
-                            max(b[2] for b in boxes),
-                            max(b[3] for b in boxes),
-                        ],
-                    )
+            except (subprocess.SubprocessError, OSError):
+                raise ValueError("Tesseract OCR failed or timed out") from None
+        grouped: dict[tuple[str, ...], list[OCRLine]] = {}
+        for row in csv.DictReader(io.StringIO(result.stdout.decode("utf-8")), delimiter="\t"):
+            if not row.get("text", "").strip() or float(row["conf"]) < 0:
+                continue
+            left, top, width, height = (float(row[k]) for k in ("left", "top", "width", "height"))
+            key = tuple(row[k] for k in ("page_num", "block_num", "par_num", "line_num"))
+            grouped.setdefault(key, []).append(
+                OCRLine(
+                    text=row["text"],
+                    confidence=float(row["conf"]) / 100,
+                    box=[left, top, left + width, top + height],
                 )
-            return lines, None
+            )
+        lines = []
+        for words in grouped.values():
+            boxes = [word.box for word in words if word.box is not None]
+            lines.append(
+                OCRLine(
+                    text=" ".join(word.text for word in words),
+                    confidence=min(word.confidence for word in words if word.confidence is not None),
+                    box=[
+                        min(b[0] for b in boxes),
+                        min(b[1] for b in boxes),
+                        max(b[2] for b in boxes),
+                        max(b[3] for b in boxes),
+                    ],
+                )
+            )
+        return lines
+
+    def _rapidocr(self, png: bytes) -> list[OCRLine]:
         rapidocr = dependency("rapidocr", "ocr-rapid")
         if self.engine is None:
             self.engine = rapidocr.RapidOCR(
@@ -265,12 +275,12 @@ class OCRRunner:
             )
         result = self.engine(png, use_cls=False)
         if result.txts is None:
-            return [], None
+            return []
         lines = []
         for text, score, box in zip(result.txts, result.scores, result.boxes, strict=True):
             xs, ys = [float(point[0]) for point in box], [float(point[1]) for point in box]
             lines.append(OCRLine(text=text, confidence=float(score), box=[min(xs), min(ys), max(xs), max(ys)]))
-        return lines, None
+        return lines
 
     def _remote(self, png: bytes) -> tuple[list[OCRLine], dict[str, Any] | None]:
         payload = {
@@ -302,10 +312,8 @@ class OCRRunner:
                 data = bytearray()
                 for chunk in response.iter_bytes():
                     data.extend(chunk)
-                    if len(data) > 4 * MAX_SOURCE_BYTES:
+                    if len(data) > MAX_OCR_ARTIFACT_BYTES:
                         raise ValueError("OCR response exceeds the size limit")
-            import json
-
             body = json.loads(data)
             usage = body.get("usage")
             safe_usage = (

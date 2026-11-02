@@ -12,7 +12,6 @@ report out, with the held-out families identical for every arm.
 from __future__ import annotations
 
 import json
-import os
 import time
 from pathlib import Path
 from typing import Annotated, Any
@@ -23,7 +22,7 @@ from decision_forge.exporters import export_run
 from decision_forge.inputs import model_input
 from decision_forge.io import atomic_text, canonical, read_json, write_json
 from decision_forge.pipeline import load_run
-from decision_forge.providers import OpenAICompatibleProvider
+from decision_forge.providers import OpenAICompatibleProvider, env_api_key
 
 app = typer.Typer(no_args_is_help=True, help="Fixed-budget fine-tuning and held-out evaluation loop.")
 
@@ -274,7 +273,7 @@ def evaluate_command(
         provider = OpenAICompatibleProvider(
             base_url,
             model,
-            os.environ.get("FORGE_API_KEY", ""),
+            env_api_key(),
             retries=1,
             temperature=temperature,
             max_output_tokens=max_output_tokens,

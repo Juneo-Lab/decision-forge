@@ -7,7 +7,6 @@ Credentials are read from FORGE_API_KEY and never included in the report.
 from __future__ import annotations
 
 import argparse
-import os
 import time
 from pathlib import Path
 
@@ -15,7 +14,7 @@ from pydantic import ValidationError
 
 from decision_forge.corpus import CompilationOptions, compile_corpus, extraction_metrics
 from decision_forge.io import read_json, write_json
-from decision_forge.providers import OpenAICompatibleProvider
+from decision_forge.providers import OpenAICompatibleProvider, env_api_key
 
 
 def main() -> int:
@@ -35,7 +34,7 @@ def main() -> int:
     provider = OpenAICompatibleProvider(
         args.base_url,
         args.model,
-        os.environ.get("FORGE_API_KEY", ""),
+        env_api_key(),
         retries=0,
         temperature=None,
         reasoning_effort=args.reasoning_effort,

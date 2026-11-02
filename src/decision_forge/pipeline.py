@@ -301,6 +301,11 @@ def _generation_cost(expansion: dict[str, Any] | None, offline: int, synthesized
     }
 
 
+def run_digest(run: Path) -> str:
+    """Digest of a completed run's published episodes, as recorded in its manifest."""
+    return str(read_json(run / "manifest.json")["dataset_digest"])
+
+
 def load_run(path: Path) -> list[Episode]:
     manifest = read_json(path / "manifest.json")
     if manifest["status"] != "complete":

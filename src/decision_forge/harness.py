@@ -6,10 +6,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from decision_forge.exporters import model_input
+from decision_forge.inputs import model_input
 from decision_forge.io import atomic_text, digest, read_json, write_json
 from decision_forge.models import Episode
-from decision_forge.pipeline import load_run
+from decision_forge.pipeline import load_run, run_digest
 
 
 def replay(run: Path, predictions: Path) -> dict[str, Any]:
@@ -72,7 +72,6 @@ def export_harbor(run: Path, output: Path, limit: int = 20, split: str = "test")
     for episode in episodes:
         task = output / episode.id
         write_json(task / "environment/context.json", model_input(episode))
-        (task / "environment/context.json").chmod(0o644)
         atomic_text(
             task / "environment/Dockerfile",
             "FROM python:3.12-slim\nWORKDIR /workspace\nCOPY context.json /workspace/context.json\n",
@@ -125,7 +124,7 @@ output.mkdir(parents=True, exist_ok=True)
             "tasks": len(episodes),
             "episode_ids": [e.id for e in episodes],
             "sampling": "deterministic-round-robin-kind-stratum-v1",
-            "dataset_digest": read_json(run / "manifest.json")["dataset_digest"],
+            "dataset_digest": run_digest(run),
             "scope": "Decision tasks; full business workflow environments are planned.",
         },
     )

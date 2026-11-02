@@ -98,8 +98,13 @@ def atomic_text(path: Path, content: str, mode: int = 0o600) -> None:
             os.unlink(name)
 
 
+def json_text(value: Any) -> str:
+    """The exact text ``write_json`` stores: indented, UTF-8, no NaN, trailing newline."""
+    return json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+
+
 def write_json(path: Path, value: Any) -> None:
-    atomic_text(path, json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False) + "\n")
+    atomic_text(path, json_text(value))
 
 
 def read_jsonl(path: Path) -> list[Any]:

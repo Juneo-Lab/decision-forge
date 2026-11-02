@@ -3,25 +3,27 @@
 from __future__ import annotations
 
 import json
-import os
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, NoReturn, get_args
 
 import typer
 from filelock import Timeout
+from pydantic import ValidationError
 
 from decision_forge import __version__
 from decision_forge.compiler import compile_documents
 from decision_forge.corpus import CompilationOptions, compile_corpus, extraction_metrics
 from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD
 from decision_forge.evaluation import DecisionReference, NodeBinding, evaluate_decisions
-from decision_forge.exporters import export_run
+from decision_forge.exporters import ExportFormat, export_run
 from decision_forge.harness import export_harbor, replay
 from decision_forge.io import digest, load_project, load_sources, read_json, write_json
-from decision_forge.models import Project
-from decision_forge.pipeline import build, impact
-from decision_forge.providers import OpenAICompatibleProvider
-from decision_forge.review import record_review, review_status
+from decision_forge.models import Episode, Project, Split
+from decision_forge.pipeline import build, impact, load_run
+from decision_forge.providers import OpenAICompatibleProvider, ResponseMode, env_api_key
+from decision_forge.review import ReviewDecision, record_review, review_status
 from decision_forge.sources import ingest_manifest
 
 app = typer.Typer(no_args_is_help=True, help="Compile organizational workflows into verifiable decision data.")
@@ -31,13 +33,37 @@ def display(value: object) -> None:
     typer.echo(json.dumps(value, indent=2, ensure_ascii=False))
 
 
-def fail(exc: Exception) -> None:
+def fail(exc: Exception) -> NoReturn:
     # Validation errors may contain private source excerpts; display only their class here.
-    if type(exc).__name__ == "ValidationError":
+    if isinstance(exc, ValidationError):
         typer.echo("Error: specification validation failed; check field types and references.", err=True)
     else:
         typer.echo(f"Error: {exc}", err=True)
     raise typer.Exit(code=1)
+
+
+def choice(value: str, allowed: Any, message: str) -> Any:
+    """Return ``value`` if it is one of the ``Literal`` type's options, otherwise fail with ``message``."""
+    if value not in get_args(allowed):
+        raise ValueError(message)
+    return value
+
+
+def _episode(run: Path, episode_id: str) -> Episode:
+    episode = next((e for e in load_run(run) if e.id == episode_id), None)
+    if episode is None:
+        raise ValueError("Unknown episode ID")
+    return episode
+
+
+@contextmanager
+def cli_errors(*expected: type[Exception]) -> Iterator[None]:
+    """Report expected failures as a one-line error and exit code 1 instead of a traceback."""
+    handled: tuple[type[Exception], ...] = (ValueError, OSError, *expected)
+    try:
+        yield
+    except handled as exc:
+        fail(exc)
 
 
 @app.command()
@@ -58,7 +84,7 @@ def schema(output: Path | None = None) -> None:
 @app.command()
 def validate(spec: Path) -> None:
     """Validate project references and exact evidence quotations."""
-    try:
+    with cli_errors():
         project = load_project(spec)
         _, hashes = load_sources(project, spec.parent)
         display(
@@ -70,8 +96,6 @@ def validate(spec: Path) -> None:
                 "scenarios": len(project.scenarios),
             }
         )
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("build")
@@ -92,7 +116,7 @@ def build_command(
 
     The first build records every family's split in SPEC's split lock; later builds keep it.
     """
-    try:
+    with cli_errors(Timeout):
         display(
             build(
                 spec,
@@ -104,28 +128,22 @@ def build_command(
                 locked_splits=locked_splits,
             )["report"]
         )
-    except (ValueError, OSError, Timeout) as exc:
-        fail(exc)
 
 
 @app.command("export")
 def export_command(run: Path, output: Annotated[Path, typer.Option("--output", "-o")], format: str = "typed") -> None:
     """Export split-aware decision-probability, typed, SFT, or canonical training data."""
-    try:
-        if format not in {"typed", "sft", "canonical", "decision"}:
-            raise ValueError("Format must be typed, sft, canonical, or decision")
-        display(export_run(run, output, format))  # type: ignore[arg-type]
-    except (ValueError, OSError) as exc:
-        fail(exc)
+    with cli_errors():
+        display(
+            export_run(run, output, choice(format, ExportFormat, "Format must be typed, sft, canonical, or decision"))
+        )
 
 
 @app.command("impact")
 def impact_command(spec: Path, previous: Path) -> None:
     """Identify changed and reusable scenario families before rebuilding."""
-    try:
+    with cli_errors():
         display(impact(spec, previous))
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("compile")
@@ -140,8 +158,8 @@ def compile_command(
     Set FORGE_API_KEY for authenticated endpoints. The endpoint must support JSON responses;
     fixed records use native strict schemas.
     """
-    try:
-        provider = OpenAICompatibleProvider(base_url, model, os.environ.get("FORGE_API_KEY", ""))
+    with cli_errors():
+        provider = OpenAICompatibleProvider(base_url, model, env_api_key())
         project = compile_documents(sources, output, provider)
         display(
             {
@@ -151,20 +169,16 @@ def compile_command(
                 "evidence": "exact quotes checked; review policy interpretation before training",
             }
         )
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("replay")
 def replay_command(run: Path, predictions: Path, output: Path | None = None) -> None:
     """Score recorded candidate choices against a verified decision dataset."""
-    try:
+    with cli_errors():
         result = replay(run, predictions)
         if output:
             write_json(output, result)
         display({key: value for key, value in result.items() if key != "events"})
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("harbor-export")
@@ -175,12 +189,9 @@ def harbor_export_command(
     split: str = "test",
 ) -> None:
     """Create single-step decision task directories for Harbor."""
-    try:
-        if split not in {"train", "development", "test"}:
-            raise ValueError("Choose train, development, or test")
+    with cli_errors():
+        choice(split, Split, "Choose train, development, or test")
         display({"tasks": export_harbor(run, output, limit, split), "output": str(output)})
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("ingest")
@@ -192,14 +203,12 @@ def ingest_command(
     ] = False,
 ) -> None:
     """Normalize source documents with versions, access metadata, and source spans."""
-    try:
+    with cli_errors():
         if output.exists():
             raise ValueError("Ingestion output already exists")
         documents = ingest_manifest(manifest, allow_external_ocr=allow_external_ocr)
         write_json(output, [d.model_dump(mode="json") for d in documents])
         display({"sources": len(documents), "output": str(output)})
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("compile-corpus")
@@ -224,16 +233,15 @@ def compile_corpus_command(
     ] = False,
 ) -> None:
     """Send an explicit source corpus to a model, checkpoint extraction, and assemble a review draft."""
-    try:
+    with cli_errors(Timeout):
         # One journal reservation equals one HTTP attempt; retries require an explicit resume.
-        if response_mode not in {"auto", "json_schema", "json_object"}:
-            raise ValueError("Choose auto, json_schema, or json_object response mode")
+        mode = choice(response_mode, ResponseMode, "Choose auto, json_schema, or json_object response mode")
         provider = OpenAICompatibleProvider(
             base_url,
             model,
-            os.environ.get("FORGE_API_KEY", ""),
+            env_api_key(),
             retries=0,
-            response_mode=response_mode,  # type: ignore[arg-type]
+            response_mode=mode,
             reasoning_effort=reasoning_effort,
             temperature=temperature,
             max_output_tokens=max_output_tokens,
@@ -247,16 +255,16 @@ def compile_corpus_command(
             chunk_characters=chunk_characters,
             overlap_characters=overlap_characters,
         )
+        # The identity records temperature 0 whatever --temperature says. It keys existing caches and
+        # compilation fingerprints, so correcting it would orphan them; change it only with a version bump.
         identity = digest({"endpoint": provider.base_url, "model": model, "temperature": 0})
         display(compile_corpus(manifest, output, provider, identity, options, allow_external_ocr=allow_external_ocr))
-    except (ValueError, OSError, Timeout) as exc:
-        fail(exc)
 
 
 @app.command("review-status")
 def review_status_command(spec: Path, output: Path | None = None) -> None:
     """Inspect current rule/node reviews and observed rule conflicts; export details locally."""
-    try:
+    with cli_errors():
         status = review_status(spec)
         if output:
             write_json(output, status)
@@ -269,8 +277,6 @@ def review_status_command(spec: Path, output: Path | None = None) -> None:
                 ],
             }
         )
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("review-record")
@@ -283,31 +289,26 @@ def review_record_command(
     fingerprint: Annotated[str, typer.Option()],
 ) -> None:
     """Record a named review against the exact fingerprint shown by review-status."""
-    try:
-        if decision not in {"accepted", "rejected"}:
-            raise ValueError("Decision must be accepted or rejected")
-        event = record_review(spec, item, decision, reviewer, reason, fingerprint)  # type: ignore[arg-type]
+    with cli_errors(Timeout):
+        verdict = choice(decision, ReviewDecision, "Decision must be accepted or rejected")
+        event = record_review(spec, item, verdict, reviewer, reason, fingerprint)
         display({"recorded": event["item_id"], "decision": event["decision"], "hash": event["hash"]})
-    except (ValueError, OSError, Timeout) as exc:
-        fail(exc)
 
 
 @app.command("evaluate-extraction")
 def evaluate_extraction_command(predicted: Path, reference: Path, output: Path | None = None) -> None:
     """Compute exact source-span/kind metrics against a separately authored reference."""
-    try:
+    with cli_errors(KeyError, TypeError):
         result = extraction_metrics(read_json(predicted), read_json(reference))
         if output:
             write_json(output, result)
         display(result)
-    except (ValueError, OSError, KeyError, TypeError) as exc:
-        fail(exc)
 
 
 @app.command("evaluate-decisions")
 def evaluate_decisions_command(spec: Path, reference: Path, bindings: Path, output: Path | None = None) -> None:
     """Check compiled rule semantics against fixed model-neutral cases and explicit field bindings."""
-    try:
+    with cli_errors():
         project = load_project(spec)
         load_sources(project, spec.parent)
         raw_bindings = read_json(bindings)
@@ -321,8 +322,6 @@ def evaluate_decisions_command(spec: Path, reference: Path, bindings: Path, outp
         if output:
             write_json(output, result)
         display({key: value for key, value in result.items() if key != "events"})
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("workflow-run")
@@ -341,7 +340,7 @@ def workflow_run_command(
     from decision_forge.review import require_review
     from decision_forge.workflows import WorkflowTask, solve_workflow
 
-    try:
+    with cli_errors():
         if output.exists():
             raise ValueError("Workflow output already exists; choose a new directory")
         project = load_project(spec)
@@ -352,7 +351,7 @@ def workflow_run_command(
         provider = OpenAICompatibleProvider(
             base_url,
             model,
-            os.environ.get("FORGE_API_KEY", ""),
+            env_api_key(),
             retries=0,
             temperature=None,
             reasoning_effort=reasoning_effort,
@@ -369,8 +368,6 @@ def workflow_run_command(
             {"provider": provider.configuration, "task": task_spec.model_dump(mode="json")},
         )
         display({k: v for k, v in result.items() if k not in {"trace", "calls"}})
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("workflow-grade")
@@ -378,15 +375,13 @@ def workflow_grade_command(spec: Path, task: Path, trace: Path, output: Path | N
     """Recompute workflow utility and policy compliance from a recorded trace."""
     from decision_forge.workflows import WorkflowTask, grade_workflow
 
-    try:
+    with cli_errors(KeyError, TypeError):
         project = load_project(spec)
         load_sources(project, spec.parent)
         result = grade_workflow(project, WorkflowTask.model_validate(read_json(task)), read_json(trace))
         if output:
             write_json(output, result)
         display(result)
-    except (ValueError, OSError, KeyError, TypeError) as exc:
-        fail(exc)
 
 
 @app.command("events-ingest")
@@ -394,10 +389,8 @@ def events_ingest_command(events: Path, database: Annotated[Path, typer.Option()
     """Append versioned runtime events atomically; repeated identical IDs are idempotent."""
     from decision_forge.feedback import RuntimeEvent, ingest_events
 
-    try:
+    with cli_errors():
         display(ingest_events(database, [RuntimeEvent.model_validate(row) for row in read_json(events)]))
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("feedback-plan")
@@ -405,12 +398,10 @@ def feedback_plan_command(run: Path, database: Path, output: Annotated[Path, typ
     """Create generation requests only from explicitly reviewed development errors."""
     from decision_forge.feedback import feedback_requests
 
-    try:
+    with cli_errors():
         result = feedback_requests(run, database)
         write_json(output, result)
         display({"requests": len(result["requests"]), "excluded": result["excluded"]})
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("update")
@@ -420,10 +411,8 @@ def update_command(
     """Rebuild affected scenarios while freezing published train/development/test membership."""
     from decision_forge.feedback import update_dataset
 
-    try:
+    with cli_errors(Timeout):
         display(update_dataset(spec, previous, output, cache))
-    except (ValueError, OSError, Timeout) as exc:
-        fail(exc)
 
 
 @app.command("lineage")
@@ -431,12 +420,10 @@ def lineage_command(run: Path, output: Annotated[Path, typer.Option()]) -> None:
     """Export source-span, rule, scenario, and episode lineage for a completed dataset."""
     from decision_forge.feedback import lineage
 
-    try:
+    with cli_errors():
         result = lineage(run)
         write_json(output, result)
         display({"dataset_digest": result["dataset_digest"], "episodes": len(result["episodes"])})
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("orchestrate")
@@ -449,10 +436,8 @@ def orchestrate_command(
     """Run or resume a durable LangGraph review/build/export job (requires orchestration extra)."""
     from decision_forge.adapters import orchestrate
 
-    try:
+    with cli_errors(Timeout):
         display(orchestrate(spec, output, database, thread_id))
-    except (ValueError, OSError, Timeout) as exc:
-        fail(exc)
 
 
 @app.command("designer-process")
@@ -460,22 +445,18 @@ def designer_process_command(run: Path, output: Annotated[Path, typer.Option()])
     """Process ordered dataset seeds through the pinned Data Designer expression engine."""
     from decision_forge.adapters import designer_process
 
-    try:
+    with cli_errors():
         display(designer_process(run, output))
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("transform")
 def transform_command(run: Path, episode_id: str, intervention: Path, output: Annotated[Path, typer.Option()]) -> None:
     """Check a counterfactual or candidate-order rewrite and save its verified parent/child pair."""
-    from decision_forge.pipeline import load_run, load_run_project
+    from decision_forge.pipeline import load_run_project
     from decision_forge.transformations import Intervention, transform_episode
 
-    try:
-        parent = next((e for e in load_run(run) if e.id == episode_id), None)
-        if parent is None:
-            raise ValueError("Unknown episode ID")
+    with cli_errors():
+        parent = _episode(run, episode_id)
         request = Intervention.model_validate(read_json(intervention))
         child = transform_episode(load_run_project(run), parent, request)
         write_json(
@@ -487,8 +468,6 @@ def transform_command(run: Path, episode_id: str, intervention: Path, output: An
             },
         )
         display({"parent": parent.id, "child": child.id, "relation": request.relation, "verified": True})
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("plan-recipe")
@@ -508,7 +487,7 @@ def plan_recipe_command(
     from decision_forge.models import DistributionTarget
     from decision_forge.planner import PlanObjective, PlanOptions, plan_recipe
 
-    try:
+    with cli_errors(Timeout):
         if mode not in {"uniform_cells", "explicit"}:
             raise ValueError("Choose uniform_cells or explicit")
         objective = PlanObjective.model_validate(
@@ -524,7 +503,7 @@ def plan_recipe_command(
         if base_url or model:
             if not (base_url and model):
                 raise ValueError("An advisor model requires both --base-url and --model")
-            provider = OpenAICompatibleProvider(base_url, model, os.environ.get("FORGE_API_KEY", ""))
+            provider = OpenAICompatibleProvider(base_url, model, env_api_key())
         plan = plan_recipe(
             spec,
             output,
@@ -546,8 +525,6 @@ def plan_recipe_command(
                 "output": str(output),
             }
         )
-    except (ValueError, OSError, Timeout) as exc:
-        fail(exc)
 
 
 @app.command("expand")
@@ -567,11 +544,11 @@ def expand_command(
     """Synthesize extra examples with an explicit model call and verify every label by replay."""
     from decision_forge.expansion import ExpansionOptions, ProposalBatch, expand
 
-    try:
+    with cli_errors(Timeout):
         provider = OpenAICompatibleProvider(
             base_url,
             model,
-            os.environ.get("FORGE_API_KEY", ""),
+            env_api_key(),
             retries=0,
             temperature=None,
             max_output_tokens=max_output_tokens,
@@ -595,28 +572,25 @@ def expand_command(
                 max_input_bytes=max_input_bytes,
                 near_duplicate_threshold=near_duplicate_threshold,
             ),
+            # Unlike compile-corpus, this hashes the URL as typed (a trailing slash changes it). Kept
+            # as is because it keys resumable expansion artifacts.
             provider_id=digest({"endpoint": base_url, "model": model}),
         )
         display(summary)
-    except (ValueError, OSError, Timeout) as exc:
-        fail(exc)
 
 
 @app.command("dedup")
 def dedup_command(run: Path, output: Path | None = None, threshold: float = NEAR_DUPLICATE_THRESHOLD) -> None:
     """Report duplicate inputs and held-out leaks in a completed run."""
     from decision_forge.dedup import find_duplicates
-    from decision_forge.pipeline import load_run
 
-    try:
+    with cli_errors():
         report = find_duplicates(load_run(run), threshold=threshold)
         if output:
             write_json(output, report)
         display(
             {key: report[key] for key in ("protocol", "threshold", "examples", "kept", "removed", "cross_split_pairs")}
         )
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 @app.command("rewrite")
@@ -629,24 +603,20 @@ def rewrite_command(
     verifier_model: Annotated[str | None, typer.Option(help="Independent verifier model name.")] = None,
 ) -> None:
     """Paraphrase one presentation and publish it only after independent verification."""
-    from decision_forge.pipeline import load_run, load_run_project
+    from decision_forge.pipeline import load_run_project
     from decision_forge.transformations import rewrite_presentation
 
-    try:
-        provider = OpenAICompatibleProvider(base_url, model, os.environ.get("FORGE_API_KEY", ""), temperature=None)
+    with cli_errors():
+        provider = OpenAICompatibleProvider(base_url, model, env_api_key(), temperature=None)
         verifier = (
-            OpenAICompatibleProvider(base_url, verifier_model, os.environ.get("FORGE_API_KEY", ""), temperature=None)
+            OpenAICompatibleProvider(base_url, verifier_model, env_api_key(), temperature=None)
             if verifier_model
             else None
         )
-        parent = next((e for e in load_run(run) if e.id == episode_id), None)
-        if parent is None:
-            raise ValueError("Unknown episode ID")
+        parent = _episode(run, episode_id)
         child = rewrite_presentation(load_run_project(run), parent, provider, verifier)
         write_json(output, {"parent": parent.model_dump(mode="json"), "child": child.model_dump(mode="json")})
         display({"parent": parent.id, "child": child.id, "verified": True})
-    except (ValueError, OSError) as exc:
-        fail(exc)
 
 
 if __name__ == "__main__":

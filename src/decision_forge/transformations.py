@@ -12,7 +12,7 @@ from pydantic import Field, JsonValue
 from decision_forge.generation import policy_fingerprint, set_path
 from decision_forge.inputs import episode_presentation, presentation_text
 from decision_forge.io import canonical, digest
-from decision_forge.models import Contract, Episode, Project, Rule, Stratum
+from decision_forge.models import Contract, Episode, Project, Rule, Stratum, dotted_path, paths_overlap
 from decision_forge.policy import best_choices, evaluate
 from decision_forge.providers import StructuredProvider
 
@@ -52,9 +52,9 @@ def transform_episode(project: Project, parent: Episode, intervention: Intervent
     if intervention.stratum == "feedback" and parent.split != "train":
         raise ValueError("Adaptive feedback augmentation requires a training family")
     paths = list(intervention.state_updates)
-    if any(not p or any(not x for x in p.split(".")) for p in paths):
+    if not all(dotted_path(path) for path in paths):
         raise ValueError("Intervention paths must be nonempty")
-    if any(a != b and b.startswith(a + ".") for a in paths for b in paths):
+    if paths_overlap(paths):
         raise ValueError("Intervention paths must not overlap")
     child = parent.model_copy(deep=True)
     for path, value in intervention.state_updates.items():

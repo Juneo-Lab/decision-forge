@@ -147,10 +147,9 @@ class Node(Contract):
         ensure_unique(self.rule_ids, "node rule IDs")
         ensure_unique([d.path for d in self.dimensions], "dimension paths")
         candidate_ids = {c.id for c in self.candidates}
-        paths = [d.path for d in self.dimensions]
+        if paths_overlap([d.path for d in self.dimensions]):
+            raise ValueError("Dimension paths must not overlap")
         for dim in self.dimensions:
-            if any(path != dim.path and path.startswith(dim.path + ".") for path in paths):
-                raise ValueError("Dimension paths must not overlap")
             if dim.path.startswith("candidates."):
                 matches = [
                     candidate_id for candidate_id in candidate_ids if dim.path.startswith(f"candidates.{candidate_id}.")
@@ -309,6 +308,16 @@ class Episode(Contract):
     policy_fingerprint: str | None = None
     verifier: str = "policy-engine-v1"
     label_basis: str = "declarative_policy"
+
+
+def dotted_path(path: str) -> bool:
+    """Whether a path is a nonempty sequence of nonempty dot-separated parts."""
+    return bool(path) and all(path.split("."))
+
+
+def paths_overlap(paths: Collection[str]) -> bool:
+    """Whether one path is a strict prefix of another, so writing both would collide."""
+    return any(a != b and b.startswith(a + ".") for a in paths for b in paths)
 
 
 def ensure_unique(values: list[str], label: str) -> None:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
@@ -18,6 +17,7 @@ from decision_forge.io import (
     canonical,
     collapse_whitespace,
     digest,
+    json_text,
     load_project,
     load_sources,
     quote_span,
@@ -260,6 +260,38 @@ def _cached_call(
         return result, False
 
 
+def _resume_completed(output: Path, previous: dict[str, Any]) -> dict[str, Any] | None:
+    """Return a finished compilation, accepting reviewer edits that stay bound to extracted claims.
+
+    Returns ``None`` when an interrupted compilation has to continue instead.
+    """
+    draft = previous.get("status") == "draft"
+    if draft:
+        for name, expected_hash in previous["artifact_hashes"].items():
+            if digest(read_json(output / name)) != expected_hash:
+                raise ValueError("Completed compilation artifact integrity check failed")
+    if previous.get("project_digest") != digest(read_json(output / "project.json")):
+        # Business reviewers correct extracted rules in place. Accept the edit only when the
+        # result is still bound to extracted claims, then refresh the review queue.
+        if not draft:
+            raise ValueError("Interrupted compilation must be resumed before accepting project edits")
+        edited = assemble_project(
+            read_json(output / "project.json"),
+            corpus_sources(read_json(output / "corpus.json")),
+            read_json(output / "claims.json"),
+        )
+        serialized = edited.model_dump(mode="json")
+        write_json(output / "project.json", serialized)
+        previous["project_digest"] = digest(serialized)
+        previous["reviewer_edits"] = previous.get("reviewer_edits", 0) + 1
+        write_json(output / "compilation.json", previous)
+    if not draft:
+        return None
+    load_sources(load_project(output / "project.json"), output)
+    write_json(output / "review-queue.json", review_status(output / "project.json"))
+    return {**previous, "resumed_complete": True}
+
+
 def compile_corpus(
     manifest: Path,
     output: Path,
@@ -293,34 +325,9 @@ def compile_corpus(
         if state_path.exists() and read_json(state_path).get("fingerprint") != fingerprint:
             raise ValueError("Corpus or compiler configuration changed; select a new output directory")
         if state_path.exists() and (output / "project.json").exists():
-            previous = read_json(state_path)
-            if previous.get("status") == "draft":
-                for name, expected_hash in previous["artifact_hashes"].items():
-                    if digest(read_json(output / name)) != expected_hash:
-                        raise ValueError("Completed compilation artifact integrity check failed")
-            if previous.get("project_digest") != digest(read_json(output / "project.json")):
-                # Business reviewers correct extracted rules in place. Accept the edit only when the
-                # result is still bound to extracted claims, then refresh the review queue.
-                if previous.get("status") != "draft":
-                    raise ValueError("Interrupted compilation must be resumed before accepting project edits")
-                edited = assemble_project(
-                    read_json(output / "project.json"),
-                    corpus_sources(read_json(output / "corpus.json")),
-                    read_json(output / "claims.json"),
-                )
-                serialized = edited.model_dump(mode="json")
-                write_json(output / "project.json", serialized)
-                previous["project_digest"] = digest(serialized)
-                previous["reviewer_edits"] = previous.get("reviewer_edits", 0) + 1
-                write_json(state_path, previous)
-            if previous.get("status") == "draft":
-                project = load_project(output / "project.json")
-                load_sources(project, output)
-                for name, expected_hash in previous["artifact_hashes"].items():
-                    if digest(read_json(output / name)) != expected_hash:
-                        raise ValueError("Completed compilation artifact integrity check failed")
-                write_json(output / "review-queue.json", review_status(output / "project.json"))
-                return {**previous, "resumed_complete": True}
+            resumed = _resume_completed(output, read_json(state_path))
+            if resumed is not None:
+                return resumed
         if not state_path.exists() and any(p.name != ".compilation.lock" for p in output.iterdir()):
             raise ValueError("New compilation requires an empty output directory")
         state: dict[str, Any] = {
@@ -365,10 +372,11 @@ def compile_corpus(
                     claims[key] = {"id": key, **row}
         rows = sorted(claims.values(), key=lambda c: (c["source_id"], c["start"], c["id"]))
         write_json(output / "claims.json", rows)
-        write_json(output / "corpus.json", [d.model_dump(mode="json", exclude={"text"}) for d in documents])
+        corpus = [d.model_dump(mode="json", exclude={"text"}) for d in documents]
+        write_json(output / "corpus.json", corpus)
         if not rows:
             raise ValueError("No supported decision claims were extracted")
-        sources = corpus_sources([d.model_dump(mode="json", exclude={"text"}) for d in documents])
+        sources = corpus_sources(corpus)
         assembly = canonical({"sources": [s.model_dump(mode="json") for s in sources], "claims": rows})
         if len(assembly.encode()) > options.max_assembly_bytes:
             raise ValueError("Extracted claims exceed assembly budget; partition the corpus by workflow")
@@ -441,7 +449,7 @@ def assemble_project(response: dict[str, Any], sources: list[Source], rows: list
             evidence.start, evidence.end, evidence.locator = positions.pop()
             evidence.claim_id = candidates[0].get("id")
     serialized = project.model_dump(mode="json")
-    if len((json.dumps(serialized, indent=2, ensure_ascii=False, allow_nan=False) + "\n").encode()) > MAX_SOURCE_BYTES:
+    if len(json_text(serialized).encode()) > MAX_SOURCE_BYTES:
         raise ValueError("Assembled project exceeds the supported specification size")
     return project
 
