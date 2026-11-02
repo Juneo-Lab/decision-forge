@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from itertools import combinations
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 from filelock import FileLock
 
@@ -15,6 +15,7 @@ from decision_forge.models import Project, Rule
 from decision_forge.policy import conditions_disjoint, matches
 
 MAX_WITNESSES = 5
+ReviewDecision = Literal["accepted", "rejected"]
 
 
 def _rule_items(project: Project, hashes: dict[str, str]) -> dict[str, dict[str, Any]]:
@@ -189,12 +190,12 @@ def review_status(spec: Path) -> dict[str, Any]:
 def record_review(
     spec: Path,
     item_id: str,
-    decision: Literal["accepted", "rejected"],
+    decision: ReviewDecision,
     reviewer: str,
     reason: str,
     expected_fingerprint: str,
 ) -> dict[str, Any]:
-    if decision not in {"accepted", "rejected"} or not reviewer.strip() or not reason.strip():
+    if decision not in get_args(ReviewDecision) or not reviewer.strip() or not reason.strip():
         raise ValueError("Review requires an accepted/rejected decision, reviewer identity, and reason")
     with FileLock(str(spec.parent / ".review.lock"), timeout=0):
         snapshot = review_snapshot(spec)

@@ -7,7 +7,7 @@ import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Annotated, Any, NoReturn
+from typing import Annotated, Any, NoReturn, get_args
 
 import typer
 from filelock import Timeout
@@ -18,13 +18,13 @@ from decision_forge.compiler import compile_documents
 from decision_forge.corpus import CompilationOptions, compile_corpus, extraction_metrics
 from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD
 from decision_forge.evaluation import DecisionReference, NodeBinding, evaluate_decisions
-from decision_forge.exporters import export_run
+from decision_forge.exporters import ExportFormat, export_run
 from decision_forge.harness import export_harbor, replay
 from decision_forge.io import digest, load_project, load_sources, read_json, write_json
-from decision_forge.models import Project
+from decision_forge.models import Project, Split
 from decision_forge.pipeline import build, impact
-from decision_forge.providers import OpenAICompatibleProvider
-from decision_forge.review import record_review, review_status
+from decision_forge.providers import OpenAICompatibleProvider, ResponseMode
+from decision_forge.review import ReviewDecision, record_review, review_status
 from decision_forge.sources import ingest_manifest
 
 app = typer.Typer(no_args_is_help=True, help="Compile organizational workflows into verifiable decision data.")
@@ -43,12 +43,20 @@ def fail(exc: Exception) -> NoReturn:
     raise typer.Exit(code=1)
 
 
+def choice(value: str, allowed: Any, message: str) -> Any:
+    """Return ``value`` if it is one of the ``Literal`` type's options, otherwise fail with ``message``."""
+    if value not in get_args(allowed):
+        raise ValueError(message)
+    return value
+
+
 @contextmanager
 def cli_errors(*expected: type[Exception]) -> Iterator[None]:
     """Report expected failures as a one-line error and exit code 1 instead of a traceback."""
+    handled: tuple[type[Exception], ...] = (ValueError, OSError, *expected)
     try:
         yield
-    except (ValueError, OSError, *expected) as exc:
+    except handled as exc:
         fail(exc)
 
 
@@ -120,9 +128,9 @@ def build_command(
 def export_command(run: Path, output: Annotated[Path, typer.Option("--output", "-o")], format: str = "typed") -> None:
     """Export split-aware decision-probability, typed, SFT, or canonical training data."""
     with cli_errors():
-        if format not in {"typed", "sft", "canonical", "decision"}:
-            raise ValueError("Format must be typed, sft, canonical, or decision")
-        display(export_run(run, output, format))  # type: ignore[arg-type]
+        display(
+            export_run(run, output, choice(format, ExportFormat, "Format must be typed, sft, canonical, or decision"))
+        )
 
 
 @app.command("impact")
@@ -176,8 +184,7 @@ def harbor_export_command(
 ) -> None:
     """Create single-step decision task directories for Harbor."""
     with cli_errors():
-        if split not in {"train", "development", "test"}:
-            raise ValueError("Choose train, development, or test")
+        choice(split, Split, "Choose train, development, or test")
         display({"tasks": export_harbor(run, output, limit, split), "output": str(output)})
 
 
@@ -222,14 +229,13 @@ def compile_corpus_command(
     """Send an explicit source corpus to a model, checkpoint extraction, and assemble a review draft."""
     with cli_errors(Timeout):
         # One journal reservation equals one HTTP attempt; retries require an explicit resume.
-        if response_mode not in {"auto", "json_schema", "json_object"}:
-            raise ValueError("Choose auto, json_schema, or json_object response mode")
+        mode = choice(response_mode, ResponseMode, "Choose auto, json_schema, or json_object response mode")
         provider = OpenAICompatibleProvider(
             base_url,
             model,
             os.environ.get("FORGE_API_KEY", ""),
             retries=0,
-            response_mode=response_mode,  # type: ignore[arg-type]
+            response_mode=mode,
             reasoning_effort=reasoning_effort,
             temperature=temperature,
             max_output_tokens=max_output_tokens,
@@ -276,9 +282,8 @@ def review_record_command(
 ) -> None:
     """Record a named review against the exact fingerprint shown by review-status."""
     with cli_errors(Timeout):
-        if decision not in {"accepted", "rejected"}:
-            raise ValueError("Decision must be accepted or rejected")
-        event = record_review(spec, item, decision, reviewer, reason, fingerprint)  # type: ignore[arg-type]
+        verdict = choice(decision, ReviewDecision, "Decision must be accepted or rejected")
+        event = record_review(spec, item, verdict, reviewer, reason, fingerprint)
         display({"recorded": event["item_id"], "decision": event["decision"], "hash": event["hash"]})
 
 

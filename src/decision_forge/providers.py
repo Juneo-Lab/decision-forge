@@ -8,10 +8,12 @@ import math
 import re
 import time
 from collections.abc import Callable
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, get_args
 from urllib.parse import urlparse
 
 import httpx
+
+ResponseMode = Literal["auto", "json_schema", "json_object"]
 
 
 class StructuredProvider(Protocol):
@@ -66,7 +68,7 @@ class OpenAICompatibleProvider:
         client: httpx.Client | None = None,
         retries: int = 2,
         max_output_tokens: int = 16000,
-        response_mode: Literal["auto", "json_schema", "json_object"] = "auto",
+        response_mode: ResponseMode = "auto",
         temperature: float | None = 0,
         reasoning_effort: str | None = None,
         timeout_seconds: float = 120,
@@ -97,7 +99,7 @@ class OpenAICompatibleProvider:
         self.temperature = temperature
         self.reasoning_effort = reasoning_effort
         self.timeout_seconds = timeout_seconds
-        if response_mode not in {"auto", "json_schema", "json_object"}:
+        if response_mode not in get_args(ResponseMode):
             raise ValueError("Unknown structured response mode")
         self.response_mode = response_mode
         self.last_response_encoding: str | None = None
