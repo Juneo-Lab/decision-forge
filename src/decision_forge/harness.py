@@ -72,7 +72,6 @@ def export_harbor(run: Path, output: Path, limit: int = 20, split: str = "test")
     for episode in episodes:
         task = output / episode.id
         write_json(task / "environment/context.json", model_input(episode))
-        (task / "environment/context.json").chmod(0o644)
         atomic_text(
             task / "environment/Dockerfile",
             "FROM python:3.12-slim\nWORKDIR /workspace\nCOPY context.json /workspace/context.json\n",

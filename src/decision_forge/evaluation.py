@@ -38,6 +38,11 @@ class FactBinding(Contract):
     path: str = Field(pattern=r"^(state|candidates)\..+$")
     values: list[ValueMapping] = Field(default_factory=list)
 
+    @property
+    def names(self) -> list[str]:
+        """The reference facts this binding reads; a single name binds one value, a list binds several."""
+        return [self.fact] if isinstance(self.fact, str) else self.fact
+
 
 class NodeBinding(Contract):
     node_id: str
@@ -62,7 +67,7 @@ def evaluate_decisions(
         node = nodes[binding.node_id]
         if set(binding.candidate_actions) != {c.id for c in node.candidates}:
             raise ValueError("Every node candidate must have exactly one action mapping")
-        bound_facts = {name for b in binding.facts for name in ([b.fact] if isinstance(b.fact, str) else b.fact)}
+        bound_facts = {name for b in binding.facts for name in b.names}
         if not set(case.facts) <= bound_facts:
             raise ValueError("Every reference fact requires an explicit input binding")
         paths = [b.path for b in binding.facts]
@@ -72,7 +77,7 @@ def evaluate_decisions(
         state: dict[str, Any] = {}
         candidates = [c.model_copy(deep=True) for c in node.candidates]
         for field in binding.facts:
-            names = [field.fact] if isinstance(field.fact, str) else field.fact
+            names = field.names
             present = [name in case.facts for name in names]
             if any(present) and not all(present):
                 raise ValueError("Composite binding cannot discard a supplied fact when another constituent is absent")

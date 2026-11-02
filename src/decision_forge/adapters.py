@@ -10,10 +10,16 @@ from typing import Any, TypedDict
 from decision_forge.exporters import export_run
 from decision_forge.inputs import model_input
 from decision_forge.io import atomic_text, canonical, digest, load_project, load_sources, read_json, write_json
+from decision_forge.models import Episode
 from decision_forge.pipeline import build, load_run
 from decision_forge.review import require_review, review_status
 
 SUPPORTED = {"data-designer": "0.9.7", "langgraph": "1.2.19", "langgraph-checkpoint-sqlite": "3.1.3"}
+
+
+def _training_input(episode: Episode) -> str:
+    """The text Data Designer receives and must return unchanged."""
+    return "Decision input:\n" + canonical(model_input(episode))
 
 
 def require_backend(name: str, extra: str) -> None:
@@ -68,7 +74,7 @@ def designer_process(run: Path, output: Path) -> dict[str, Any]:
             "split": e.split,
             "state_json": canonical(e.state),
             "input_json": canonical(model_input(e)),
-            "input_text": "Decision input:\n" + canonical(model_input(e)),
+            "input_text": _training_input(e),
             "valid_choices_json": canonical(e.valid_choices),
         }
         for e in episodes
@@ -106,7 +112,7 @@ def designer_process(run: Path, output: Path) -> dict[str, Any]:
     for row in rows:
         episode = expected[row["episode_id"]]
         if (
-            row["training_input"] != "Decision input:\n" + canonical(model_input(episode))
+            row["training_input"] != _training_input(episode)
             or row["family_id"] != episode.family_id
             or row["split"] != episode.split
             or row["valid_choices_json"] != canonical(episode.valid_choices)

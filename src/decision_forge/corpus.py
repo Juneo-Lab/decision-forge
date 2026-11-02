@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
@@ -18,6 +17,7 @@ from decision_forge.io import (
     canonical,
     collapse_whitespace,
     digest,
+    json_text,
     load_project,
     load_sources,
     quote_span,
@@ -441,7 +441,7 @@ def assemble_project(response: dict[str, Any], sources: list[Source], rows: list
             evidence.start, evidence.end, evidence.locator = positions.pop()
             evidence.claim_id = candidates[0].get("id")
     serialized = project.model_dump(mode="json")
-    if len((json.dumps(serialized, indent=2, ensure_ascii=False, allow_nan=False) + "\n").encode()) > MAX_SOURCE_BYTES:
+    if len(json_text(serialized).encode()) > MAX_SOURCE_BYTES:
         raise ValueError("Assembled project exceeds the supported specification size")
     return project
 

@@ -21,8 +21,8 @@ from decision_forge.evaluation import DecisionReference, NodeBinding, evaluate_d
 from decision_forge.exporters import ExportFormat, export_run
 from decision_forge.harness import export_harbor, replay
 from decision_forge.io import digest, load_project, load_sources, read_json, write_json
-from decision_forge.models import Project, Split
-from decision_forge.pipeline import build, impact
+from decision_forge.models import Episode, Project, Split
+from decision_forge.pipeline import build, impact, load_run
 from decision_forge.providers import OpenAICompatibleProvider, ResponseMode
 from decision_forge.review import ReviewDecision, record_review, review_status
 from decision_forge.sources import ingest_manifest
@@ -48,6 +48,13 @@ def choice(value: str, allowed: Any, message: str) -> Any:
     if value not in get_args(allowed):
         raise ValueError(message)
     return value
+
+
+def _episode(run: Path, episode_id: str) -> Episode:
+    episode = next((e for e in load_run(run) if e.id == episode_id), None)
+    if episode is None:
+        raise ValueError("Unknown episode ID")
+    return episode
 
 
 @contextmanager
@@ -444,13 +451,11 @@ def designer_process_command(run: Path, output: Annotated[Path, typer.Option()])
 @app.command("transform")
 def transform_command(run: Path, episode_id: str, intervention: Path, output: Annotated[Path, typer.Option()]) -> None:
     """Check a counterfactual or candidate-order rewrite and save its verified parent/child pair."""
-    from decision_forge.pipeline import load_run, load_run_project
+    from decision_forge.pipeline import load_run_project
     from decision_forge.transformations import Intervention, transform_episode
 
     with cli_errors():
-        parent = next((e for e in load_run(run) if e.id == episode_id), None)
-        if parent is None:
-            raise ValueError("Unknown episode ID")
+        parent = _episode(run, episode_id)
         request = Intervention.model_validate(read_json(intervention))
         child = transform_episode(load_run_project(run), parent, request)
         write_json(
@@ -575,7 +580,6 @@ def expand_command(
 def dedup_command(run: Path, output: Path | None = None, threshold: float = NEAR_DUPLICATE_THRESHOLD) -> None:
     """Report duplicate inputs and held-out leaks in a completed run."""
     from decision_forge.dedup import find_duplicates
-    from decision_forge.pipeline import load_run
 
     with cli_errors():
         report = find_duplicates(load_run(run), threshold=threshold)
@@ -596,7 +600,7 @@ def rewrite_command(
     verifier_model: Annotated[str | None, typer.Option(help="Independent verifier model name.")] = None,
 ) -> None:
     """Paraphrase one presentation and publish it only after independent verification."""
-    from decision_forge.pipeline import load_run, load_run_project
+    from decision_forge.pipeline import load_run_project
     from decision_forge.transformations import rewrite_presentation
 
     with cli_errors():
@@ -606,9 +610,7 @@ def rewrite_command(
             if verifier_model
             else None
         )
-        parent = next((e for e in load_run(run) if e.id == episode_id), None)
-        if parent is None:
-            raise ValueError("Unknown episode ID")
+        parent = _episode(run, episode_id)
         child = rewrite_presentation(load_run_project(run), parent, provider, verifier)
         write_json(output, {"parent": parent.model_dump(mode="json"), "child": child.model_dump(mode="json")})
         display({"parent": parent.id, "child": child.id, "verified": True})
