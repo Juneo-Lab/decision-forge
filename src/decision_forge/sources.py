@@ -8,6 +8,7 @@ import importlib.metadata
 import json
 import math
 import re
+from collections.abc import Iterable
 from contextlib import closing
 from pathlib import Path
 from threading import RLock
@@ -207,7 +208,15 @@ class WorkflowAdapter:
         return text, spans
 
 
-ADAPTERS: dict[str, SourceAdapter] = {"text": TextAdapter(), "pdf": PDFAdapter(), "workflow": WorkflowAdapter()}
+ADAPTERS: dict[str, SourceAdapter] = {"text": TextAdapter(), "workflow": WorkflowAdapter()}
+# Parsed formats record the parser version, because a parser upgrade can change extracted text.
+PARSER_PACKAGES = {
+    "pdf": "pypdf",
+    "docx": "python-docx",
+    "xlsx": "openpyxl",
+    "pptx": "python-pptx",
+    "html": "beautifulsoup4",
+}
 
 SUFFIXES = {
     ".txt": "text",
@@ -239,7 +248,7 @@ def normalize_newlines(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
-def join_fragments(fragments: list[Fragment]) -> tuple[str, list[Span]]:
+def join_fragments(fragments: Iterable[Fragment]) -> tuple[str, list[Span]]:
     text = ""
     spans = []
     for fragment in collect(iter(fragments)):
@@ -273,6 +282,29 @@ def parse_image(path: Path, runner: OCRRunner | None) -> tuple[str, list[Span]]:
     return join_fragments(fragments)
 
 
+def _extract(
+    kind: str, path: Path, runner: OCRRunner | None, metadata: dict[str, object]
+) -> tuple[str, list[Span], str]:
+    """Normalized text, located spans, and adapter version for one source; records parse scope."""
+    if kind == "pdf":
+        adapter: SourceAdapter = PDFAdapter(runner)
+    elif kind in ADAPTERS:
+        adapter = ADAPTERS[kind]
+    elif kind == "image":
+        return (*parse_image(path, runner), f"{kind}-v1")
+    else:
+        if kind in {"docx", "xlsx", "pptx"}:
+            fragments = office_fragments(path, kind)
+            metadata["scope"] = "native text and tables; embedded images, charts and drawing text are not OCRed"
+        elif kind == "html":
+            fragments = html_fragments(path)
+            metadata["scope"] = "static parsed text; scripts, styles and hidden attributes excluded; CSS not evaluated"
+        else:
+            fragments = csv_fragments(path)
+        return (*join_fragments(fragments), f"{kind}-v1")
+    return (*adapter.extract(path), adapter.version)
+
+
 def ingest_manifest(
     path: Path, max_total_bytes: int = 32_000_000, *, allow_external_ocr: bool = False
 ) -> list[Document]:
@@ -300,13 +332,7 @@ def ingest_manifest(
             raise ValueError("OCR configuration applies only to PDF and image sources")
         runner = OCRRunner(source.ocr, root, allow_external=allow_external_ocr) if source.ocr else None
         metadata: dict[str, object] = {}
-        package = {
-            "pdf": "pypdf",
-            "docx": "python-docx",
-            "xlsx": "openpyxl",
-            "pptx": "python-pptx",
-            "html": "beautifulsoup4",
-        }.get(kind)
+        package = PARSER_PACKAGES.get(kind)
         if package:
             try:
                 metadata["parser_version"] = importlib.metadata.version(package)
@@ -318,25 +344,7 @@ def ingest_manifest(
             if kind == "pdf":
                 dependency("pypdfium2", "ocr")
                 metadata["renderer_version"] = importlib.metadata.version("pypdfium2")
-        adapter_version = f"{kind}-v1"
-        if kind in ADAPTERS:
-            adapter = PDFAdapter(runner) if kind == "pdf" else ADAPTERS[kind]
-            adapter_version = adapter.version
-            text, spans = adapter.extract(source_path)
-        elif kind == "image":
-            text, spans = parse_image(source_path, runner)
-        else:
-            if kind in {"docx", "xlsx", "pptx"}:
-                fragments = office_fragments(source_path, kind)
-                metadata["scope"] = "native text and tables; embedded images, charts and drawing text are not OCRed"
-            elif kind == "html":
-                fragments = html_fragments(source_path)
-                metadata["scope"] = (
-                    "static parsed text; scripts, styles and hidden attributes excluded; CSS not evaluated"
-                )
-            else:
-                fragments = csv_fragments(source_path)
-            text, spans = join_fragments(collect(fragments))
+        text, spans, adapter_version = _extract(kind, source_path, runner, metadata)
         if not text.strip() or len(text.encode()) > MAX_SOURCE_BYTES:
             raise ValueError(f"Empty or oversized normalized source: {source.id}")
         result.append(
