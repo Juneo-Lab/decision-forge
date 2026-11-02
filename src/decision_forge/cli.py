@@ -13,6 +13,7 @@ from filelock import Timeout
 from decision_forge import __version__
 from decision_forge.compiler import compile_documents
 from decision_forge.corpus import CompilationOptions, compile_corpus, extraction_metrics
+from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD
 from decision_forge.evaluation import DecisionReference, NodeBinding, evaluate_decisions
 from decision_forge.exporters import export_run
 from decision_forge.harness import export_harbor, replay
@@ -82,7 +83,7 @@ def build_command(
     expansion: Annotated[Path | None, typer.Option(help="Verified synthesis directory.")] = None,
     near_duplicate_threshold: Annotated[
         float, typer.Option(help="Presentation similarity above which a duplicate is dropped.")
-    ] = 0.9,
+    ] = NEAR_DUPLICATE_THRESHOLD,
     locked_splits: Annotated[
         bool, typer.Option(help="Fail instead of creating or updating the split lock next to SPEC.")
     ] = False,
@@ -560,7 +561,7 @@ def expand_command(
     max_calls: int = 20,
     max_input_bytes: int = 4_000_000,
     max_output_tokens: int = 4096,
-    near_duplicate_threshold: float = 0.9,
+    near_duplicate_threshold: float = NEAR_DUPLICATE_THRESHOLD,
     reasoning_effort: str | None = None,
 ) -> None:
     """Synthesize extra examples with an explicit model call and verify every label by replay."""
@@ -602,7 +603,7 @@ def expand_command(
 
 
 @app.command("dedup")
-def dedup_command(run: Path, output: Path | None = None, threshold: float = 0.9) -> None:
+def dedup_command(run: Path, output: Path | None = None, threshold: float = NEAR_DUPLICATE_THRESHOLD) -> None:
     """Report duplicate inputs and held-out leaks in a completed run."""
     from decision_forge.dedup import find_duplicates
     from decision_forge.pipeline import load_run

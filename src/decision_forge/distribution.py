@@ -2,16 +2,35 @@
 
 from __future__ import annotations
 
+import json
 import math
 from collections import Counter
-from typing import Any
+from typing import Any, NamedTuple
 
 from decision_forge.io import canonical, digest
-from decision_forge.models import Episode, Project
+from decision_forge.models import DistributionTarget, Episode, Project, Split, Stratum
+
+
+class Cell(NamedTuple):
+    """One exact quota cell: a node, stratum, split and full answer set."""
+
+    node_id: str
+    stratum: Stratum
+    split: Split
+    valid_choices: list[str]
+
+    @classmethod
+    def parse(cls, key: str) -> Cell:
+        node_id, stratum, split, choices = json.loads(key)
+        return cls(node_id, stratum, split, list(choices))
 
 
 def cell_key(node: str, stratum: str, split: str, choices: list[str]) -> str:
     return canonical([node, stratum, split, sorted(choices)])
+
+
+def target_cell(target: DistributionTarget) -> str:
+    return cell_key(target.node_id, target.stratum, target.split, target.valid_choices)
 
 
 def episode_cell(episode: Episode) -> str:
@@ -28,9 +47,7 @@ def select_distribution(
     """
     available = Counter(episode_cell(e) for e in accepted)
     invalid = Counter(episode_cell(e) for e in rejected)
-    wanted = {
-        cell_key(t.node_id, t.stratum, t.split, t.valid_choices): t.count for t in project.recipe.distribution
-    } or dict(available)
+    wanted = {target_cell(t): t.count for t in project.recipe.distribution} or dict(available)
     selected: list[Episode] = []
     buckets: dict[str, list[Episode]] = {}
     for episode in accepted:

@@ -13,13 +13,13 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 from pydantic import Field, JsonValue, ValidationError, model_validator
 
-from decision_forge.dedup import duplicate_verdict
-from decision_forge.generation import candidate_for, policy_fingerprint, set_path
-from decision_forge.io import atomic_text, canonical, digest, load_sources, read_json, write_json
+from decision_forge.dedup import NEAR_DUPLICATE_THRESHOLD, duplicate_verdict
+from decision_forge.generation import candidate_for, policy_fingerprint, referenced_sources, set_path
+from decision_forge.io import atomic_text, canonical, digest, load_sources, read_json, read_jsonl, write_json
 from decision_forge.models import (
     Candidate,
     CandidateIdentifier,
@@ -30,6 +30,7 @@ from decision_forge.models import (
     Node,
     Project,
     Rule,
+    Stratum,
 )
 from decision_forge.pipeline import load_run, load_run_project
 from decision_forge.policy import MISSING, best_choices, evaluate, json_equal, lookup
@@ -63,14 +64,14 @@ class StateProposal(Contract):
 
 class ExpansionRequest(Contract):
     node_id: Identifier
-    stratum: Literal["routine", "boundary", "change", "feedback"] = "boundary"
+    stratum: Stratum = "boundary"
     split: Literal["train", "development"] = "train"
     valid_choices: list[CandidateIdentifier] = Field(min_length=1, max_length=16)
     count: int = Field(ge=1, le=10000)
 
     @model_validator(mode="after")
-    def choices_sorted(self) -> ExpansionRequest:
-        self.valid_choices = sorted(left for left in self.valid_choices)
+    def choices_sorted(self) -> Self:
+        self.valid_choices = sorted(self.valid_choices)
         return self
 
 
@@ -79,7 +80,7 @@ class ExpansionOptions(Contract):
     max_calls: int = Field(default=20, ge=1, le=1000)
     max_input_bytes: int = Field(default=4_000_000, ge=1)
     max_empty_rounds: int = Field(default=2, ge=1, le=10)
-    near_duplicate_threshold: float = Field(default=0.9, gt=0, le=1)
+    near_duplicate_threshold: float = Field(default=NEAR_DUPLICATE_THRESHOLD, gt=0, le=1)
 
 
 class ProposalBatch(Contract):
@@ -92,7 +93,7 @@ def allowed_state_paths(project: Project, node: Node) -> dict[str, dict[str, Any
     Restricting paths and domains keeps synthesis inside the decision problem the rules describe;
     an invented key would be invisible to the policy and could inflate apparent coverage.
     """
-    node_rules = [rule for rule in project.organization.rules if rule.id in node.rule_ids]
+    node_rules = project.select_rules(node.rule_ids)
     paths: dict[str, dict[str, Any]] = {}
     for dimension in node.dimensions:
         if dimension.path.startswith("state."):
@@ -136,9 +137,7 @@ def build_prompt(
                 {"id": candidate.id, "description": candidate.description, "attributes": candidate.attributes}
                 for candidate in node.candidates
             ],
-            "policy_descriptions": [
-                rule.description for rule in project.organization.rules if rule.id in node.rule_ids
-            ],
+            "policy_descriptions": [rule.description for rule in project.select_rules(node.rule_ids)],
             "state_paths": {name: domain for name, domain in sorted(domains.items())},
             "policy_conditions": [
                 {
@@ -180,8 +179,7 @@ def _base_episodes(episodes: list[Episode], request: ExpansionRequest) -> list[E
     """
     candidates = [e for e in episodes if e.node_id == request.node_id and e.split == request.split]
     matching = [e for e in candidates if e.valid_choices == request.valid_choices]
-    ordered = sorted(matching or candidates, key=lambda e: e.id)
-    return ordered
+    return sorted(matching or candidates, key=lambda e: e.id)
 
 
 def materialize(
@@ -205,16 +203,16 @@ def materialize(
                 raise ValueError(f"Proposal value outside the declared dimension domain: {name}")
         elif isinstance(binding.value, (dict, list)):
             raise ValueError(f"Proposal value for {name} must be a scalar")
-        set_path(state, name, deepcopy(binding.value))
+        set_path(state, name, binding.value)
         applied[name] = binding.value
     if not applied:
         raise ValueError("Proposal produced no state change")
-    rules = [rule for rule in project.organization.rules if rule.id in base.rule_ids]
+    rules = project.select_rules(base.rule_ids)
     verdicts: list[CandidateVerdict] = evaluate(state, base.candidates, rules)
     choices = best_choices(verdicts)
     if not choices:
         raise ValueError("Synthesized state leaves no permitted candidate")
-    if sorted(choices) != sorted(request.valid_choices):
+    if choices != request.valid_choices:
         raise ValueError(
             f"Policy replay produced {sorted(choices)} instead of the requested {sorted(request.valid_choices)}"
         )
@@ -244,8 +242,33 @@ def materialize(
     )
 
 
-def _journal_append(path: Path, events: list[dict[str, Any]]) -> None:
-    write_json(path, events)
+def _input_bytes(provider: StructuredProvider, prompt: str) -> int:
+    """Request size as the provider measures it, or the canonical prompt size when it cannot."""
+    measure = getattr(provider, "input_bytes", None)
+    if measure:
+        return int(measure(SYSTEM_PROMPT, prompt, StateProposal.model_json_schema()))
+    return len(canonical({"system": SYSTEM_PROMPT, "user": prompt}).encode())
+
+
+def _quarantined(request: dict[str, Any], proposed: ProposedState, reason: str) -> dict[str, Any]:
+    return {
+        "request": request,
+        "rationale": proposed.rationale,
+        "bindings": [binding.model_dump(mode="json") for binding in proposed.bindings],
+        "reason": reason,
+    }
+
+
+def _usage(journal: list[dict[str, Any]], published: int) -> tuple[int, dict[str, Any]]:
+    """Metered call count and token and cost totals; a missing price stays unknown, never zero."""
+    billed = [event["usage"] for event in journal if event.get("usage")]
+    cost = sum(float(usage.get("cost", 0)) for usage in billed if "cost" in usage)
+    return len(billed), {
+        "prompt_tokens": sum(int(usage.get("prompt_tokens", 0)) for usage in billed),
+        "completion_tokens": sum(int(usage.get("completion_tokens", 0)) for usage in billed),
+        "cost_usd": cost or None,
+        "per_published_example_usd": (cost / published) if cost and published else None,
+    }
 
 
 def expand(
@@ -296,9 +319,7 @@ def expand(
     quarantine_path = output / "quarantine.json"
     # A crash between calls leaves verified rows on disk; reload them instead of republishing.
     accepted: list[Episode] = (
-        [Episode.model_validate_json(line) for line in accepted_path.read_text(encoding="utf-8").splitlines() if line]
-        if accepted_path.exists()
-        else []
+        [Episode.model_validate(row) for row in read_jsonl(accepted_path)] if accepted_path.exists() else []
     )
     quarantine: list[dict[str, Any]] = read_json(quarantine_path) if quarantine_path.exists() else []
     shortfalls: list[dict[str, Any]] = []
@@ -316,8 +337,9 @@ def expand(
     known: list[Episode] = list(pool) + accepted
 
     for request in requests:
-        request_key = digest(request.model_dump(mode="json"))
-        node = next((n for n in project.nodes if n.id == request.node_id), None)
+        request_json = request.model_dump(mode="json")
+        request_key = digest(request_json)
+        node = project.find_node(request.node_id)
         if node is None:
             raise ValueError(f"Unknown node in expansion request: {request.node_id}")
         if not set(request.valid_choices) <= {candidate.id for candidate in node.candidates}:
@@ -337,20 +359,13 @@ def expand(
             if empty_rounds >= options.max_empty_rounds:
                 # Verified work is never discarded because one cell could not be completed. The
                 # shortfall is reported and the build decides whether quotas remain satisfiable.
-                shortfalls.append(
-                    {"request": request.model_dump(mode="json"), "requested": request.count, "verified": produced}
-                )
+                shortfalls.append({"request": request_json, "requested": request.count, "verified": produced})
                 break
-            index = len([event for event in journal if event.get("request") == request.model_dump(mode="json")])
-            call_key = digest({"request": request.model_dump(mode="json"), "index": index})
+            index = sum(event.get("request") == request_json for event in journal)
+            call_key = digest({"request": request_json, "index": index})
             batch = min(options.states_per_call, request.count - produced)
             prompt = build_prompt(project, node, request, domains, batch)
-            measure = getattr(provider, "input_bytes", None)
-            size = (
-                measure(SYSTEM_PROMPT, prompt, StateProposal.model_json_schema())
-                if measure
-                else len(canonical({"system": SYSTEM_PROMPT, "user": prompt}).encode())
-            )
+            size = _input_bytes(provider, prompt)
             if len(journal) >= options.max_calls or used_bytes + size > options.max_input_bytes:
                 state.update(
                     status="budget_exhausted",
@@ -362,29 +377,29 @@ def expand(
                 raise ValueError("Expansion call/input budget exhausted; raise the explicit budget to resume")
             event = {
                 "key": call_key,
-                "request": request.model_dump(mode="json"),
+                "request": request_json,
                 "input_bytes": size,
                 "status": "reserved",
                 "usage": None,
             }
             journal.append(event)
-            _journal_append(journal_path, journal)
+            write_json(journal_path, journal)
             used_bytes += size
             try:
                 response = provider.generate(SYSTEM_PROMPT, prompt, StateProposal.model_json_schema())
             except Exception:
                 event["status"] = "failed"
-                _journal_append(journal_path, journal)
+                write_json(journal_path, journal)
                 raise
             event["status"] = "returned"
             event["usage"] = getattr(provider, "last_usage", None)
             event["response_metadata"] = getattr(provider, "last_response_metadata", None)
-            _journal_append(journal_path, journal)
+            write_json(journal_path, journal)
             try:
                 proposal = StateProposal.model_validate(response)
             except ValidationError as exc:
                 event["validation"] = {"status": "rejected", "errors": [error["msg"] for error in exc.errors()][:5]}
-                _journal_append(journal_path, journal)
+                write_json(journal_path, journal)
                 empty_rounds += 1
                 continue
             verified = 0
@@ -401,24 +416,12 @@ def expand(
                         {"synthesis.request": request_key, "synthesis.base": base.id},
                     )
                 except ValueError as failure:
-                    quarantine.append(
-                        {
-                            "request": request.model_dump(mode="json"),
-                            "rationale": proposed.rationale,
-                            "bindings": [binding.model_dump(mode="json") for binding in proposed.bindings],
-                            "reason": str(failure),
-                        }
-                    )
+                    quarantine.append(_quarantined(request_json, proposed, str(failure)))
                     continue
                 duplicate = duplicate_verdict(episode, known, threshold=options.near_duplicate_threshold)
                 if duplicate:
                     quarantine.append(
-                        {
-                            "request": request.model_dump(mode="json"),
-                            "rationale": proposed.rationale,
-                            "bindings": [binding.model_dump(mode="json") for binding in proposed.bindings],
-                            "reason": f"{duplicate} duplicate of an existing example",
-                        }
+                        _quarantined(request_json, proposed, f"{duplicate} duplicate of an existing example")
                     )
                     continue
                 known.append(episode)
@@ -426,7 +429,7 @@ def expand(
                 produced += 1
                 verified += 1
             event["validation"] = {"status": "accepted", "verified": verified}
-            _journal_append(journal_path, journal)
+            write_json(journal_path, journal)
             # Checkpoint so a crash never republishes or loses verified work.
             atomic_text(
                 accepted_path,
@@ -439,13 +442,10 @@ def expand(
     if not accepted:
         state.update(status="complete", published=0, quarantine=len(quarantine), shortfalls=shortfalls)
         write_json(quarantine_path, quarantine)
-        write_json(summary_path, {**state, "published": 0})
+        write_json(summary_path, state)
         raise ValueError("No proposed state survived policy verification")
 
-    billed = [event["usage"] for event in journal if event.get("usage")]
-    cost = sum(float(usage.get("cost", 0)) for usage in billed if "cost" in usage)
-    prompt_tokens = sum(int(usage.get("prompt_tokens", 0)) for usage in billed)
-    completion_tokens = sum(int(usage.get("completion_tokens", 0)) for usage in billed)
+    metered_calls, usage = _usage(journal, len(accepted))
     summary = {
         **state,
         "status": "complete",
@@ -454,14 +454,9 @@ def expand(
         "shortfalls": shortfalls,
         "complete_requests": not shortfalls,
         "calls": len(journal),
-        "metered_calls": len(billed),
+        "metered_calls": metered_calls,
         "input_bytes": used_bytes,
-        "usage": {
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "cost_usd": cost or None,
-            "per_published_example_usd": (cost / len(accepted)) if cost and accepted else None,
-        },
+        "usage": usage,
         "accepted_digest": digest([row.model_dump(mode="json") for row in accepted]),
         "completed_at": datetime.now(UTC).isoformat(),
     }
@@ -496,7 +491,7 @@ def expected_candidates(node: Node, observed: list[Candidate]) -> list[Candidate
         attribute = dimension.path.removeprefix(f"candidates.{target.id}.")
         value = lookup(by_id[target.id].attributes, attribute) if target.id in by_id else MISSING
         if value is not MISSING and any(json_equal(value, allowed) for allowed in dimension.values):
-            set_path(target.attributes, attribute, deepcopy(value))
+            set_path(target.attributes, attribute, value)
     return expected
 
 
@@ -511,18 +506,14 @@ def load_expansion(
     summary = read_json(directory / "expansion.json")
     if summary.get("status") != "complete":
         raise ValueError("Expansion is incomplete; resume it before building")
-    rows = [
-        Episode.model_validate_json(line)
-        for line in (directory / "accepted.jsonl").read_text(encoding="utf-8").splitlines()
-        if line
-    ]
+    rows = [Episode.model_validate(row) for row in read_jsonl(directory / "accepted.jsonl")]
     if digest([row.model_dump(mode="json") for row in rows]) != summary.get("accepted_digest"):
         raise ValueError("Expansion integrity check failed")
     verified: list[Episode] = []
     family_splits = split_plan(project)
     scenarios = {scenario.id: scenario for scenario in project.scenarios}
     for episode in rows:
-        node = next((n for n in project.nodes if n.id == episode.node_id), None)
+        node = project.find_node(episode.node_id)
         if node is None or set(episode.rule_ids) != set(node.rule_ids):
             raise ValueError(f"Expanded episode has stale node or rule lineage: {episode.id}")
         scenario = scenarios.get(episode.scenario_id)
@@ -539,8 +530,8 @@ def load_expansion(
             raise ValueError("Held-out splits cannot contain synthesized examples")
         if episode.split != current_split:
             raise ValueError(f"Expanded episode has stale family split: {episode.id}")
-        rules = [rule for rule in project.organization.rules if rule.id in node.rule_ids]
-        expected_sources = set(scenario.source_ids) | {e.source_id for rule in rules for e in rule.evidence}
+        rules = project.select_rules(node.rule_ids)
+        expected_sources = referenced_sources(scenario, rules)
         if set(episode.source_ids) != expected_sources or episode.source_hashes != {
             key: source_hashes[key] for key in expected_sources
         }:

@@ -106,7 +106,7 @@ class WorkflowEnvironment:
         if self.done:
             return {"task_id": self.task.id, "done": True, "state": copy.deepcopy(self.state)}
         step = next(s for s in self.task.steps if s.id == self.current)
-        node = next(n for n in self.project.nodes if n.id == step.node_id)
+        node = self.project.node(step.node_id)
         return {
             "task_id": self.task.id,
             "step_id": step.id,
@@ -114,7 +114,7 @@ class WorkflowEnvironment:
             "state": copy.deepcopy(self.state),
             "question": node.question,
             "candidates": [c.model_dump(mode="json") for c in node.candidates],
-            "policy_context": [r.description for r in self.project.organization.rules if r.id in node.rule_ids],
+            "policy_context": [rule.description for rule in self.project.select_rules(node.rule_ids)],
             "remaining_steps": self.task.max_steps - len(self.events),
         }
 
@@ -122,8 +122,8 @@ class WorkflowEnvironment:
         if self.done:
             raise ValueError("Workflow has ended; reset before another action")
         step = next(s for s in self.task.steps if s.id == self.current)
-        node = next(n for n in self.project.nodes if n.id == step.node_id)
-        rules = [r for r in self.project.organization.rules if r.id in node.rule_ids]
+        node = self.project.node(step.node_id)
+        rules = self.project.select_rules(node.rule_ids)
         verdicts = evaluate(self.state, node.candidates, rules)
         permitted = tool == step.tool and any(v.candidate_id == choice and v.allowed for v in verdicts)
         before = copy.deepcopy(self.state)
@@ -161,8 +161,8 @@ def grade_workflow(project: Project, task: WorkflowTask, trace: list[dict[str, A
             invalid = "Trace continues after termination"
             break
         step = next(s for s in task.steps if s.id == current)
-        node = next(n for n in project.nodes if n.id == step.node_id)
-        verdicts = evaluate(state, node.candidates, [r for r in project.organization.rules if r.id in node.rule_ids])
+        node = project.node(step.node_id)
+        verdicts = evaluate(state, node.candidates, project.select_rules(node.rule_ids))
         allowed = event.get("tool") == step.tool and any(
             v.candidate_id == event.get("choice") and v.allowed for v in verdicts
         )
