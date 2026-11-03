@@ -2,8 +2,18 @@
 
 ## Unreleased
 
+## 0.3.2
+
+Version 0.3.2 keeps published families in their splits across dataset versions and sends rule
+conflicts that appear only at generated dimension values to review. Both fixes change what builds and
+reviews produce: commit the new `project.splits.lock.json` next to each specification, regenerate
+`plan-recipe` plans, and record conflict reviews again.
+
 ### Changed
 
+- Consolidate duplicated pipeline, CLI, ingestion, provider, and workflow code without changing any
+  dataset, export, plan, review fingerprint, or ingestion output, and cover twelve CLI failure paths.
+- Update GitHub Actions, mypy, and pre-commit hooks.
 - Tell the project's story in the README and a new [Why Decision Forge](docs/vision.md) page: the missing
   trust layer for AI agents, the three kinds of organizational data it requires, and where Decision Forge
   fits in the data → model → organization stack.
@@ -22,7 +32,7 @@
   situation was labeled without review. The gate now searches every situation the build samples and
   also queues pairs whose conditions cannot be proven disjoint, since synthesis can reach new states.
   Conflict items report `overlap`, `witness_count`, and up to five `witnesses` with their dimension
-  values; existing conflict reviews must be recorded again.
+  values; existing conflict reviews must be recorded again. Thanks to sunxiuguo for an independent fix in #44.
 - Attest only the wheel and sdist in the release workflow; `uv build` also writes `dist/.gitignore`.
 
 ## 0.3.1

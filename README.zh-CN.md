@@ -79,7 +79,7 @@ Juneo Lab 正在构建的技术栈的基石：
 已验证标签、来源记录和稳定场景族分配的决策样本。这些训练数据可以审计、复现，并交给训练器使用。
 
 > [!NOTE]
-> **状态：`v0.3.1` alpha — 组织决策数据管线。**
+> **状态：`v0.3.2` alpha — 组织决策数据管线。**
 > 已审核或手工编写的规格可以在本地构建训练数据，无需模型凭证。文档编译与模型辅助合成使用显式指定的
 > 模型端点。当前实现与后续里程碑见[项目状态](docs/status.md)。
 
@@ -93,7 +93,7 @@ Juneo Lab 正在构建的技术栈的基石：
 | **防泄漏切分** | 相关变体共享场景族切分；跨切分重复会被报告并剔除 |
 | **可直接训练的导出** | 四种格式，包括 candidate-readout 决策契约 |
 | **广泛的文档接入** | 文本、Markdown、JSON/YAML、PDF、DOCX/XLSX/PPTX、HTML、CSV/TSV 与本地 OCR |
-| **验证** | 完整可选适配器环境下，280 项测试、88.41% 语句覆盖率 |
+| **验证** | 完整可选适配器环境下，311 项测试、90.89% 语句覆盖率 |
 | **持续检查** | Linux 与 macOS 上共 10 项 CI 任务，包括适配器、OCR 与 Harbor 对照验证；另有 CodeQL 与 OpenSSF Scorecard 扫描 |
 
 ## 工作原理
@@ -224,7 +224,7 @@ Markdown、JSON/YAML、PDF、DOCX/XLSX/PPTX、HTML、CSV/TSV 和 OCR 图片输�
 
 <br>
 
-**本地验证（macOS ARM64、Python 3.12、全部可选依赖）：** 280 项测试、88.41% 语句覆盖率，以及 Ruff、严格 mypy、
+**本地验证（macOS ARM64、Python 3.12、全部可选依赖）：** 311 项测试、90.89% 语句覆盖率，以及 Ruff、严格 mypy、
 严格 MkDocs、wheel 和 sdist 构建。CI 包含 10 项任务：代码质量、6 项测试（Ubuntu 与 macOS ×
 Python 3.11/3.12/3.13）、固定版本的 Data Designer 与 LangGraph 适配器契约，以及 Docker 中的 Harbor
 oracle 与 no-op 对照验证，加上真实本地 OCR 推理与七格式导入。CodeQL 与 OpenSSF Scorecard 会在拉取请求
@@ -337,7 +337,7 @@ uv build
 @software{decision_forge,
   title   = {Decision Forge: Organizational Decision Data Infrastructure},
   author  = {{Decision Forge contributors}},
-  version = {0.3.1},
+  version = {0.3.2},
   license = {Apache-2.0},
   url     = {https://github.com/Juneo-Lab/decision-forge}
 }
