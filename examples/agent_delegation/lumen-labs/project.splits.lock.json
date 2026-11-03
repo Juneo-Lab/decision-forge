@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "organization_id": "lumen-labs",
+  "families": {
+    "delegate-request": "train",
+    "permission-request": "train",
+    "refund-request": "test",
+    "share-record-request": "development"
+  }
+}
