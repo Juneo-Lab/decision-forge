@@ -316,6 +316,7 @@ small fictional inputs; organizational training-quality evaluation remains a sep
 - Training exports in four formats, including the candidate-readout decision contract.
 - Multi-step mock business workflows with independent trace grading and Harbor task export.
 - Runtime event ingestion, reviewed development feedback, and split-preserving dataset updates.
+- Offline audits of recorded agent tool calls (JSON Lines or OpenTelemetry GenAI traces) against the declared policy.
 
 </td>
 <td valign="top">

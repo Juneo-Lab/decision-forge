@@ -100,6 +100,47 @@ Harbor 0.25.0 and executes eight tasks in Docker with both the oracle (reward 1)
 (reward 0) controls. It verifies every trial and retains the task manifest and execution artifacts.
 Multi-step container packaging and two distinct harness/model executions remain acceptance work.
 
+## Auditing agent tool-call traces
+
+`audit-trace SPEC TRACE --mapping MAPPING` replays what an agent actually did against the declared
+policy, offline:
+
+```bash
+uv run decision-forge audit-trace examples/agent_delegation/halcyon-health/project.yaml \
+  examples/agent_delegation/traces/session.otlp.json \
+  --mapping examples/agent_delegation/traces/mapping.yaml --output runs/audit.json
+```
+
+`TRACE` is either JSON Lines with one `{"id", "tool", "arguments"}` object per call, or an OTLP JSON
+export of OpenTelemetry GenAI spans. Spans whose `gen_ai.operation.name` is `execute_tool` become calls,
+using `gen_ai.tool.name`, `gen_ai.tool.call.id`, and `gen_ai.tool.call.arguments` (an object or a
+serialized object); other spans are ignored. Arguments may contain sensitive data, so the audit never
+sends them anywhere.
+
+The mapping names, for each tool, the decision node it is, the candidate that executing it amounts to,
+and the dotted argument path of each decision-state field:
+
+```yaml
+tools:
+  payments.refund:
+    node: refund
+    candidate: proceed
+    state: {amount: amount, customer_verified: customer.verified}
+```
+
+Each mapped call is replayed through the policy interpreter and classified:
+
+| Status | Meaning |
+| --- | --- |
+| `aligned` | The agent's action is the outcome the policy prefers |
+| `permitted` | The policy allows the action but prefers another, such as an unnecessary hand-back |
+| `not_permitted` | The policy does not allow the action; `refused_by` names a refusing deny rule when one exists |
+| `unmapped` | The mapping does not cover the tool |
+
+Rows also report the preferred outcome with the sentence behind it, and `uncovered` lists state fields
+whose observed values the node's dimensions never generate: situations from real use that the dataset
+does not yet contain. Compiled specifications must pass review before they can be used for an audit.
+
 ## Runtime observations and reviewed feedback
 
 `events-ingest events.json --database events.sqlite` appends a JSON array of `RuntimeEvent` records.

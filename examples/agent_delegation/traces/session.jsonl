@@ -1,0 +1,8 @@
+{"id": "call-01", "tool": "payments.refund", "arguments": {"amount": 40, "customer": {"id": "c-1042", "verified": true}}}
+{"id": "call-02", "tool": "payments.refund", "arguments": {"amount": 250, "customer": {"id": "c-2210", "verified": true}}}
+{"id": "call-03", "tool": "records.send", "arguments": {"recipient": "internal-team", "record": {"id": "r-77", "type": "health"}}}
+{"id": "call-04", "tool": "search.web", "arguments": {"query": "refund policy best practices"}}
+{"id": "call-05", "tool": "agents.delegate", "arguments": {"target": {"name": "outreach-bot", "verified": false}, "scope": {"exceeds_delegator": false}}}
+{"id": "call-06", "tool": "iam.request_permission", "arguments": {"permission": "billing-write"}}
+{"id": "call-07", "tool": "records.send", "arguments": {"recipient": "partner-agent", "record": {"id": "r-91", "type": "usage"}}}
+{"id": "call-08", "tool": "billing.escalate_refund", "arguments": {"amount": 40, "customer": {"id": "c-3301", "verified": true}}}

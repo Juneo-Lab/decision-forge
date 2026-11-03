@@ -1,0 +1,33 @@
+# Which decision node each tool call is, the outcome executing it amounts to, and where the
+# decision-time state lives in the call arguments (dotted paths).
+schema_version: "1.0"
+tools:
+  payments.refund:
+    node: refund
+    candidate: proceed
+    state:
+      amount: amount
+      customer_verified: customer.verified
+  billing.escalate_refund:
+    node: refund
+    candidate: hand-back
+    state:
+      amount: amount
+      customer_verified: customer.verified
+  records.send:
+    node: share-record
+    candidate: send-full
+    state:
+      recipient: recipient
+      record_type: record.type
+  agents.delegate:
+    node: delegate
+    candidate: delegate
+    state:
+      target_verified: target.verified
+      exceeds_own_authority: scope.exceeds_delegator
+  iam.request_permission:
+    node: permission
+    candidate: grant
+    state:
+      permission: permission

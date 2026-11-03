@@ -285,6 +285,7 @@ oracle 与 no-op 对照验证，加上真实本地 OCR 推理与七格式导入�
 - 四种训练导出格式，包括 candidate-readout 决策契约。
 - 多步模拟业务工作流、独立轨迹评分和 Harbor 任务导出。
 - 运行事件接入、经过审核的开发反馈和保持切分的数据集更新。
+- 依据声明规则，离线审计 Agent 实际的工具调用记录（JSON Lines 或 OpenTelemetry GenAI 追踪）。
 
 </td>
 <td valign="top">

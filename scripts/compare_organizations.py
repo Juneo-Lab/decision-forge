@@ -13,15 +13,16 @@ from typing import Any
 from decision_forge.io import canonical, load_project
 from decision_forge.models import Episode, Project
 from decision_forge.pipeline import build, load_run
+from decision_forge.policy import governing_rule
 
 
-def governing_rule(project: Project, episode: Episode) -> dict[str, str]:
-    """The highest-priority, highest-scoring rule that allowed the chosen candidate."""
+def decision(project: Project, episode: Episode) -> dict[str, str]:
+    """The chosen candidate and the rule, with its quotation, that allowed it."""
     choice = episode.valid_choices[0]
     verdict = next(v for v in episode.verdicts if v.candidate_id == choice)
-    matched = project.select_rules(verdict.matched_rules)
-    priority = max(rule.priority for rule in matched)
-    rule = max((r for r in matched if r.priority == priority and r.effect == "allow"), key=lambda r: r.score)
+    rule = governing_rule(project.select_rules(verdict.matched_rules), verdict)
+    if rule is None:
+        raise ValueError(f"No rule governs {choice} in {episode.id}")
     return {"choice": choice, "rule": rule.id, "quote": rule.evidence[0].quote}
 
 
@@ -57,7 +58,7 @@ def compare(specs: list[Path], workspace: Path) -> dict[str, Any]:
             row = rows.setdefault(
                 key, {"node_id": episode.node_id, "situation": situation, "order": order, "decisions": {}}
             )
-            row["decisions"][project.organization.id] = governing_rule(project, episode)
+            row["decisions"][project.organization.id] = decision(project, episode)
     ids = [org["id"] for org in organizations]
     aligned = list(rows.values())
     node_order = [node.id for node in reference.nodes]
