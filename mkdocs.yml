@@ -46,6 +46,7 @@ plugins:
 nav:
   - Overview: index.md
   - Why Decision Forge: vision.md
+  - Tutorial: tutorial.md
   - Project status: status.md
   - Architecture: architecture.md
   - Specification: specification.md

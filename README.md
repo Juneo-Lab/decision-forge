@@ -144,7 +144,10 @@ delegates to people and agents:
 
 ## Quickstart
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). No API keys, no model downloads.
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). No API keys, no model downloads. New here? The
+[five-minute tutorial](docs/tutorial.md) goes from a written policy to training data, and the
+[notebook version](https://colab.research.google.com/github/Juneo-Lab/decision-forge/blob/main/examples/agent_delegation/tutorial.ipynb)
+runs in Colab.
 
 ```bash
 git clone https://github.com/Juneo-Lab/decision-forge
@@ -336,6 +339,7 @@ The [roadmap](ROADMAP.md) tracks each remaining acceptance item against a milest
 
 | Guide | What it covers |
 | --- | --- |
+| [Tutorial](docs/tutorial.md) | From a written policy to training data in five minutes |
 | [Why Decision Forge](docs/vision.md) | The problem, the data it needs, and where this project fits |
 | [Project status](docs/status.md) | Implemented paths and remaining validation |
 | [Architecture](docs/architecture.md) | Component boundaries and data flow |

@@ -127,7 +127,9 @@ Juneo Lab 正在构建的技术栈的基石：
 
 ## 快速开始
 
-需要 Python 3.11+ 与 [uv](https://docs.astral.sh/uv/)。此示例无需 API key，也无需下载模型。
+需要 Python 3.11+ 与 [uv](https://docs.astral.sh/uv/)。此示例无需 API key，也无需下载模型。第一次接触？
+[五分钟教程](docs/tutorial.md)从一份书面制度走到训练数据，
+[笔记本版本](https://colab.research.google.com/github/Juneo-Lab/decision-forge/blob/main/examples/agent_delegation/tutorial.ipynb)可在 Colab 中运行。
 
 ```bash
 git clone https://github.com/Juneo-Lab/decision-forge
@@ -304,6 +306,7 @@ oracle 与 no-op 对照验证，加上真实本地 OCR 推理与七格式导入�
 
 | 指南 | 内容 |
 | --- | --- |
+| [教程](docs/tutorial.md) | 五分钟从书面制度走到训练数据 |
 | [Why Decision Forge](docs/vision.md) | 要解决的问题、所需的数据，以及本项目的位置 |
 | [项目状态](docs/status.md) | 已实现的路径与待完成验证 |
 | [架构](docs/architecture.md) | 组件边界与数据流 |
