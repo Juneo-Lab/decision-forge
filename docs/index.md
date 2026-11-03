@@ -2,7 +2,7 @@
 
 Decision Forge compiles organizational policy into verifiable decision training data.
 It is the open data engine for trusted delegation to AI agents; [Why Decision Forge](vision.md)
-explains the problem it addresses.
+explains the problem it addresses, and the [five-minute tutorial](tutorial.md) shows it end to end.
 The four decision surfaces are work allocation, information sharing, action selection, and outcome
 evaluation.
 

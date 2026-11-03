@@ -4,6 +4,10 @@
 
 ### Added
 
+- Add a five-minute tutorial (`docs/tutorial.md`) and a Colab-ready notebook
+  (`examples/agent_delegation/tutorial.ipynb`): build a dataset from a written policy, change the policy,
+  watch an evidence check refuse the stale rule, see the label follow, export training rows, and compare
+  two organizations. A test executes every notebook cell.
 - Add an agent delegation example: two fictional organizations, Lumen Labs and Halcyon Health, decide
   the same four agent actions (refund, record sharing, delegation, permission requests) under their own
   written policies. `scripts/compare_organizations.py` builds both and renders a comparison in which
