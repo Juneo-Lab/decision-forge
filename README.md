@@ -16,6 +16,7 @@ Every organization's judgment, turned into the data that makes AI agents trustwo
 [![Typed](https://img.shields.io/badge/typing-strict%20mypy-2a6db2)](pyproject.toml)
 
 [Why Decision Forge](#why-decision-forge) ·
+[See it in action](#see-it-in-action) ·
 [Quickstart](#quickstart) ·
 [How it works](#how-it-works) ·
 [Documentation](docs/index.md) ·
@@ -109,6 +110,20 @@ can audit, reproduce, and hand to a trainer.
 | **Broad ingestion** | Text, Markdown, JSON/YAML, PDF, DOCX/XLSX/PPTX, HTML, CSV/TSV, and local OCR |
 | **Validated** | 311 tests, 90.89% statement coverage in the full optional-adapter environment |
 | **Continuous checks** | 10 CI jobs across Linux and macOS, including adapter, OCR, and Harbor controls; CodeQL and OpenSSF Scorecard scans |
+
+## See it in action
+
+Two fictional organizations, a speed-first startup and a clinic network, deploy agents that attempt
+the same actions. Each writes its own policy, and Decision Forge compiles each into verified decisions:
+
+| Agent action | Lumen Labs | Halcyon Health |
+| --- | --- | --- |
+| Refund 400 to a verified customer | **proceed**: “Agents may issue refunds of up to 1000 dollars to verified customers without approval.” | **hand back**: “Every other refund for a verified patient goes to a person in patient accounts.” |
+| Send a health record to an internal team | **send in full**: “Agents may share full customer records with internal teams.” | **send a summary**: “Health information may reach internal teams only as a minimum-necessary summary.” |
+| Delegate more authority than the agent holds | **block**: “An agent must never delegate more authority than it holds.” | **block**: “An agent must never delegate more authority than it holds.” |
+
+Of 17 situations, 8 are decided differently, and every decision cites the sentence that governs it.
+Run the [agent delegation example](examples/agent_delegation/README.md) offline in one command.
 
 ## How it works
 

@@ -16,6 +16,7 @@
 [![Typed](https://img.shields.io/badge/typing-strict%20mypy-2a6db2)](pyproject.toml)
 
 [为什么做 Decision Forge](#为什么做-decision-forge) ·
+[实际效果](#实际效果) ·
 [快速开始](#快速开始) ·
 [工作原理](#工作原理) ·
 [文档](docs/index.md) ·
@@ -95,6 +96,20 @@ Juneo Lab 正在构建的技术栈的基石：
 | **广泛的文档接入** | 文本、Markdown、JSON/YAML、PDF、DOCX/XLSX/PPTX、HTML、CSV/TSV 与本地 OCR |
 | **验证** | 完整可选适配器环境下，311 项测试、90.89% 语句覆盖率 |
 | **持续检查** | Linux 与 macOS 上共 10 项 CI 任务，包括适配器、OCR 与 Harbor 对照验证；另有 CodeQL 与 OpenSSF Scorecard 扫描 |
+
+## 实际效果
+
+两家虚构组织（一家追求速度的创业公司，一家处理患者数据的诊所网络）部署的 Agent 尝试同样的动作。
+两家各自写下自己的制度，Decision Forge 把它们分别编译成可验证的决策：
+
+| Agent 动作 | Lumen Labs | Halcyon Health |
+| --- | --- | --- |
+| 给已验证客户退款 400 | **放行**：“Agents may issue refunds of up to 1000 dollars to verified customers without approval.” | **交还给人**：“Every other refund for a verified patient goes to a person in patient accounts.” |
+| 把健康记录发给内部团队 | **完整发送**：“Agents may share full customer records with internal teams.” | **只发摘要**：“Health information may reach internal teams only as a minimum-necessary summary.” |
+| 委托超出自身权限的任务 | **拦截**：“An agent must never delegate more authority than it holds.” | **拦截**：“An agent must never delegate more authority than it holds.” |
+
+17 个情形中有 8 个结论不同，每个结论都引用了决定它的那句制度原文。
+[Agent 委托示例](examples/agent_delegation/README.md)可以离线一条命令运行。
 
 ## 工作原理
 

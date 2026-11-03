@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Add an agent delegation example: two fictional organizations, Lumen Labs and Halcyon Health, decide
+  the same four agent actions (refund, record sharing, delegation, permission requests) under their own
+  written policies. `scripts/compare_organizations.py` builds both and renders a comparison in which
+  every decision cites the sentence that governs it.
+
 ## 0.3.2
 
 Version 0.3.2 keeps published families in their splits across dataset versions and sends rule
