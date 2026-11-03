@@ -29,8 +29,8 @@ area/harness:
 area/feedback:
   - changed-files:
       - any-glob-to-any-file:
-          - src/decision_forge/feedback.py
-          - tests/test_feedback.py
+          - src/decision_forge/{feedback,traces}.py
+          - tests/test_{feedback,traces}.py
 area/infra:
   - changed-files:
       - any-glob-to-any-file:

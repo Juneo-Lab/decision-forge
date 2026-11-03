@@ -23,8 +23,9 @@ from decision_forge.io import digest, load_project, load_sources, read_json, wri
 from decision_forge.models import Episode, Project, Split
 from decision_forge.pipeline import build, impact, load_run
 from decision_forge.providers import OpenAICompatibleProvider, ResponseMode, env_api_key
-from decision_forge.review import ReviewDecision, record_review, review_status
+from decision_forge.review import ReviewDecision, record_review, require_review, review_status
 from decision_forge.sources import ingest_manifest
+from decision_forge.traces import audit_trace, load_mapping, read_trace
 
 app = typer.Typer(no_args_is_help=True, help="Compile organizational workflows into verifiable decision data.")
 
@@ -144,6 +145,27 @@ def impact_command(spec: Path, previous: Path) -> None:
     """Identify changed and reusable scenario families before rebuilding."""
     with cli_errors():
         display(impact(spec, previous))
+
+
+@app.command("audit-trace")
+def audit_trace_command(
+    spec: Path,
+    trace: Path,
+    mapping: Annotated[Path, typer.Option(help="YAML mapping from tool names to decision nodes and state.")],
+    output: Path | None = None,
+) -> None:
+    """Replay recorded agent tool calls against the declared policy. Runs offline.
+
+    TRACE is JSON Lines tool calls or an OTLP JSON export of OpenTelemetry GenAI execute_tool spans.
+    """
+    with cli_errors(KeyError, TypeError):
+        project = load_project(spec)
+        require_review(spec)
+        load_sources(project, spec.parent)
+        report = audit_trace(project, read_trace(trace), load_mapping(mapping, project))
+        if output:
+            write_json(output, report)
+        display({key: report[key] for key in ("organization_id", "calls", "summary", "coverage_gaps")})
 
 
 @app.command("compile")

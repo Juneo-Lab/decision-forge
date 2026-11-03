@@ -1,0 +1,389 @@
+{
+ "resourceSpans": [
+  {
+   "resource": {
+    "attributes": [
+     {
+      "key": "service.name",
+      "value": {
+       "stringValue": "support-agent"
+      }
+     }
+    ]
+   },
+   "scopeSpans": [
+    {
+     "scope": {
+      "name": "fictional-agent-runtime"
+     },
+     "spans": [
+      {
+       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+       "spanId": "00000000000000ff",
+       "name": "chat support-model",
+       "kind": 3,
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "chat"
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+       "spanId": "0000000000000001",
+       "name": "execute_tool payments.refund",
+       "kind": 1,
+       "startTimeUnixNano": "1793800001000000000",
+       "endTimeUnixNano": "1793800001500000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "execute_tool"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "payments.refund"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.id",
+         "value": {
+          "stringValue": "call-01"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "stringValue": "{\"amount\": 40, \"customer\": {\"id\": \"c-1042\", \"verified\": true}}"
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+       "spanId": "0000000000000002",
+       "name": "execute_tool payments.refund",
+       "kind": 1,
+       "startTimeUnixNano": "1793800002000000000",
+       "endTimeUnixNano": "1793800002500000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "execute_tool"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "payments.refund"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.id",
+         "value": {
+          "stringValue": "call-02"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "kvlistValue": {
+           "values": [
+            {
+             "key": "amount",
+             "value": {
+              "intValue": "250"
+             }
+            },
+            {
+             "key": "customer",
+             "value": {
+              "kvlistValue": {
+               "values": [
+                {
+                 "key": "id",
+                 "value": {
+                  "stringValue": "c-2210"
+                 }
+                },
+                {
+                 "key": "verified",
+                 "value": {
+                  "boolValue": true
+                 }
+                }
+               ]
+              }
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+       "spanId": "0000000000000003",
+       "name": "execute_tool records.send",
+       "kind": 1,
+       "startTimeUnixNano": "1793800003000000000",
+       "endTimeUnixNano": "1793800003500000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "execute_tool"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "records.send"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.id",
+         "value": {
+          "stringValue": "call-03"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "stringValue": "{\"recipient\": \"internal-team\", \"record\": {\"id\": \"r-77\", \"type\": \"health\"}}"
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+       "spanId": "0000000000000004",
+       "name": "execute_tool search.web",
+       "kind": 1,
+       "startTimeUnixNano": "1793800004000000000",
+       "endTimeUnixNano": "1793800004500000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "execute_tool"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "search.web"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.id",
+         "value": {
+          "stringValue": "call-04"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "kvlistValue": {
+           "values": [
+            {
+             "key": "query",
+             "value": {
+              "stringValue": "refund policy best practices"
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+       "spanId": "0000000000000005",
+       "name": "execute_tool agents.delegate",
+       "kind": 1,
+       "startTimeUnixNano": "1793800005000000000",
+       "endTimeUnixNano": "1793800005500000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "execute_tool"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "agents.delegate"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.id",
+         "value": {
+          "stringValue": "call-05"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "stringValue": "{\"target\": {\"name\": \"outreach-bot\", \"verified\": false}, \"scope\": {\"exceeds_delegator\": false}}"
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+       "spanId": "0000000000000006",
+       "name": "execute_tool iam.request_permission",
+       "kind": 1,
+       "startTimeUnixNano": "1793800006000000000",
+       "endTimeUnixNano": "1793800006500000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "execute_tool"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "iam.request_permission"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.id",
+         "value": {
+          "stringValue": "call-06"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "kvlistValue": {
+           "values": [
+            {
+             "key": "permission",
+             "value": {
+              "stringValue": "billing-write"
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+       "spanId": "0000000000000007",
+       "name": "execute_tool records.send",
+       "kind": 1,
+       "startTimeUnixNano": "1793800007000000000",
+       "endTimeUnixNano": "1793800007500000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "execute_tool"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "records.send"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.id",
+         "value": {
+          "stringValue": "call-07"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "stringValue": "{\"recipient\": \"partner-agent\", \"record\": {\"id\": \"r-91\", \"type\": \"usage\"}}"
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+       "spanId": "0000000000000008",
+       "name": "execute_tool billing.escalate_refund",
+       "kind": 1,
+       "startTimeUnixNano": "1793800008000000000",
+       "endTimeUnixNano": "1793800008500000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "execute_tool"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "billing.escalate_refund"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.id",
+         "value": {
+          "stringValue": "call-08"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "kvlistValue": {
+           "values": [
+            {
+             "key": "amount",
+             "value": {
+              "intValue": "40"
+             }
+            },
+            {
+             "key": "customer",
+             "value": {
+              "kvlistValue": {
+               "values": [
+                {
+                 "key": "id",
+                 "value": {
+                  "stringValue": "c-3301"
+                 }
+                },
+                {
+                 "key": "verified",
+                 "value": {
+                  "boolValue": true
+                 }
+                }
+               ]
+              }
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

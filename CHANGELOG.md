@@ -4,6 +4,11 @@
 
 ### Added
 
+- Add `audit-trace`, an offline audit of what agents actually did. It reads tool calls from JSON Lines or
+  from OTLP JSON exports of OpenTelemetry GenAI `execute_tool` spans, maps each call to a decision node
+  through a small YAML mapping, and replays it against the declared policy: aligned, permitted but not
+  preferred, or not permitted, with the governing sentence and any state the dataset does not yet cover.
+  The agent delegation example includes a sample session in both formats.
 - Add a five-minute tutorial (`docs/tutorial.md`) and a Colab-ready notebook
   (`examples/agent_delegation/tutorial.ipynb`): build a dataset from a written policy, change the policy,
   watch an evidence check refuse the stale rule, see the label follow, export training rows, and compare

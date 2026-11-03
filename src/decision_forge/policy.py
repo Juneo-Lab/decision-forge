@@ -157,3 +157,15 @@ def best_choices(verdicts: list[CandidateVerdict]) -> list[str]:
         return []
     score = max(v.score for v in valid)
     return sorted(v.candidate_id for v in valid if v.score == score)
+
+
+def governing_rule(rules: list[Rule], verdict: CandidateVerdict) -> Rule | None:
+    """The rule that decides a verdict: among matched rules of the highest priority, the deny that
+    refused the candidate, or else the highest-scoring allow. ``None`` when no rule matched."""
+    matched = [rule for rule in rules if rule.id in verdict.matched_rules]
+    if not matched:
+        return None
+    priority = max(rule.priority for rule in matched)
+    governing = [rule for rule in matched if rule.priority == priority]
+    denies = [rule for rule in governing if rule.effect == "deny"]
+    return denies[0] if denies else max(governing, key=lambda rule: rule.score)

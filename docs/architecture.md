@@ -19,6 +19,7 @@ The package is organized by responsibility:
 | `pipeline` | Caching, manifest lifecycle, reporting, change analysis |
 | `exporters` | Model-visible training views and supervision formats |
 | `harness` | Offline replay and portable task exports |
+| `traces` | Audits of recorded agent tool calls against the declared policy |
 | `cli` | User-facing commands |
 
 ## Build lifecycle
