@@ -130,6 +130,18 @@ The item kind is `override` when the rules differ in priority, so the higher-pri
 and `conflict` otherwise, where deny wins. Rules that a higher-priority rule of the same effect always
 outranks enter the queue as shadowed, dead rules. Reviewers examine the full rule context.
 
+Conflict and override items also bind the raw `recipe.seed`, `recipe.variants_per_scenario`, and
+`recipe.candidate_pool_per_scenario` settings in their `sampling` content. Changing any of these settings
+requires renewed pair review even if the overlap classification, witness count, and displayed witnesses
+stay identical. This includes an unset candidate pool that falls back to the variant count, a variant
+count overridden by an explicit pool, and an exhausted population. Other recipe fields remain bound
+to the dataset review without reopening these pair reviews.
+
+Adding this content field reopens preexisting conflict/override acceptances once. Inspect and accept
+the current pair items again; accepting only `dataset:recipe` cannot satisfy them, and an old individual
+item fingerprint is rejected. Item IDs and review history remain unchanged. Rule, node, and same-effect
+shadowed-item acceptances retain their existing bindings.
+
 A review records identity, reason, time, decision, and the fingerprint of the reviewed item plus the
 sources its evidence cites. Editing an unrelated rule no longer invalidates an accepted decision,
 while any change to the reviewed rule, its evidence, or a cited source re-opens that item. A

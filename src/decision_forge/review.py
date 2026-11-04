@@ -155,6 +155,12 @@ def review_snapshot(spec: Path) -> dict[str, Any]:
                     "sources": {},
                 }
             )
+            if opposite:
+                items[-1]["content"]["sampling"] = {
+                    "seed": project.recipe.seed,
+                    "variants_per_scenario": project.recipe.variants_per_scenario,
+                    "candidate_pool_per_scenario": project.recipe.candidate_pool_per_scenario,
+                }
     for item in items:
         item["fingerprint"] = item_fingerprint(item)
     return {"schema_version": "1.0", "fingerprint": fingerprint, "source_hashes": hashes, "items": items}

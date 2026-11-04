@@ -18,6 +18,12 @@
   written policies. `scripts/compare_organizations.py` builds both and renders a comparison in which
   every decision cites the sentence that governs it.
 
+### Fixed
+
+- Bind conflict/override reviews to the raw sampling seed and both pool-size settings, so changing
+  the sample requires renewed pair acceptance even when its witnesses are unchanged. Existing pair
+  acceptances reopen once; unrelated recipe fields and same-effect shadowed reviews keep their bindings.
+
 ## 0.3.2
 
 Version 0.3.2 keeps published families in their splits across dataset versions and sends rule
