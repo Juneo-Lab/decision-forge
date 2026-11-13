@@ -62,7 +62,7 @@ Juneo Lab 正在构建的技术栈的基石：
 | 层 | 作用 | 状态 |
 | --- | --- | --- |
 | **AI Native 组织** | 人与 Agent 共同分配任务、共享信息、执行操作、验收成果；执行回执回流到数据 | 与合作组织共同构建 |
-| **Laplace** | 因果-干预模型：在动作执行之前预见后果，再决定放行、拦截或交还给人 | 研发中 |
+| **Laplace** | 因果-干预决策模型：在 Agent 动手之前推演每个候选的后果，替组织做好四类判断 | 权重开源：[Laplace-1-Atlas](https://huggingface.co/JuneoAI/Laplace-1-Atlas)（27B）与 [Laplace-1-Vector](https://huggingface.co/JuneoAI/Laplace-1-Vector)（4B），训练数据全部由 Decision Forge 生成 |
 | **Decision Forge** | 把组织的文档，变成已验证的决策训练数据 | 开源，即本仓库 |
 
 **我们要建设的世界。** 人类保留决定权，Agent 获得可控的行动权，而权限在层层转交中只收窄、不放大。
@@ -88,6 +88,7 @@ Juneo Lab 正在构建的技术栈的基石：
 
 | 能力 | 说明 |
 | --- | --- |
+| **训练出真实模型** | [Laplace-1](#用-decision-forge-数据训练的模型) 的训练数据全部由 Decision Forge 生成；27B 版本在 9 项决策基准中 7 项第一或并列第一，4B 版本在 8 项中 7 项 |
 | **离线数据路径** | 已审核规则 → 场景 → 已验证标签 → 导出，无需 API key 或下载模型 |
 | **规则验证的标签** | 由确定性解释器根据声明规则重新计算 |
 | **来源可追溯** | 验证规则引文和源文件哈希；语料编译补充跨度与定位符 |
@@ -120,10 +121,10 @@ Juneo Lab 正在构建的技术栈的基石：
 
 | 决策面 | 模型要回答的问题 |
 | --- | --- |
-| **分配工作** | 哪个人或 Agent 应当负责这个任务？ |
+| **分配任务** | 哪个人或 Agent 应当负责这个任务？ |
 | **共享信息** | 哪个接收方可以获取哪些信息？ |
-| **选择行动** | 流程应当执行、调整，还是申请授权？ |
-| **验收结果** | 交付物是否满足验收标准？ |
+| **执行操作**（`select_actions`） | 流程应当执行、调整，还是申请授权？ |
+| **验收成果** | 交付物是否满足验收标准？ |
 
 ## 快速开始
 
@@ -195,7 +196,7 @@ uv run python scripts/finetune_evaluation.py prepare runs/demo --output runs/pla
 
 `scripts/finetune_evaluation.py prepare` 写入选定的训练记录、ID、文件摘要及所需训练目标。
 `evaluate` 在留出用例上评估显式选定的端点；`compare` 要求数据集、用例顺序和提示词相同。
-固定预算训练与决策质量提升的实测属于下一项评估里程碑。
+Laplace-1 的候选打分采用同一套单 token 标签读出约定。在固定训练预算下单独衡量数据本身对决策质量的提升，属于下一项评估里程碑。
 
 ## 编译自己的文档
 
@@ -235,6 +236,22 @@ Markdown、JSON/YAML、PDF、DOCX/XLSX/PPTX、HTML、CSV/TSV 和 OCR 图片输�
 </details>
 
 ## 证据
+
+### 用 Decision Forge 数据训练的模型
+
+Juneo Lab 的开源决策模型 [Laplace-1](https://huggingface.co/JuneoAI/Laplace-1-Atlas)，训练数据全部由 Decision Forge 编译生成。在公开决策基准上与同量级模型对比：
+
+| 模型 | 参数量 | 决策基准 | 领先最多的一项 |
+| --- | --- | --- | --- |
+| [Laplace-1-Atlas](https://huggingface.co/JuneoAI/Laplace-1-Atlas) | 27B | 9 项中 7 项第一或并列第一 | TrustDecision 89.4%，领先第二名 5.4 分 |
+| [Laplace-1-Vector](https://huggingface.co/JuneoAI/Laplace-1-Vector) | 4B | 8 项中 7 项第一或并列第一 | OrgAccess 44.6%，领先第二名 6.3 分 |
+
+对比模型包括 Perplexity、OpenAI、字节、阿里、IBM 等公司的模型；模型卡列出了全部分数，包括 Laplace-1 落后的项目。
+按照[数据协议](docs/data-protocol.md)，公开测试集只用于评估，其答案和衍生样本都不进入训练数据。
+这些结果说明 Decision Forge 的数据能训练出强的决策模型，但没有把数据的贡献与基座模型、训练方法的贡献分开；
+这项对照实验是下一个里程碑。[在线体验 Laplace-1-Vector](https://juneo.ai/try)。
+
+### 软件与管线验证
 
 <details open>
 <summary><b>验证、基准测试与真实模型运行</b></summary>

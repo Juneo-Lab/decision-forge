@@ -4,7 +4,8 @@ Decision Forge compiles organizational policy into verifiable decision training 
 It is the open data engine for trusted delegation to AI agents; [Why Decision Forge](vision.md)
 explains the problem it addresses, and the [five-minute tutorial](tutorial.md) shows it end to end.
 The four decision surfaces are work allocation, information sharing, action selection, and outcome
-evaluation.
+evaluation. Juneo Lab's open-weight [Laplace-1](https://huggingface.co/JuneoAI/Laplace-1-Atlas) decision models are trained entirely on
+Decision Forge data.
 
 ![Decision Forge pipeline: compile and review organizational knowledge, shape scenarios across four decision surfaces and distributions, verify labels through policy replay, and export training data.](assets/decision-forge-overview-v2.png)
 

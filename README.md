@@ -70,7 +70,7 @@ building at Juneo Lab:
 | Layer | Role | Status |
 | --- | --- | --- |
 | **AI-native organizations** | People and agents allocate work, share information, act, and accept results together; their execution receipts flow back into the data | Built with partner organizations |
-| **Laplace** | A causal-interventional model that foresees the consequence of an action before it runs, then lets it proceed, stops it, or hands it back to a person | In development |
+| **Laplace** | A causal-interventional decision model. It foresees the consequence of each candidate before an agent acts, and makes the four decisions an organization delegates | Open weights: [Laplace-1-Atlas](https://huggingface.co/JuneoAI/Laplace-1-Atlas) (27B) and [Laplace-1-Vector](https://huggingface.co/JuneoAI/Laplace-1-Vector) (4B), trained entirely on Decision Forge data |
 | **Decision Forge** | An organization's documents, turned into verified decision training data | Open source, this repository |
 
 **The world we are building.** Humans keep the right to decide. Agents earn the right to act, within
@@ -102,6 +102,7 @@ can audit, reproduce, and hand to a trainer.
 
 | Capability | What you get |
 | --- | --- |
+| **Trains real models** | [Laplace-1](#models-trained-on-decision-forge-data) is trained entirely on Decision Forge data and is best or tied for best on 7 of 9 decision benchmarks (27B) and 7 of 8 (4B) |
 | **Offline data path** | Reviewed rules → scenarios → verified labels → exports, with no API keys or model downloads |
 | **Policy-verified labels** | Recomputed from declared rules by a deterministic interpreter |
 | **Source provenance** | Verified rule quotations and source hashes; corpus compilation adds spans and locators |
@@ -139,7 +140,7 @@ delegates to people and agents:
 | --- | --- |
 | **Allocate work** | Which person or agent should own this task? |
 | **Share information** | Which recipient may receive which information? |
-| **Select actions** | Should the workflow execute, adjust, or request authorization? |
+| **Act** (`select_actions`) | Should the workflow execute, adjust, or request authorization? |
 | **Evaluate outcomes** | Does the deliverable meet the acceptance criteria? |
 
 ## Quickstart
@@ -218,8 +219,9 @@ states the required objective explicitly.
 
 `scripts/finetune_evaluation.py prepare` writes selected training rows, their IDs and file digests,
 and the required training objective. `evaluate` scores an explicitly selected endpoint on held-out
-cases; `compare` requires the same dataset, case order, and prompt. Fixed-budget training and measured
-decision-quality gains are the next evaluation milestone.
+cases; `compare` requires the same dataset, case order, and prompt. Laplace-1 reads out its candidate
+scores with the same single-token label contract. A fixed-budget comparison that isolates how much
+the data itself improves decision quality is the next evaluation milestone.
 
 ## Compile your own documents
 
@@ -263,6 +265,25 @@ publishes only proposals whose label is replayed from the declared policy.
 </details>
 
 ## Evidence
+
+### Models trained on Decision Forge data
+
+[Laplace-1](https://huggingface.co/JuneoAI/Laplace-1-Atlas), Juneo Lab's open-weight decision models, is trained entirely on data compiled by
+Decision Forge. On public decision benchmarks, against models of its class:
+
+| Model | Parameters | Decision benchmarks | Widest lead |
+| --- | --- | --- | --- |
+| [Laplace-1-Atlas](https://huggingface.co/JuneoAI/Laplace-1-Atlas) | 27B | Best or tied for best on 7 of 9 | TrustDecision 89.4%, +5.4 over the next model |
+| [Laplace-1-Vector](https://huggingface.co/JuneoAI/Laplace-1-Vector) | 4B | Best or tied for best on 7 of 8 | OrgAccess 44.6%, +6.3 over the next model |
+
+Comparison models include releases from Perplexity, OpenAI, ByteDance, Alibaba, and IBM; the model
+cards list every score, including the benchmarks where Laplace-1 trails. Following the
+[data protocol](docs/data-protocol.md), public test sets are evaluation-only, and their answers and
+derivatives are excluded from training data. These results show that Decision Forge data trains a
+strong decision model. They do not isolate the data's contribution from the base model and training
+recipe; that controlled comparison is the next milestone. [Try Laplace-1-Vector online](https://juneo.ai/try).
+
+### Software and pipeline validation
 
 <details open>
 <summary><b>Validation, benchmarks, and live model runs</b></summary>
