@@ -29,5 +29,7 @@ outcomes for the data pipeline.
 4. Complete release acceptance around the resulting decision-data pipeline.
 
 Encoder compatibility, rule replay, and software tests establish interface and execution correctness.
-The downstream training study establishes whether generated data improves decision quality. Those
-results are tracked separately; no training-quality gain is recorded until the study executes.
+[Laplace-1](https://huggingface.co/JuneoAI/Laplace-1-Atlas) is trained entirely on Decision Forge data, and its model cards report its scores
+on public decision benchmarks. Those scores come from a full training run, not from a controlled
+comparison. The downstream training study above isolates whether, and by how much, generated data
+improves decision quality; until it executes, no data-attributable gain is recorded.

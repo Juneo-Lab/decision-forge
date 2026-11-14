@@ -81,20 +81,23 @@ Decision Forge is the data layer of a three-layer stack:
 AI-native organizations   people and agents allocate, share, act, and accept together
         ▲      │ execution receipts
         │      ▼
-Laplace                   causal-interventional model: predict the consequence, then allow,
-        ▲                 block, or hand the action back to a person            (in development)
+Laplace                   causal-interventional decision model: foresee each consequence,
+        ▲                 then make the four decisions          (open weights: Laplace-1)
         │ verified decision data
 Decision Forge            organization documents → decision training data, locally (open source)
 ```
 
 - **Decision Forge** turns an organization's documents into verified decision training data.
-- **Laplace**, Juneo Lab's causal-interventional model, learns to predict the consequence of an
-  action before it runs and to make a calibrated call: allow it, block it, or return it to a person.
+- **Laplace**, Juneo Lab's causal-interventional decision model, foresees the consequence of each
+  candidate before an agent acts and makes the four decisions an organization delegates. Laplace-1
+  ([Atlas](https://huggingface.co/JuneoAI/Laplace-1-Atlas), 27B, and [Vector](https://huggingface.co/JuneoAI/Laplace-1-Vector), 4B) has open weights and is trained entirely on
+  data compiled by Decision Forge.
 - **AI-native organizations** deploy it where people and agents work together. Their execution
   receipts return to the data, so each deployment teaches the model more about that organization.
 
 The four decision surfaces in this repository are the decisions such an organization delegates:
-**allocate work, share information, select actions, and evaluate outcomes.**
+**allocate work, share information, act, and evaluate outcomes.** In data, acting is the
+`select_actions` surface.
 
 ## 6. What exists today, and what does not yet
 
@@ -103,10 +106,13 @@ review gate, distribution planning, verified synthesis, deduplication, family-le
 four training export formats, runtime event ingestion, and reviewed feedback. See
 [project status](status.md) for the detailed list.
 
-It does not yet show that training on its data improves a model's decisions. That fixed-budget
-training study is the next evaluation milestone, and the [roadmap](https://github.com/Juneo-Lab/decision-forge/blob/main/ROADMAP.md)
-tracks it alongside larger corpora, cross-document rule resolution, and multi-harness evaluation.
-Laplace is under development and is not part of this repository.
+Laplace-1 is trained entirely on Decision Forge data and is best or tied for best on most public
+decision benchmarks in its class (see the [model cards](https://huggingface.co/JuneoAI/Laplace-1-Atlas)). That shows the data can train a
+strong decision model. It does not yet isolate how much the data contributes beyond the base model
+and the training recipe. That fixed-budget study is the next evaluation milestone, and the
+[roadmap](https://github.com/Juneo-Lab/decision-forge/blob/main/ROADMAP.md) tracks it alongside
+larger corpora, cross-document rule resolution, and multi-harness evaluation. Laplace's weights are
+published on Hugging Face; its training code is not part of this repository.
 
 ## 7. The world we are building
 

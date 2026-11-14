@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Documentation
+
+- Describe Laplace-1 as released with open weights and trained entirely on Decision Forge data, with its
+  decision-benchmark results, links to the Atlas and Vector model cards, and the online playground. State
+  that these results come from a full training run and that the controlled fixed-budget comparison
+  remains the next milestone.
+- Describe Laplace by the four decisions it makes rather than as an allow/block gate, and label the third
+  surface Act (`select_actions` in data) to match the model cards.
+
 ### Added
 
 - Add `audit-trace`, an offline audit of what agents actually did. It reads tool calls from JSON Lines or
