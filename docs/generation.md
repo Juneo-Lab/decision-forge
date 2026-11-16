@@ -7,7 +7,7 @@ distribution is deliberate rather than incidental:
 2. **Synthesize** the missing situations with a model, verifying every proposal by policy replay.
 3. **Deduplicate** the merged pool globally, including held-out leak detection.
 
-The offline core still runs without credentials. Stages 2 requires an explicit `expand` command with
+The offline core still runs without credentials. Stage 2 requires an explicit `expand` command with
 a model endpoint; nothing calls a model implicitly.
 
 ## 1. Plan the recipe
@@ -88,8 +88,11 @@ Operational properties:
 
 ## 3. Deduplicate globally and detect leaks
 
+The build in step 4 deduplicates the merged pool before applying quotas. To inspect the result for a
+completed run:
+
 ```bash
-uv run decision-forge dedup runs/merged
+uv run decision-forge dedup runs/final
 ```
 
 Scenario-local identity cannot see that two scenarios describe the same decision problem, because it

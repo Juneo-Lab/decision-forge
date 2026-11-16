@@ -15,6 +15,8 @@
 - Move questions and early proposals to GitHub Discussions, with Q&A and Ideas forms; the Question
   issue template is retired. `CONTRIBUTING.md` gains a where-to-start table, and `AUTHORS.md` lists
   outside contributors.
+- Fix a dead experiment link, a malformed benchmark table, and a dedup command that referenced a
+  run no step creates.
 
 ### Added
 

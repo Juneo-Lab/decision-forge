@@ -175,7 +175,7 @@ to validate transport and accounting. Their results do not measure model extract
 - `test_review.py`: pending/rejected review gates, content changes, conflicts, and history integrity.
 - `test_regressions.py`: recursive JSON comparison, source snapshots, and private YAML error redaction.
 
-Live evidence is published in [the experiment report](https://github.com/Juneo-Lab/decision-forge/tree/feat/organization-compiler/experiments/2026-10-m1).
+Live evidence is published in [the experiment report](https://github.com/Juneo-Lab/decision-forge/tree/main/experiments/2026-10-m1).
 Both flagship models extracted 13/13 reference claims and agreed with 31/32 fixed decision cases.
 One Opus mismatch concerns an absent amount key; the GPT mismatch exposes a source/reference ambiguity.
 Both drafts retain rejected review nodes. The authored example passes all 32 reference cases.

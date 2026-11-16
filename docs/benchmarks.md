@@ -34,7 +34,7 @@ records the engine fingerprint and dataset digests. MB and KB below use decimal 
 | pydantic / filelock | 2.14.2 / 4.2.4 |
 
 | Families | Scenarios | Accepted episodes | Cold (s) | Warm (s) | Episodes/s (cold) | Run artifacts | Specification |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 25 | 100 | 700 | 0.221 | 0.140 | 3,168 | 1.18 MB | 43.9 KB |
 | 100 | 400 | 2,800 | 0.835 | 0.570 | 3,352 | 4.60 MB | 130.8 KB |
 | 400 | 1,600 | 11,200 | 3.340 | 2.380 | 3,354 | 18.30 MB | 481.8 KB |

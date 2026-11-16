@@ -377,6 +377,7 @@ The guides below are published at [juneo-lab.github.io/decision-forge](https://j
 | [Platform workflows](docs/platform-workflows.md) | Multi-step tasks, grading, feedback, updates |
 | [Data protocol](docs/data-protocol.md) | Evaluation protocol and reporting rules |
 | [Benchmarks](docs/benchmarks.md) | Offline throughput protocol and reference results |
+| [Implementation plan](docs/implementation-plan.md) | First principles, dependency order, and current state |
 | [Release process](docs/releasing.md) | Tagging, attested artifacts, and verification |
 | [References](docs/references.md) | Prior art and integration candidates |
 
