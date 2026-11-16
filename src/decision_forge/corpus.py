@@ -15,8 +15,8 @@ from decision_forge.io import (
     MAX_SOURCE_BYTES,
     atomic_text,
     canonical,
-    collapse_whitespace,
     digest,
+    evidence_quote_matches,
     json_text,
     load_project,
     load_sources,
@@ -98,7 +98,7 @@ def _validate_claims(data: dict[str, Any], text: str) -> list[Claim]:
         if claim.end > len(text) or claim.end <= claim.start:
             raise ValueError("Extracted claim has an invalid evidence span")
         span = text[claim.start : claim.end]
-        if len(span) < len(claim.quote) or collapse_whitespace(span)[0] != collapse_whitespace(claim.quote)[0]:
+        if len(span) < len(claim.quote) or not evidence_quote_matches(span, claim.quote):
             raise ValueError("Extracted claim span does not reproduce the quote")
     return claims
 

@@ -8,8 +8,8 @@ from decision_forge.io import (
     MAX_SOURCE_BYTES,
     atomic_text,
     canonical,
-    collapse_whitespace,
     digest,
+    evidence_quote_matches,
     quote_span,
     write_json,
 )
@@ -84,7 +84,7 @@ def compile_documents(sources: list[Path], output: Path, provider: StructuredPro
                 if not 0 <= evidence.start < evidence.end <= len(text):
                     raise ValueError(f"Compiler produced out-of-bounds evidence for rule {rule.id}")
                 span = text[evidence.start : evidence.end]
-                if collapse_whitespace(span)[0] != collapse_whitespace(evidence.quote)[0]:
+                if not evidence_quote_matches(span, evidence.quote):
                     raise ValueError(f"Compiler produced invalid evidence span for rule {rule.id}")
             else:
                 try:

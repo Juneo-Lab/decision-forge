@@ -36,6 +36,8 @@
 
 ### Fixed
 
+- Match evidence quotes across hard-wrapped Chinese and Japanese text while retaining original source
+  offsets and hashes. Korean Hangul keeps the ordinary word-spacing rules.
 - Bind conflict/override reviews to the raw sampling seed and both pool-size settings, so changing
   the sample requires renewed pair acceptance even when its witnesses are unchanged. Existing pair
   acceptances reopen once; unrelated recipe fields and same-effect shadowed reviews keep their bindings.
