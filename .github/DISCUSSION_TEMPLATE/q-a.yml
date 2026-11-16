@@ -1,0 +1,22 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use fictional examples. Never paste credentials, customer documents, or private policy text.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question and intended workflow
+      description: What you are trying to compile, generate, or export, and where you are stuck.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Version, command, and relevant output
+      description: |
+        Decision Forge version (`python -c "import decision_forge; print(decision_forge.__version__)"`),
+        Python version, the exact command, and the relevant part of `report.json` or `calls.json`.
+      render: text
+    validations:
+      required: true

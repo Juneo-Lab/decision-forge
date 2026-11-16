@@ -3,6 +3,18 @@
 Welcome to Decision Forge. Contributions should improve the path from organizational evidence to
 verifiable decision data. Use English for code, comments, documentation, issues, and pull requests.
 
+## Where to start
+
+| You want to | Start here |
+| --- | --- |
+| Make a first contribution | Issues labelled [`good first issue`](https://github.com/Juneo-Lab/decision-forge/labels/good%20first%20issue): scoped, testable offline, no design decision |
+| Own a larger piece | Issues labelled [`help wanted`](https://github.com/Juneo-Lab/decision-forge/labels/help%20wanted), usually an open acceptance item from the [roadmap](ROADMAP.md) |
+| Propose something new | [Discussions → Ideas](https://github.com/Juneo-Lab/decision-forge/discussions/categories/ideas) first, then an issue once it has an acceptance criterion |
+| Ask a question | [Discussions → Q&A](https://github.com/Juneo-Lab/decision-forge/discussions/categories/q-a) |
+
+Comment on an issue before starting so two people do not build the same thing. If you stop, say so and
+the issue goes back to the pool.
+
 ## Local development
 
 ```bash
@@ -85,8 +97,6 @@ the checklist, the automated verification, and how to verify published artifacts
 
 ## Documentation deployment
 
-The Docs workflow builds and uploads the site for documentation pull requests and main-branch updates.
-To publish it, a repository administrator selects **GitHub Actions** under **Settings → Pages** and
-sets the Actions repository variable `DEPLOY_DOCS` to `true`. Deployment then runs on main, or through
-a manual Docs workflow run on main. Until enabled, the workflow builds the site and skips deployment.
-The intended site URL is `https://juneo-lab.github.io/decision-forge/`.
+The Docs workflow builds the site for every documentation pull request and publishes it from `main` to
+[juneo-lab.github.io/decision-forge](https://juneo-lab.github.io/decision-forge/). Publishing is gated by
+the Actions repository variable `DEPLOY_DOCS`; a manual Docs workflow run on `main` republishes the site.

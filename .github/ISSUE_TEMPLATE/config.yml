@@ -1,11 +1,14 @@
 blank_issues_enabled: false
 contact_links:
   - name: Question or usage help
-    url: https://github.com/Juneo-Lab/decision-forge/issues/new?template=question.yml
+    url: https://github.com/Juneo-Lab/decision-forge/discussions/categories/q-a
     about: Ask how to compile your own documents, interpret a report, or integrate an adapter.
+  - name: Idea or early proposal
+    url: https://github.com/Juneo-Lab/decision-forge/discussions/categories/ideas
+    about: Discuss a source format, decision surface, or exporter before it has an acceptance criterion.
   - name: Report a security vulnerability
     url: https://github.com/Juneo-Lab/decision-forge/blob/main/SECURITY.md
     about: Please do not open a public issue for vulnerabilities.
   - name: Read the documentation
-    url: https://github.com/Juneo-Lab/decision-forge/blob/main/docs/index.md
-    about: Architecture, specification, compiler, generation, and training contracts.
+    url: https://juneo-lab.github.io/decision-forge/
+    about: Tutorial, architecture, specification, compiler, generation, and training contracts.

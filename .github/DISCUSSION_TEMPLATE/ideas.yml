@@ -1,0 +1,35 @@
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Organizational problem
+      description: Which decision, source, or workflow Decision Forge handles badly or not at all today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed direction
+      description: Inputs, outputs, and how the result stays verifiable by policy replay.
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Fictional or redacted sample
+      description: A small source excerpt or specification fragment makes an idea testable.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Compiler and ingestion
+        - Policy semantics
+        - Generation and distributions
+        - Training export
+        - Workflows and harnesses
+        - Feedback and lineage
+        - Documentation
+        - Other
+    validations:
+      required: true
