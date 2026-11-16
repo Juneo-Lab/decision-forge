@@ -340,6 +340,7 @@ oracle 与 no-op 对照验证，加上真实本地 OCR 推理与七格式导入�
 | [平台工作流](docs/platform-workflows.md) | 多步任务、评分、反馈与更新 |
 | [数据协议](docs/data-protocol.md) | 评估协议与报告规则 |
 | [基准测试](docs/benchmarks.md) | 离线吞吐协议与参考结果 |
+| [实施计划](docs/implementation-plan.md) | 第一性原理、依赖顺序与当前状态 |
 | [发布流程](docs/releasing.md) | 打标签、带证明的产物与校验 |
 | [参考](docs/references.md) | 相关工作与集成候选 |
 

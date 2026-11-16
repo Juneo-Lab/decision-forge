@@ -2,7 +2,7 @@
 
 ## Evidence and supervision
 
-The v0.1 verifier checks declared policies. Source quotation matching establishes traceability.
+The verifier checks declared policies. Source quotation matching establishes traceability.
 It does not establish that a policy was interpreted correctly. Review the rule representation against
 independent business fixtures before using an organization dataset for training or production claims.
 
