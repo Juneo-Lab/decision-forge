@@ -54,7 +54,7 @@ decision-forge = "decision_forge.cli:app"
 
 [project.optional-dependencies]
 documents = [
-    "pypdf>=6,<7",
+    "pypdf>=6,<8",
     "python-docx>=1.2,<2",
     "openpyxl>=3.1,<4",
     "python-pptx>=1.0,<2",
