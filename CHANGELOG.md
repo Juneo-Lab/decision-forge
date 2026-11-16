@@ -36,6 +36,11 @@
 
 ### Fixed
 
+- Detect Chinese and Japanese near-duplicates. Deduplication split presentations only on whitespace, so a
+  whole CJK sentence became one token and a one-character edit scored zero similarity. Each CJK
+  character is now its own token; other text tokenizes as before. The dedup protocol is now
+  `policy-aware-structural-token-minhash-v3`. Builds with Chinese or Japanese presentations may remove
+  more rows than before.
 - Bind conflict/override reviews to the raw sampling seed and both pool-size settings, so changing
   the sample requires renewed pair acceptance even when its witnesses are unchanged. Existing pair
   acceptances reopen once; unrelated recipe fields and same-effect shadowed reviews keep their bindings.

@@ -1,6 +1,7 @@
 import pytest
 
 from decision_forge.dedup import (
+    NEAR_DUPLICATE_THRESHOLD,
     deduplicate,
     duplicate_verdict,
     find_duplicates,
@@ -87,6 +88,38 @@ def test_minhash_estimates_similarity_and_rejects_bad_thresholds():
     assert jaccard_estimate(left, different) < 0.5
     with pytest.raises(ValueError, match="threshold"):
         find_duplicates([], threshold=0)
+
+
+CHINESE_REFUND = "客户申请退款金额超过五百元，需要主管审批后才能执行。"
+CHINESE_REFUND_EDITED = "客户申请退款金额超过五百元，须要主管审批后才能执行。"
+CHINESE_UNRELATED = "今天天气很好，我们下午一起去公园散步然后吃晚饭吧。"
+
+
+def similarity(left, right):
+    return jaccard_estimate(minhash_signature(shingle_hashes(left)), minhash_signature(shingle_hashes(right)))
+
+
+def test_chinese_near_duplicates_reach_the_threshold():
+    assert similarity(CHINESE_REFUND, CHINESE_REFUND_EDITED) >= NEAR_DUPLICATE_THRESHOLD
+    assert similarity(CHINESE_REFUND, CHINESE_UNRELATED) < 0.5
+
+
+def test_near_identical_chinese_rows_across_splits_are_a_split_leak(example_path, tmp_path):
+    build(example_path, tmp_path / "run")
+    train_one = next(e for e in load_run(tmp_path / "run") if e.split == "train")
+    leaked = clone(train_one, id="ep-leaked-train", split="train", question=CHINESE_REFUND)
+    for candidate in leaked.candidates:
+        candidate.description = "按照公司政策处理这个请求。"
+    held_out = clone(leaked, id="ep-held-out", split="test", question=CHINESE_REFUND_EDITED)
+    _, report = deduplicate([leaked, held_out])
+    assert report["split_leaks"] == [
+        {
+            "dropped": "ep-leaked-train",
+            "dropped_split": "train",
+            "kept": "ep-held-out",
+            "kept_split": "test",
+        }
+    ]
 
 
 def test_duplicate_group_with_conflicting_metadata_is_reported(example_path, tmp_path):
