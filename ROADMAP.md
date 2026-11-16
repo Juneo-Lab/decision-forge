@@ -105,6 +105,10 @@ studies, public package provenance and stable extension guarantees remain releas
 
 ## Contribution lanes
 
+Open acceptance items that suit an outside contributor carry the
+[`help wanted`](https://github.com/Juneo-Lab/decision-forge/labels/help%20wanted) label; smaller scoped tasks carry
+[`good first issue`](https://github.com/Juneo-Lab/decision-forge/labels/good%20first%20issue).
+
 - Organization source adapters and reviewed policy fixtures.
 - Distribution samplers and scenario-family validators.
 - Environment tools and executable acceptance checks.

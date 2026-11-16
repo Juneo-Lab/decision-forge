@@ -11,6 +11,8 @@
 [![CI](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/Juneo-Lab/decision-forge?include_prereleases&color=FF5A1F)](https://github.com/Juneo-Lab/decision-forge/releases)
+[![Docs](https://img.shields.io/badge/docs-juneo--lab.github.io-FF5A1F)](https://juneo-lab.github.io/decision-forge/)
+[![Discussions](https://img.shields.io/github/discussions/Juneo-Lab/decision-forge?color=FF5A1F)](https://github.com/Juneo-Lab/decision-forge/discussions)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Typed](https://img.shields.io/badge/typing-strict%20mypy-2a6db2)](pyproject.toml)
@@ -322,6 +324,8 @@ oracle 与 no-op 对照验证，加上真实本地 OCR 推理与七格式导入�
 
 ## 文档
 
+以下指南同时发布在 [juneo-lab.github.io/decision-forge](https://juneo-lab.github.io/decision-forge/)。
+
 | 指南 | 内容 |
 | --- | --- |
 | [教程](docs/tutorial.md) | 五分钟从书面制度走到训练数据 |
@@ -353,6 +357,9 @@ uv build
 运行一次 `uvx pre-commit install`，即可在每次提交前执行相同的格式与配置检查。
 
 ## 社区
+
+提问和提议请到 [Discussions](https://github.com/Juneo-Lab/decision-forge/discussions)。想贡献代码，可以从标记为
+[good first issue](https://github.com/Juneo-Lab/decision-forge/labels/good%20first%20issue) 或 [help wanted](https://github.com/Juneo-Lab/decision-forge/labels/help%20wanted) 的 issue 开始。
 
 | 文档 | 用途 |
 | --- | --- |

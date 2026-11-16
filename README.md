@@ -11,6 +11,8 @@ Every organization's judgment, turned into the data that makes AI agents trustwo
 [![CI](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml/badge.svg)](https://github.com/Juneo-Lab/decision-forge/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/Juneo-Lab/decision-forge?include_prereleases&color=FF5A1F)](https://github.com/Juneo-Lab/decision-forge/releases)
+[![Docs](https://img.shields.io/badge/docs-juneo--lab.github.io-FF5A1F)](https://juneo-lab.github.io/decision-forge/)
+[![Discussions](https://img.shields.io/github/discussions/Juneo-Lab/decision-forge?color=FF5A1F)](https://github.com/Juneo-Lab/decision-forge/discussions)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776ab)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Typed](https://img.shields.io/badge/typing-strict%20mypy-2a6db2)](pyproject.toml)
@@ -359,6 +361,8 @@ The [roadmap](ROADMAP.md) tracks each remaining acceptance item against a milest
 
 ## Documentation
 
+The guides below are published at [juneo-lab.github.io/decision-forge](https://juneo-lab.github.io/decision-forge/).
+
 | Guide | What it covers |
 | --- | --- |
 | [Tutorial](docs/tutorial.md) | From a written policy to training data in five minutes |
@@ -391,6 +395,9 @@ Run `uvx pre-commit install` once to apply the same formatting and configuration
 commit.
 
 ## Community
+
+Ask questions and propose ideas in [Discussions](https://github.com/Juneo-Lab/decision-forge/discussions). To contribute code, start with an
+issue labelled [good first issue](https://github.com/Juneo-Lab/decision-forge/labels/good%20first%20issue) or [help wanted](https://github.com/Juneo-Lab/decision-forge/labels/help%20wanted).
 
 | Document | Purpose |
 | --- | --- |

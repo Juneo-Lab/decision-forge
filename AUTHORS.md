@@ -11,7 +11,11 @@ artifacts is recorded in [`NOTICE`](NOTICE) as "Decision Forge contributors".
 
 ## Contributors
 
-Contributions are recorded in the repository history. This project follows the
+| Contributor | Contribution |
+| --- | --- |
+| [@sunxiuguo](https://github.com/sunxiuguo) | Reopen pair reviews when sampling settings change ([#56](https://github.com/Juneo-Lab/decision-forge/pull/56)) |
+
+The full record is the repository history. This project follows the
 [`CONTRIBUTING.md`](CONTRIBUTING.md) review bar; there is no separate contributor licence agreement
 beyond the Apache-2.0 inbound terms.
 

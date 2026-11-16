@@ -10,6 +10,11 @@
   remains the next milestone.
 - Describe Laplace by the four decisions it makes rather than as an allow/block gate, and label the third
   surface Act (`select_actions` in data) to match the model cards.
+- Publish the documentation site at https://juneo-lab.github.io/decision-forge/ and link it from both
+  READMEs, the issue chooser, and the repository homepage.
+- Move questions and early proposals to GitHub Discussions, with Q&A and Ideas forms; the Question
+  issue template is retired. `CONTRIBUTING.md` gains a where-to-start table, and `AUTHORS.md` lists
+  outside contributors.
 
 ### Added
 

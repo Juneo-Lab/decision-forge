@@ -2,9 +2,12 @@
 
 ## Questions and usage help
 
-Open an issue using the Question template. Include the command you ran, the
-Decision Forge version (`python -c "import decision_forge; print(decision_forge.__version__)"), the Python version, and the relevant part of
-`report.json` or `calls.json`. Never paste credentials or customer documents.
+Ask in [Discussions → Q&A](https://github.com/Juneo-Lab/decision-forge/discussions/categories/q-a). Include the command you ran, the
+Decision Forge version (`python -c "import decision_forge; print(decision_forge.__version__)"`), the
+Python version, and the relevant part of `report.json` or `calls.json`. Never paste credentials or
+customer documents.
+
+Proposals that are not yet a scoped feature belong in [Discussions → Ideas](https://github.com/Juneo-Lab/decision-forge/discussions/categories/ideas).
 
 ## Bugs
 
