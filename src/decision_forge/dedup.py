@@ -10,7 +10,9 @@ So duplicates are found in two stages:
 2. Within a group, MinHash over normalized word tokens estimates presentation similarity, so a
    cosmetic edit collapses instead of training the model on the same sentence twice. Word tokens
    rather than character n-grams are used because a one-word edit in a short presentation changes
-   most character n-grams, which would miss the duplicates this check exists to find.
+   most character n-grams, which would miss the duplicates this check exists to find. Chinese and
+   Japanese do not separate words with spaces, so each CJK character is its own token; Hangul and
+   other scripts stay whitespace-delimited.
 
 Near-identical wording about *different* states is not a duplicate: those are distinct situations.
 """
@@ -18,6 +20,7 @@ Near-identical wording about *different* states is not a duplicate: those are di
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Iterable
 from itertools import combinations
 from typing import Any
@@ -32,6 +35,7 @@ PERMUTATIONS = 64
 # Prime larger than the 64-bit space of the shingle hashes used below.
 _PRIME = 2**61 - 1
 SPLIT_PRIORITY: dict[str, int] = {"test": 0, "development": 1, "train": 2}
+_CJK_CHARACTER = re.compile("([\u3000-\u303f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff65-\uff9f])")
 
 
 def input_text(episode: Episode) -> str:
@@ -60,7 +64,7 @@ def structure_key(episode: Episode) -> str:
 
 def shingle_hashes(text: str, size: int = SHINGLE_SIZE) -> list[int]:
     """Stable hashed word n-grams; no Python-level hashing so runs reproduce across processes."""
-    words = text.split()
+    words = [token for word in text.split() for token in _CJK_CHARACTER.split(word) if token]
     grams = [text] if len(words) < size else [" ".join(words[i : i + size]) for i in range(len(words) - size + 1)]
     return [int.from_bytes(hashlib.blake2b(gram.encode(), digest_size=8).digest(), "big") for gram in grams]
 
@@ -199,7 +203,7 @@ def find_duplicates(
     dropped_ids = {row["id"] for row in dropped}
     kept = [e for e in episodes if e.id not in dropped_ids]
     return {
-        "protocol": "policy-aware-structural-token-minhash-v2",
+        "protocol": "policy-aware-structural-token-minhash-v3",
         "threshold": threshold,
         "shingle_size": SHINGLE_SIZE,
         "permutations": permutations,

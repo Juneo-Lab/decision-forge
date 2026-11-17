@@ -1,6 +1,7 @@
 import pytest
 
 from decision_forge.dedup import (
+    NEAR_DUPLICATE_THRESHOLD,
     deduplicate,
     duplicate_verdict,
     find_duplicates,
@@ -9,6 +10,9 @@ from decision_forge.dedup import (
     shingle_hashes,
     structure_key,
 )
+from decision_forge.generation import generate_family
+from decision_forge.io import load_sources
+from decision_forge.models import Episode
 from decision_forge.pipeline import build, load_run
 
 
@@ -87,6 +91,69 @@ def test_minhash_estimates_similarity_and_rejects_bad_thresholds():
     assert jaccard_estimate(left, different) < 0.5
     with pytest.raises(ValueError, match="threshold"):
         find_duplicates([], threshold=0)
+
+
+def test_distinct_fullwidth_latin_episodes_are_not_removed(project, example_path):
+    _, hashes = load_sources(project, example_path.parent)
+    parent = next(e for e in generate_family(project, project.scenarios[0], hashes, "train") if e.valid_choices)
+    episodes = []
+    for episode_id, question in [("ep-listen", "ＬＩＳＴＥＮ"), ("ep-silent", "ＳＩＬＥＮＴ")]:
+        row = parent.model_dump(mode="json")
+        row.update(id=episode_id, question=question)
+        for candidate in row["candidates"]:
+            candidate["description"] = "x"
+        episodes.append(Episode.model_validate(row))
+    kept, report = deduplicate(episodes)
+    assert [e.id for e in kept] == ["ep-listen", "ep-silent"]
+    assert report["removed"] == 0
+    assert duplicate_verdict(episodes[1], [episodes[0]]) is None
+
+
+@pytest.mark.parametrize("text", ["ＬＩＳＴＥＮ", "\uffa1\uffa2"], ids=["fullwidth-latin", "halfwidth-hangul"])
+def test_fullwidth_latin_and_halfwidth_hangul_stay_whitespace_delimited(text):
+    assert len(shingle_hashes(text)) == 1
+    assert shingle_hashes(f"{text} {text}") == shingle_hashes(text) * 2
+
+
+def test_halfwidth_katakana_characters_remain_separate_tokens():
+    assert shingle_hashes("･ｶﾞﾊﾟ") == shingle_hashes("･ ｶ ﾞ ﾊ ﾟ")
+
+
+CHINESE_REFUND = "客户申请退款金额超过五百元，需要主管审批后才能执行。"
+CHINESE_REFUND_EDITED = "客户申请退款金额超过五百元，须要主管审批后才能执行。"
+CHINESE_UNRELATED = "今天天气很好，我们下午一起去公园散步然后吃晚饭吧。"
+
+
+def similarity(left, right):
+    return jaccard_estimate(minhash_signature(shingle_hashes(left)), minhash_signature(shingle_hashes(right)))
+
+
+def test_chinese_near_duplicates_reach_the_threshold():
+    assert similarity(CHINESE_REFUND, CHINESE_REFUND_EDITED) >= NEAR_DUPLICATE_THRESHOLD
+    assert similarity(CHINESE_REFUND, CHINESE_UNRELATED) < 0.5
+
+
+def test_japanese_near_duplicates_reach_the_threshold():
+    text = "お客様が五百円を超える返金を申請した場合は、担当者が内容を確認し、上司の承認を得てから処理してください。"
+    assert similarity(text, text.replace("承認", "承諾")) >= NEAR_DUPLICATE_THRESHOLD
+
+
+def test_near_identical_chinese_rows_across_splits_are_a_split_leak(example_path, tmp_path):
+    build(example_path, tmp_path / "run")
+    train_one = next(e for e in load_run(tmp_path / "run") if e.split == "train")
+    leaked = clone(train_one, id="ep-leaked-train", split="train", question=CHINESE_REFUND)
+    for candidate in leaked.candidates:
+        candidate.description = "按照公司政策处理这个请求。"
+    held_out = clone(leaked, id="ep-held-out", split="test", question=CHINESE_REFUND_EDITED)
+    _, report = deduplicate([leaked, held_out])
+    assert report["split_leaks"] == [
+        {
+            "dropped": "ep-leaked-train",
+            "dropped_split": "train",
+            "kept": "ep-held-out",
+            "kept_split": "test",
+        }
+    ]
 
 
 def test_duplicate_group_with_conflicting_metadata_is_reported(example_path, tmp_path):
