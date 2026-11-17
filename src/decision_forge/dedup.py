@@ -35,7 +35,7 @@ PERMUTATIONS = 64
 # Prime larger than the 64-bit space of the shingle hashes used below.
 _PRIME = 2**61 - 1
 SPLIT_PRIORITY: dict[str, int] = {"test": 0, "development": 1, "train": 2}
-_CJK_CHARACTER = re.compile("([\u3000-\u303f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef])")
+_CJK_CHARACTER = re.compile("([\u3000-\u303f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff65-\uff9f])")
 
 
 def input_text(episode: Episode) -> str:

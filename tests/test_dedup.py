@@ -10,6 +10,9 @@ from decision_forge.dedup import (
     shingle_hashes,
     structure_key,
 )
+from decision_forge.generation import generate_family
+from decision_forge.io import load_sources
+from decision_forge.models import Episode
 from decision_forge.pipeline import build, load_run
 
 
@@ -90,6 +93,32 @@ def test_minhash_estimates_similarity_and_rejects_bad_thresholds():
         find_duplicates([], threshold=0)
 
 
+def test_distinct_fullwidth_latin_episodes_are_not_removed(project, example_path):
+    _, hashes = load_sources(project, example_path.parent)
+    parent = next(e for e in generate_family(project, project.scenarios[0], hashes, "train") if e.valid_choices)
+    episodes = []
+    for episode_id, question in [("ep-listen", "ＬＩＳＴＥＮ"), ("ep-silent", "ＳＩＬＥＮＴ")]:
+        row = parent.model_dump(mode="json")
+        row.update(id=episode_id, question=question)
+        for candidate in row["candidates"]:
+            candidate["description"] = "x"
+        episodes.append(Episode.model_validate(row))
+    kept, report = deduplicate(episodes)
+    assert [e.id for e in kept] == ["ep-listen", "ep-silent"]
+    assert report["removed"] == 0
+    assert duplicate_verdict(episodes[1], [episodes[0]]) is None
+
+
+@pytest.mark.parametrize("text", ["ＬＩＳＴＥＮ", "\uffa1\uffa2"], ids=["fullwidth-latin", "halfwidth-hangul"])
+def test_fullwidth_latin_and_halfwidth_hangul_stay_whitespace_delimited(text):
+    assert len(shingle_hashes(text)) == 1
+    assert shingle_hashes(f"{text} {text}") == shingle_hashes(text) * 2
+
+
+def test_halfwidth_katakana_characters_remain_separate_tokens():
+    assert shingle_hashes("･ｶﾞﾊﾟ") == shingle_hashes("･ ｶ ﾞ ﾊ ﾟ")
+
+
 CHINESE_REFUND = "客户申请退款金额超过五百元，需要主管审批后才能执行。"
 CHINESE_REFUND_EDITED = "客户申请退款金额超过五百元，须要主管审批后才能执行。"
 CHINESE_UNRELATED = "今天天气很好，我们下午一起去公园散步然后吃晚饭吧。"
@@ -102,6 +131,11 @@ def similarity(left, right):
 def test_chinese_near_duplicates_reach_the_threshold():
     assert similarity(CHINESE_REFUND, CHINESE_REFUND_EDITED) >= NEAR_DUPLICATE_THRESHOLD
     assert similarity(CHINESE_REFUND, CHINESE_UNRELATED) < 0.5
+
+
+def test_japanese_near_duplicates_reach_the_threshold():
+    text = "お客様が五百円を超える返金を申請した場合は、担当者が内容を確認し、上司の承認を得てから処理してください。"
+    assert similarity(text, text.replace("承認", "承諾")) >= NEAR_DUPLICATE_THRESHOLD
 
 
 def test_near_identical_chinese_rows_across_splits_are_a_split_leak(example_path, tmp_path):
