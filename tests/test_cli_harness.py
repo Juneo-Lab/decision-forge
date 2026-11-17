@@ -69,6 +69,29 @@ def test_evaluate_decisions_rejects_non_object_bindings(example_path, tmp_path):
     assert result.exception is None or isinstance(result.exception, SystemExit)
 
 
+@pytest.mark.parametrize("payload", [5, "events", {"event_id": "e1"}], ids=["number", "string", "object"])
+@pytest.mark.parametrize(
+    ("arguments", "message"),
+    [
+        (["events-ingest", "{input}", "--database", "{tmp}/events.sqlite"], "Events file must be a JSON array"),
+        (
+            ["plan-recipe", "{spec}", "--mode", "explicit", "--targets", "{input}", "--output", "{tmp}/plan.json"],
+            "Targets file must be a JSON array",
+        ),
+    ],
+    ids=["events-ingest", "plan-recipe"],
+)
+def test_commands_reject_non_array_json_inputs(example_path, tmp_path, arguments, message, payload):
+    source = tmp_path / "input.json"
+    write_json(source, payload)
+    values = [argument.format(input=source, spec=example_path, tmp=tmp_path) for argument in arguments]
+    result = CliRunner().invoke(app, values)
+    assert result.exit_code == 1, result.output
+    assert result.output.strip() == f"Error: {message}"
+    assert isinstance(result.exception, SystemExit)
+    assert not (tmp_path / "events.sqlite").exists()
+
+
 @pytest.mark.parametrize(
     "arguments",
     [
