@@ -95,7 +95,7 @@ verified labels, source provenance, and stable family assignments. The result is
 can audit, reproduce, and hand to a trainer.
 
 > [!NOTE]
-> **Status: `v0.3.2` alpha — organizational decision data pipeline.**
+> **Status: `v0.4.0` alpha — organizational decision data pipeline.**
 > Reviewed or authored specifications build into training data locally, without model credentials.
 > Document compilation and model-assisted synthesis use an explicitly selected model endpoint.
 > See [project status](docs/status.md) for the current implementation and next milestones.
@@ -111,7 +111,7 @@ can audit, reproduce, and hand to a trainer.
 | **Leak-resistant splits** | Related variants share a family split; cross-split duplicates are reported and dropped |
 | **Training-ready exports** | Four formats, including the candidate-readout decision contract |
 | **Broad ingestion** | Text, Markdown, JSON/YAML, PDF, DOCX/XLSX/PPTX, HTML, CSV/TSV, and local OCR |
-| **Validated** | 311 tests, 90.89% statement coverage in the full optional-adapter environment |
+| **Validated** | 371 tests, 91.28% statement coverage in the full optional-adapter environment |
 | **Continuous checks** | 10 CI jobs across Linux and macOS, including adapter, OCR, and Harbor controls; CodeQL and OpenSSF Scorecard scans |
 
 ## See it in action
@@ -292,7 +292,7 @@ recipe; that controlled comparison is the next milestone. [Try Laplace-1-Vector 
 
 <br>
 
-**Local validation (macOS ARM64, Python 3.12, all optional extras):** 311 tests, 90.89% statement coverage, Ruff, strict
+**Local validation (Linux x86-64, Python 3.12, all optional extras):** 371 tests, 91.28% statement coverage, Ruff, strict
 mypy, strict MkDocs, wheel and sdist builds. CI runs 10 jobs: quality, six test jobs (Ubuntu and macOS ×
 Python 3.11/3.12/3.13), pinned Data Designer and LangGraph adapter contracts, and Harbor task execution
 in Docker under oracle and no-op controls, plus real local OCR inference and seven-format ingestion.
@@ -421,7 +421,7 @@ repository** button reads [CITATION.cff](CITATION.cff); export formats are versi
 @software{decision_forge,
   title   = {Decision Forge: Organizational Decision Data Infrastructure},
   author  = {{Decision Forge contributors}},
-  version = {0.3.2},
+  version = {0.4.0},
   license = {Apache-2.0},
   url     = {https://github.com/Juneo-Lab/decision-forge}
 }

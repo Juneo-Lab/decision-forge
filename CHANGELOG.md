@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.0
+
+Version 0.4.0 adds `audit-trace`, which replays what agents actually did against the declared policy,
+together with a five-minute tutorial and a two-organization agent delegation example. Deduplication and
+evidence matching now handle Chinese and Japanese text. Two changes affect existing outputs: builds with
+Chinese or Japanese presentations may drop more near-duplicates under dedup protocol v3, and
+conflict/override pair reviews reopen once because they now bind to the sampling settings.
+
 ### Documentation
 
 - Describe Laplace-1 as released with open weights and trained entirely on Decision Forge data, with its
@@ -48,14 +56,16 @@
   character, including halfwidth Katakana and its voiced marks (U+FF65–U+FF9F), is now its own token;
   fullwidth Latin, Hangul (including halfwidth Hangul), and other scripts remain whitespace-delimited.
   The dedup protocol is now `policy-aware-structural-token-minhash-v3`. Builds with Chinese or Japanese
-  presentations may remove more rows than before.
+  presentations may remove more rows than before. Thanks to tridev-tej (#86).
 - Match evidence quotes across hard-wrapped Chinese and Japanese text while retaining original source
-  offsets and hashes. Korean Hangul keeps the ordinary word-spacing rules.
+  offsets and hashes. Korean Hangul keeps the ordinary word-spacing rules. Thanks to Golden007-prog (#87).
 - Bind conflict/override reviews to the raw sampling seed and both pool-size settings, so changing
   the sample requires renewed pair acceptance even when its witnesses are unchanged. Existing pair
   acceptances reopen once; unrelated recipe fields and same-effect shadowed reviews keep their bindings.
+  Thanks to sunxiuguo (#56).
 - `events-ingest` and `plan-recipe --targets` report a JSON input that is not an array as a one-line
-  error with exit code 1 instead of a traceback or a misleading validation failure (#71).
+  error with exit code 1 instead of a traceback or a misleading validation failure (#71). Thanks to
+  kratos0718 (#88).
 
 ## 0.3.2
 
