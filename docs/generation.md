@@ -103,7 +103,10 @@ includes the scenario ID. Deduplication therefore works on the model-visible inp
    Wording can only be compared inside a group.
 2. **MinHash over normalized word tokens** estimates presentation similarity inside a group, so a
    cosmetic edit collapses. Word tokens are used instead of character n-grams because a one-word edit
-   in a short presentation changes most character n-grams.
+   in a short presentation changes most character n-grams. Chinese and Japanese text has no spaces
+   between words, so each CJK character is its own token, including halfwidth Katakana and its voiced
+   marks (U+FF65–U+FF9F). Fullwidth Latin, Hangul (including halfwidth Hangul), and other scripts stay
+   whitespace-delimited.
 
 Keeper policy: the most held-out member survives (`test` > `development` > `train`, then lowest ID).
 A cross-split duplicate is a **split leak**: the training copy is dropped and listed in `split_leaks`,
