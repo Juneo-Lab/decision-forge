@@ -57,6 +57,14 @@ def _episode(run: Path, episode_id: str) -> Episode:
     return episode
 
 
+def read_json_array(path: Path, label: str) -> list[Any]:
+    """Read a JSON file that must hold an array, so other values fail as one-line errors."""
+    value = read_json(path)
+    if not isinstance(value, list):
+        raise ValueError(f"{label} must be a JSON array")
+    return value
+
+
 @contextmanager
 def cli_errors(*expected: type[Exception]) -> Iterator[None]:
     """Report expected failures as a one-line error and exit code 1 instead of a traceback."""
@@ -412,7 +420,8 @@ def events_ingest_command(events: Path, database: Annotated[Path, typer.Option()
     from decision_forge.feedback import RuntimeEvent, ingest_events
 
     with cli_errors():
-        display(ingest_events(database, [RuntimeEvent.model_validate(row) for row in read_json(events)]))
+        rows = read_json_array(events, "Events file")
+        display(ingest_events(database, [RuntimeEvent.model_validate(row) for row in rows]))
 
 
 @app.command("feedback-plan")
@@ -518,7 +527,9 @@ def plan_recipe_command(
                 "per_cell": per_cell,
                 "total_examples": total,
                 "strata": [value for value in (stratum or []) if value],
-                "targets": [DistributionTarget.model_validate(row) for row in read_json(targets)] if targets else [],
+                "targets": [DistributionTarget.model_validate(row) for row in read_json_array(targets, "Targets file")]
+                if targets
+                else [],
             }
         )
         provider = None
