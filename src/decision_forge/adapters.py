@@ -14,7 +14,7 @@ from decision_forge.models import Episode
 from decision_forge.pipeline import build, load_run
 from decision_forge.review import require_review, review_status
 
-SUPPORTED = {"data-designer": "0.9.7", "langgraph": "1.2.19", "langgraph-checkpoint-sqlite": "3.1.3"}
+SUPPORTED = {"data-designer": "0.9.7", "langgraph": "1.2.22", "langgraph-checkpoint-sqlite": "3.1.3"}
 
 
 def _training_input(episode: Episode) -> str:
