@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from decision_forge.compiler import compile_documents
+from decision_forge.io import digest, load_sources, quote_span
 from decision_forge.providers import OpenAICompatibleProvider
 
 
@@ -233,6 +234,61 @@ def test_compile_anchors_quotes_across_hard_wrapped_sources(project, tmp_path):
     assert evidence.start is not None and evidence.end is not None
     text = source.read_text()
     assert text[evidence.start : evidence.end].replace("\n", " ") == target
+
+
+@pytest.mark.parametrize(
+    ("wrapped", "quote"),
+    [
+        ("退款金额超过\n100元的，须提交主管审批。", "退款金额超过100元的，须提交主管审批。"),
+        ("退款金\n\t额需要审批。", "退款金额需要审批。"),
+    ],
+)
+def test_cjk_line_wraps_keep_original_evidence_offsets(project, tmp_path, wrapped, quote):
+    evidence = project.organization.rules[0].evidence[0]
+    evidence.quote = quote
+    evidence.start = evidence.end = None
+    quotes = list(dict.fromkeys(ev.quote for rule in project.organization.rules for ev in rule.evidence))
+    text = "Section 3: " + wrapped + "\n" + "\n".join(quotes[1:]) + "\n"
+    source = tmp_path / "policy.md"
+    source.write_text(text, encoding="utf-8")
+
+    start, end = quote_span(text, quote)
+    assert text[start:end] == wrapped
+
+    output = tmp_path / "compiled"
+    result = compile_documents([source], output, FixtureProvider(project))
+    bound = result.organization.rules[0].evidence[0]
+    assert (bound.start, bound.end) == (start, end)
+    assert bound.quote == quote
+    contents, hashes = load_sources(result, output)
+    assert contents[bound.source_id][start:end] == wrapped
+    assert hashes[bound.source_id] == digest(text)
+    bound.quote = quote[:1] + " " + quote[1:]
+    with pytest.raises(ValueError, match="Evidence span does not match"):
+        load_sources(result, output)
+    bound.quote = quote
+    bound.start = bound.end = None
+    load_sources(result, output)
+
+
+def test_cjk_quotes_can_keep_source_spacing_without_inventing_it():
+    source = "退款  金\n额。"
+    assert quote_span(source, "退款 金额。") == (0, len(source))
+    with pytest.raises(ValueError, match="not present"):
+        quote_span(source, "退 款金额。")
+
+
+def test_ambiguity_after_eliding_cjk_wraps_is_rejected():
+    with pytest.raises(ValueError, match="more than one source span"):
+        quote_span("退款\n金额。\n退款金\t额。", "退款金额。")
+
+
+@pytest.mark.parametrize(("first", "second"), [("승인", "필요"), ("\uffa1", "\uffa2")])
+def test_hangul_wraps_keep_a_space(first, second):
+    source = f"{first}\n{second}"
+    assert quote_span(source, f"{first} {second}") == (0, len(source))
+    with pytest.raises(ValueError, match="not present"):
+        quote_span(source, first + second)
 
 
 def test_whitespace_tolerant_quotes_produce_a_loadable_project(project, example_path, tmp_path):

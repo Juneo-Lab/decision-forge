@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,11 @@ import yaml
 from decision_forge.models import Project
 
 MAX_SOURCE_BYTES = 2_000_000
+# Halfwidth and Fullwidth Forms contains halfwidth Hangul at U+FFA0–U+FFDC.
+_CJK_NEIGHBOR = re.compile(
+    r"[\u3000-\u303f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff"
+    r"\uff00-\uff9f\uffdd-\uffef]"
+)
 
 
 def canonical(value: Any) -> str:
@@ -25,7 +31,7 @@ def digest(value: Any) -> str:
 
 
 def collapse_whitespace(text: str) -> tuple[str, list[int]]:
-    """Collapse each whitespace run to one space, keeping a map back to original offsets."""
+    """Collapse whitespace for evidence matching and map each character to its original offset."""
     collapsed: list[str] = []
     positions: list[int] = []
     index = 0
@@ -34,8 +40,9 @@ def collapse_whitespace(text: str) -> tuple[str, list[int]]:
             end = index
             while end < len(text) and text[end].isspace():
                 end += 1
-            # A run between two tokens becomes one space; leading and trailing runs vanish.
-            if collapsed and end < len(text):
+            # Preserve a space between ordinary tokens. CJK-adjacent runs drop out,
+            # as do leading and trailing runs.
+            if collapsed and end < len(text) and not _CJK_NEIGHBOR.search(collapsed[-1] + text[end]):
                 collapsed.append(" ")
                 positions.append(index)
             index = end
@@ -44,6 +51,29 @@ def collapse_whitespace(text: str) -> tuple[str, list[int]]:
         positions.append(index)
         index += 1
     return "".join(collapsed), positions
+
+
+def _normalized_quote(quote: str) -> tuple[str, tuple[int, ...]]:
+    normalized, positions = collapse_whitespace(quote)
+    # A gap between two retained non-space characters marks elided CJK whitespace.
+    # A gap after a normalized space comes from the existing space collapse instead.
+    gaps = tuple(
+        i
+        for i in range(1, len(positions))
+        if positions[i] > positions[i - 1] + 1 and " " not in normalized[i - 1 : i + 1]
+    )
+    return normalized, gaps
+
+
+def _contains_quote_gaps(positions: list[int], start: int, quote_gaps: tuple[int, ...]) -> bool:
+    return all(positions[start + i] > positions[start + i - 1] + 1 for i in quote_gaps)
+
+
+def evidence_quote_matches(text: str, quote: str) -> bool:
+    """Check a bound evidence span without accepting whitespace invented by the quote."""
+    normalized_text, positions = collapse_whitespace(text)
+    normalized_quote, gaps = _normalized_quote(quote)
+    return normalized_text == normalized_quote and _contains_quote_gaps(positions, 0, gaps)
 
 
 def _find_all(haystack: str, needle: str) -> list[tuple[int, int]]:
@@ -70,10 +100,14 @@ def quote_span(text: str, quote: str) -> tuple[int, int]:
     if len(exact) > 1:
         raise ValueError("Quote matches more than one source span")
     collapsed_text, positions = collapse_whitespace(text)
-    collapsed_quote, _ = collapse_whitespace(quote)
+    collapsed_quote, gaps = _normalized_quote(quote)
     if not collapsed_quote:
         raise ValueError("Quote must not be empty")
-    hits = _find_all(collapsed_text, collapsed_quote)
+    hits = [
+        (start, end)
+        for start, end in _find_all(collapsed_text, collapsed_quote)
+        if _contains_quote_gaps(positions, start, gaps)
+    ]
     if len(hits) == 1:
         start, end = hits[0]
         return positions[start], positions[end - 1] + 1
@@ -150,7 +184,6 @@ def load_sources(project: Project, root: Path) -> tuple[dict[str, str], dict[str
     for rule in project.organization.rules:
         for evidence in rule.evidence:
             source_text = contents[evidence.source_id]
-            quoted, _ = collapse_whitespace(evidence.quote)
             if evidence.start is None or evidence.end is None:
                 try:
                     quote_span(source_text, evidence.quote)
@@ -160,6 +193,6 @@ def load_sources(project: Project, root: Path) -> tuple[dict[str, str], dict[str
             if not 0 <= evidence.start < evidence.end <= len(source_text):
                 raise ValueError(f"Evidence span is outside source bounds for rule {rule.id}")
             span = source_text[evidence.start : evidence.end]
-            if collapse_whitespace(span)[0] != quoted:
+            if not evidence_quote_matches(span, evidence.quote):
                 raise ValueError(f"Evidence span does not match for rule {rule.id}")
     return contents, hashes
