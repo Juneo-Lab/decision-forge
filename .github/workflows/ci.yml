@@ -15,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           enable-cache: true
       - run: uv sync --locked --all-groups --extra documents --python 3.12
@@ -35,8 +35,8 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         python: ['3.11', '3.12', '3.13']
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           enable-cache: true
       - run: uv sync --locked --group dev --extra documents --extra ocr --python ${{ matrix.python }}
@@ -49,8 +49,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           enable-cache: true
       - run: uv sync --locked --group dev --extra designer --extra orchestration --python 3.12
@@ -60,8 +60,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           enable-cache: true
       - run: uv sync --locked --group dev --extra documents --extra ocr-rapid --python 3.12
@@ -73,8 +73,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
       - run: uv sync --locked --no-dev --python 3.12
       - run: uv tool install 'harbor==0.25.0' --python 3.12
       - run: uv run --no-sync decision-forge build examples/customer_support/project.yaml --output runs/harbor-build
@@ -83,7 +83,7 @@ jobs:
       - run: uv run --no-sync python scripts/check_harbor_results.py --manifest runs/harbor-tasks/manifest.json --jobs runs/harbor-oracle --agent oracle --reward 1
       - run: harbor run -p runs/harbor-tasks -a nop -e docker --jobs-dir runs/harbor-nop -n 2
       - run: uv run --no-sync python scripts/check_harbor_results.py --manifest runs/harbor-tasks/manifest.json --jobs runs/harbor-nop --agent nop --reward 0
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: harbor-controls
@@ -99,8 +99,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/dependency-review-action@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           fail-on-severity: high
           comment-summary-in-pr: never

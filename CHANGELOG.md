@@ -34,6 +34,13 @@
   written policies. `scripts/compare_organizations.py` builds both and renders a comparison in which
   every decision cites the sentence that governs it.
 
+### Changed
+
+- Pin every GitHub Action in the workflows to a full commit SHA, with its release in a trailing comment.
+  Dependabot updates the SHA and the comment together.
+- Update LangGraph to 1.2.22 in the orchestration adapter, and typer, onnxruntime, pypdfium2, and the
+  development tools to their latest releases.
+
 ### Fixed
 
 - Detect Chinese and Japanese near-duplicates. Deduplication split presentations only on whitespace, so a
