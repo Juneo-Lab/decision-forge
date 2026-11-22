@@ -36,11 +36,19 @@
 
 ### Fixed
 
+- Detect Chinese and Japanese near-duplicates. Deduplication split presentations only on whitespace, so a
+  whole CJK sentence became one token and a one-character edit scored zero similarity. Each CJK
+  character, including halfwidth Katakana and its voiced marks (U+FF65–U+FF9F), is now its own token;
+  fullwidth Latin, Hangul (including halfwidth Hangul), and other scripts remain whitespace-delimited.
+  The dedup protocol is now `policy-aware-structural-token-minhash-v3`. Builds with Chinese or Japanese
+  presentations may remove more rows than before.
 - Match evidence quotes across hard-wrapped Chinese and Japanese text while retaining original source
   offsets and hashes. Korean Hangul keeps the ordinary word-spacing rules.
 - Bind conflict/override reviews to the raw sampling seed and both pool-size settings, so changing
   the sample requires renewed pair acceptance even when its witnesses are unchanged. Existing pair
   acceptances reopen once; unrelated recipe fields and same-effect shadowed reviews keep their bindings.
+- `events-ingest` and `plan-recipe --targets` report a JSON input that is not an array as a one-line
+  error with exit code 1 instead of a traceback or a misleading validation failure (#71).
 
 ## 0.3.2
 
