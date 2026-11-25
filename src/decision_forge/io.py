@@ -141,23 +141,48 @@ def write_json(path: Path, value: Any) -> None:
     atomic_text(path, json_text(value))
 
 
+# Parse errors name the file and a 1-based position, never the content: the decoder and
+# PyYAML messages quote the offending text, so neither ``str(exc)`` nor ``exc.msg`` is used.
+
+
+def _read_text(path: Path, kind: str) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeError:
+        raise ValueError(f"{kind} encoding in {path}") from None
+
+
 def read_jsonl(path: Path) -> list[Any]:
     """One JSON value per non-empty line."""
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    rows = []
+    for number, line in enumerate(_read_text(path, "Invalid JSONL").splitlines(), 1):
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSONL syntax in {path} at line {number}, column {exc.colno}") from None
+    return rows
 
 
 def read_json(path: Path) -> Any:
+    text = _read_text(path, "Invalid JSON artifact")
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, UnicodeError):
-        raise ValueError("Invalid JSON artifact encoding or syntax") from None
+        return json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON artifact syntax in {path} at line {exc.lineno}, column {exc.colno}") from None
 
 
 def read_yaml(path: Path) -> Any:
+    text = _read_text(path, "Invalid YAML/JSON input")
     try:
-        return yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (yaml.YAMLError, UnicodeError, RecursionError):
-        raise ValueError("Invalid YAML/JSON input encoding or syntax") from None
+        return yaml.safe_load(text)
+    except yaml.MarkedYAMLError as exc:
+        mark = exc.problem_mark or exc.context_mark
+        where = f" at line {mark.line + 1}, column {mark.column + 1}" if mark is not None else ""
+        raise ValueError(f"Invalid YAML/JSON input syntax in {path}{where}") from None
+    except (yaml.YAMLError, RecursionError):
+        raise ValueError(f"Invalid YAML/JSON input syntax in {path}") from None
 
 
 def load_project(path: Path) -> Project:

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+
+- YAML, JSON and JSON Lines syntax and encoding errors name the file and, for syntax errors, a
+  1-based line and column, so `audit-trace` and `evaluate-decisions`, which each read three files,
+  say which one is broken. The messages still carry no file content.
+
 ## 0.4.0
 
 Version 0.4.0 adds `audit-trace`, which replays what agents actually did against the declared policy,
